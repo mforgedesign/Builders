@@ -1,40 +1,178 @@
 /**
- * AutoBuilder v4.0 - Persistence Module
- * ======================================
- * Saves and restores the builder state using localStorage.
- * Prevents data loss on page reload.
+ * AutoBuilder v4.0 - Persistence Module (IndexedDB)
+ * ==================================================
+ * Saves and restores builder state using:
+ * - IndexedDB for assets (supports large files, 50MB+)
+ * - localStorage for form data and links (small, fast)
  * 
- * ESTRATÉGIA: Salvamento Imediato (Eager Save)
- * - Converte blobs para Base64 IMEDIATAMENTE quando arquivo é selecionado
- * - Mantém cache de Base64 já convertido
- * - Salva SINCRONAMENTE usando o cache (não depende de beforeunload async)
+ * Prevents data loss on page reload.
  */
 
 (function () {
     'use strict';
 
     const STORAGE_KEY = 'autobuilder_v4_state';
-    const SAVE_DELAY = 500; // 0.5 second debounce para form data
+    const DB_NAME = 'AutoBuilderDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'assets';
+    const SAVE_DELAY = 500;
 
     let saveTimeout;
-
-    // Cache de Base64 para assets - persiste entre saves
-    let assetsBase64Cache = {};
+    let db = null;
 
     // ========================================
-    // Core Functions
+    // IndexedDB Setup
     // ========================================
 
-    /**
-     * Helper: Converts a Blob/File to Base64 data URL
-     */
+    function openDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+            request.onerror = () => {
+                console.error('[Persistence] IndexedDB error:', request.error);
+                reject(request.error);
+            };
+
+            request.onsuccess = () => {
+                db = request.result;
+                console.log('[Persistence] IndexedDB opened');
+                resolve(db);
+            };
+
+            request.onupgradeneeded = (event) => {
+                const database = event.target.result;
+                if (!database.objectStoreNames.contains(STORE_NAME)) {
+                    database.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    console.log('[Persistence] IndexedDB store created');
+                }
+            };
+        });
+    }
+
+    // ========================================
+    // Asset Storage (IndexedDB)
+    // ========================================
+
+    async function saveAssetToDB(context, base64Data) {
+        if (!db) await openDatabase();
+
+        return new Promise((resolve, reject) => {
+            try {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put({ id: context, data: base64Data });
+
+                request.onsuccess = () => {
+                    console.log(`[Persistence] Asset saved to IndexedDB: ${context}`);
+                    resolve();
+                };
+                request.onerror = () => {
+                    console.error(`[Persistence] Failed to save asset: ${context}`, request.error);
+                    reject(request.error);
+                };
+            } catch (e) {
+                console.error('[Persistence] Transaction error:', e);
+                reject(e);
+            }
+        });
+    }
+
+    async function getAssetFromDB(context) {
+        if (!db) await openDatabase();
+
+        return new Promise((resolve, reject) => {
+            try {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(context);
+
+                request.onsuccess = () => {
+                    resolve(request.result ? request.result.data : null);
+                };
+                request.onerror = () => {
+                    reject(request.error);
+                };
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
+
+    async function getAllAssetsFromDB() {
+        if (!db) await openDatabase();
+
+        return new Promise((resolve, reject) => {
+            try {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+
+                request.onsuccess = () => {
+                    const assets = {};
+                    (request.result || []).forEach(item => {
+                        assets[item.id] = item.data;
+                    });
+                    resolve(assets);
+                };
+                request.onerror = () => {
+                    reject(request.error);
+                };
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
+
+    async function deleteAssetFromDB(context) {
+        if (!db) await openDatabase();
+
+        return new Promise((resolve, reject) => {
+            try {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(context);
+
+                request.onsuccess = () => {
+                    console.log(`[Persistence] Asset deleted from IndexedDB: ${context}`);
+                    resolve();
+                };
+                request.onerror = () => reject(request.error);
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
+
+    async function clearAllAssetsFromDB() {
+        if (!db) await openDatabase();
+
+        return new Promise((resolve, reject) => {
+            try {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.clear();
+
+                request.onsuccess = () => {
+                    console.log('[Persistence] All assets cleared from IndexedDB');
+                    resolve();
+                };
+                request.onerror = () => reject(request.error);
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
+
+    // ========================================
+    // Helper Functions
+    // ========================================
+
     function blobToBase64(blob) {
         return new Promise((resolve) => {
             if (!blob) return resolve(null);
             if (typeof blob === 'string') {
-                // Se já é string (base64 ou URL)
                 if (blob.startsWith('data:')) return resolve(blob);
-                return resolve(null); // blob URL não é serializável
+                return resolve(null);
             }
             if (!(blob instanceof Blob)) return resolve(null);
 
@@ -45,42 +183,33 @@
         });
     }
 
-    /**
-     * Salva estado SINCRONAMENTE usando cache de Base64.
-     * Chamado após cada modificação.
-     */
-    function saveStateSync() {
-        if (!window.builderState) return;
+    // ========================================
+    // Form/Links Storage (localStorage - small data)
+    // ========================================
 
+    function saveFormState() {
         try {
             const stateToSave = {
-                formData: window.builderState.formData || {},
-                assets: { ...assetsBase64Cache },
-                linksExtras: window.builderState.linksExtras || [],
+                formData: window.builderState?.formData || {},
+                linksExtras: window.builderState?.linksExtras || [],
                 timestamp: Date.now()
             };
-
             localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-            console.log('[Persistence] State saved', new Date().toLocaleTimeString(),
-                `(${Object.keys(assetsBase64Cache).length} assets cached)`);
-
+            console.log('[Persistence] Form state saved to localStorage');
         } catch (e) {
-            console.warn('[Persistence] Failed to save state:', e);
+            console.warn('[Persistence] Failed to save form state:', e);
         }
     }
 
-    /**
-     * Debounced save function (para form data).
-     */
     function scheduleSave() {
         clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(saveStateSync, SAVE_DELAY);
+        saveTimeout = setTimeout(saveFormState, SAVE_DELAY);
     }
 
-    /**
-     * Processa um asset imediatamente: converte para Base64 e salva.
-     * Chamado quando um arquivo é selecionado.
-     */
+    // ========================================
+    // Asset Processing
+    // ========================================
+
     async function processAndSaveAsset(context, blobOrFile) {
         if (!blobOrFile) return;
 
@@ -89,60 +218,54 @@
         try {
             const base64 = await blobToBase64(blobOrFile);
             if (base64) {
-                assetsBase64Cache[context] = base64;
-                console.log(`[Persistence] Asset cached: ${context} (${(base64.length / 1024).toFixed(1)}KB)`);
-
-                // Salvar imediatamente
-                saveStateSync();
+                await saveAssetToDB(context, base64);
+                console.log(`[Persistence] Asset saved: ${context} (${(base64.length / 1024).toFixed(1)}KB)`);
             }
         } catch (e) {
             console.error(`[Persistence] Failed to process asset ${context}:`, e);
         }
     }
 
-    /**
-     * Remove um asset do cache.
-     */
-    function removeAsset(context) {
-        delete assetsBase64Cache[context];
-        saveStateSync();
-        console.log(`[Persistence] Asset removed: ${context}`);
-    }
+    // ========================================
+    // Restore State
+    // ========================================
 
-    /**
-     * Restores the state from localStorage.
-     */
-    function restoreState() {
+    async function restoreState() {
         try {
+            // 1. Restore Form Data from localStorage
             const savedRaw = localStorage.getItem(STORAGE_KEY);
-            if (!savedRaw) {
-                console.log('[Persistence] No saved state found');
-                return;
-            }
+            let savedState = null;
 
-            const savedState = JSON.parse(savedRaw);
-            console.log('[Persistence] Found saved state from:', new Date(savedState.timestamp).toLocaleString());
+            if (savedRaw) {
+                savedState = JSON.parse(savedRaw);
+                console.log('[Persistence] Found form state from:', new Date(savedState.timestamp).toLocaleString());
 
-            // 1. Restore Form Data
-            if (savedState.formData) {
-                console.log('[Persistence] Broadcasting restored state...');
+                if (savedState.formData) {
+                    document.dispatchEvent(new CustomEvent('stateUpdated', {
+                        detail: { source: 'persistence', data: savedState }
+                    }));
+                }
 
-                document.dispatchEvent(new CustomEvent('stateUpdated', {
-                    detail: {
-                        source: 'persistence',
-                        data: savedState
+                // Restore Extra Links
+                if (savedState.linksExtras && window.AutoBuilderLinksExtras) {
+                    console.log('[Persistence] Restoring extra links...');
+                    if (window.builderState) {
+                        window.builderState.linksExtras = [...savedState.linksExtras];
                     }
-                }));
+                    window.AutoBuilderLinksExtras.populateLinks(savedState.linksExtras);
+                    document.dispatchEvent(new CustomEvent('linksExtrasUpdated', {
+                        detail: { links: savedState.linksExtras }
+                    }));
+                }
             }
 
-            // 2. Restore Assets (Dropzones)
-            if (savedState.assets && Object.keys(savedState.assets).length > 0) {
-                console.log('[Persistence] Restoring assets...');
+            // 2. Restore Assets from IndexedDB
+            const assets = await getAllAssetsFromDB();
+            const assetCount = Object.keys(assets).length;
 
-                // Restaurar cache de Base64
-                assetsBase64Cache = { ...savedState.assets };
+            if (assetCount > 0) {
+                console.log(`[Persistence] Restoring ${assetCount} assets from IndexedDB...`);
 
-                // Map context to dropzone IDs
                 const dropzoneMap = {
                     'capa': 'cover-dropzone',
                     'folha_vazia': 'leaf-dropzone',
@@ -155,11 +278,8 @@
                     'manual': 'manual-image-dropzone'
                 };
 
-                // Helper: Convert Base64 data URL back to Blob
                 const base64ToBlob = (dataUrl) => {
-                    if (!dataUrl || typeof dataUrl !== 'string') return null;
-                    if (!dataUrl.startsWith('data:')) return null;
-
+                    if (!dataUrl || !dataUrl.startsWith('data:')) return null;
                     try {
                         const [header, base64] = dataUrl.split(',');
                         const mimeMatch = header.match(/data:([^;]+)/);
@@ -171,44 +291,38 @@
                         }
                         return new Blob([array], { type: mime });
                     } catch (e) {
-                        console.warn('[Persistence] Failed to convert base64 to blob:', e);
                         return null;
                     }
                 };
 
-                // Initialize assets object in builderState
                 if (window.builderState) {
                     window.builderState.assets = {};
                 }
 
-                Object.entries(savedState.assets).forEach(([context, dataUrl]) => {
-                    if (!dataUrl) return;
+                for (const [context, dataUrl] of Object.entries(assets)) {
+                    if (!dataUrl) continue;
 
                     const dropzoneId = dropzoneMap[context];
-
-                    // Determine type based on context
                     let type = 'image';
-                    if (context.includes('video') || context === 'vid_abertura' || context === 'vid_loop' ||
-                        context === 'folha_animada') {
+
+                    if (context.includes('video') || context === 'vid_abertura' ||
+                        context === 'vid_loop' || context === 'folha_animada') {
                         type = 'video';
                     } else if (context === 'musica') {
                         type = 'audio';
                     }
 
-                    // Convert Base64 back to Blob for builderState
-                    if (dataUrl.startsWith('data:')) {
-                        const blob = base64ToBlob(dataUrl);
-                        if (blob && window.builderState) {
-                            window.builderState.assets[context] = blob;
-                        }
+                    // Convert to Blob for builderState
+                    const blob = base64ToBlob(dataUrl);
+                    if (blob && window.builderState) {
+                        window.builderState.assets[context] = blob;
                     }
 
-                    // Update dropzone preview
+                    // Update UI
                     if (dropzoneId) {
                         const dropzone = document.getElementById(dropzoneId);
                         if (dropzone) {
                             if (type === 'audio') {
-                                // Tratamento especial para música
                                 const audioPlayer = document.getElementById('music-audio-player');
                                 const trackName = document.getElementById('music-track-name');
                                 const removeBtn = document.getElementById('music-remove-btn');
@@ -225,48 +339,35 @@
                                 window.updateDropzonePreview(dropzone, dataUrl, type);
                             }
 
-                            // Emit media event for preview.js
                             document.dispatchEvent(new CustomEvent('mediaUpdated', {
                                 detail: { type: context, data: { url: dataUrl, type: type } }
                             }));
                         }
                     }
-                });
-
-                console.log('[Persistence] Assets restored:', Object.keys(savedState.assets).length);
-            }
-
-            // 3. Restore Extra Links
-            if (savedState.linksExtras && window.AutoBuilderLinksExtras) {
-                console.log('[Persistence] Restoring extra links...');
-
-                if (window.builderState) {
-                    window.builderState.linksExtras = [...savedState.linksExtras];
                 }
 
-                window.AutoBuilderLinksExtras.populateLinks(savedState.linksExtras);
+                console.log(`[Persistence] Assets restored: ${assetCount}`);
+            } else {
+                console.log('[Persistence] No assets found in IndexedDB');
+            }
 
-                document.dispatchEvent(new CustomEvent('linksExtrasUpdated', {
-                    detail: { links: savedState.linksExtras }
+            // Final state update
+            if (savedState) {
+                document.dispatchEvent(new CustomEvent('stateUpdated', {
+                    detail: { source: 'persistence', data: savedState }
                 }));
             }
 
-            // 4. Force Preview Update
-            document.dispatchEvent(new CustomEvent('stateUpdated', {
-                detail: { source: 'persistence', data: savedState }
-            }));
-
             // Notify user
-            showRestoreToast();
+            if (savedState || assetCount > 0) {
+                showRestoreToast();
+            }
 
         } catch (e) {
             console.error('[Persistence] Error restoring state:', e);
         }
     }
 
-    /**
-     * Shows a small toast notification that work was restored.
-     */
     function showRestoreToast() {
         const toast = document.createElement('div');
         toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50 flex items-center gap-2 animate-fade-in-up';
@@ -284,37 +385,33 @@
     // Event Listeners
     // ========================================
 
-    function init() {
-        // Listen for form state changes (debounced)
+    async function init() {
+        // Initialize IndexedDB
+        try {
+            await openDatabase();
+        } catch (e) {
+            console.error('[Persistence] Failed to open IndexedDB:', e);
+        }
+
+        // Listen for form state changes
         document.addEventListener('stateUpdated', (e) => {
-            // Ignore events from persistence itself
             if (e.detail && e.detail.source === 'persistence') return;
             scheduleSave();
         });
 
-        // Listen for links extras changes (debounced)
         document.addEventListener('linksExtrasUpdated', scheduleSave);
 
-        // Listen for media changes - PROCESS IMMEDIATELY
+        // Listen for media changes
         document.addEventListener('mediaUpdated', async (e) => {
-            console.log('[Persistence] mediaUpdated received:', e.detail);
-
             if (e.detail && e.detail.type && e.detail.data) {
                 const { type, data } = e.detail;
 
-                console.log(`[Persistence] mediaUpdated: type=${type}, hasBlob=${!!data.blob}, hasFile=${!!data.file}, hasUrl=${!!data.url}`);
-
-                // Se tem blob/file, processar imediatamente
                 if (data.blob || data.file) {
                     await processAndSaveAsset(type, data.blob || data.file);
                 } else if (data.url && data.url.startsWith('data:')) {
-                    // Já é base64
-                    console.log(`[Persistence] Caching base64 directly for: ${type}`);
-                    assetsBase64Cache[type] = data.url;
-                    saveStateSync();
+                    await saveAssetToDB(type, data.url);
+                    console.log(`[Persistence] Asset saved: ${type} (base64 direct)`);
                 } else if (data.url && data.url.startsWith('blob:')) {
-                    // É blob URL, precisamos fetch e converter
-                    console.log(`[Persistence] Fetching blob URL for: ${type}`);
                     try {
                         const response = await fetch(data.url);
                         const blob = await response.blob();
@@ -322,32 +419,28 @@
                     } catch (err) {
                         console.error(`[Persistence] Failed to fetch blob URL for ${type}:`, err);
                     }
-                } else {
-                    console.warn(`[Persistence] mediaUpdated: No processable data for ${type}`, data);
                 }
             }
         });
 
-        // Listen for form inputs directly as fallback
         document.addEventListener('input', (e) => {
             if (e.target.matches('input, textarea, select')) {
                 scheduleSave();
             }
         });
 
-        // Attempt restore after modules are ready
+        // Restore after modules are ready
         setTimeout(restoreState, 500);
 
-        console.log('[Persistence] Initialized with Eager Save strategy');
+        console.log('[Persistence] Initialized with IndexedDB storage');
     }
 
     // ========================================
-    // Browser Events
+    // Cleanup on close
     // ========================================
 
     window.addEventListener('beforeunload', () => {
-        // Tentativa final de salvar (síncrono)
-        saveStateSync();
+        saveFormState();
     });
 
     if (document.readyState === 'loading') {
@@ -361,17 +454,16 @@
     // ========================================
 
     window.Persistence = {
-        clear: () => {
+        clear: async () => {
             localStorage.removeItem(STORAGE_KEY);
-            assetsBase64Cache = {};
-            console.log('[Persistence] State cleared');
+            await clearAllAssetsFromDB();
+            console.log('[Persistence] All data cleared');
             location.reload();
         },
-        forceSave: saveStateSync,
+        forceSave: saveFormState,
         forceRestore: restoreState,
-        removeAsset: removeAsset,
-        processAsset: processAndSaveAsset,
-        getCache: () => ({ ...assetsBase64Cache })
+        removeAsset: deleteAssetFromDB,
+        processAsset: processAndSaveAsset
     };
 
 })();
