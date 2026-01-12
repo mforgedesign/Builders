@@ -189,13 +189,27 @@
 
     function saveFormState() {
         try {
+            // Collect form data directly from DOM to ensure current values
+            const formData = {};
+            const inputs = document.querySelectorAll('.form-input[data-field]');
+            inputs.forEach(input => {
+                const field = input.getAttribute('data-field');
+                if (field) {
+                    if (input.type === 'checkbox') {
+                        formData[field] = input.checked;
+                    } else {
+                        formData[field] = input.value;
+                    }
+                }
+            });
+
             const stateToSave = {
-                formData: window.builderState?.formData || {},
+                formData: formData,
                 linksExtras: window.builderState?.linksExtras || [],
                 timestamp: Date.now()
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-            console.log('[Persistence] Form state saved to localStorage');
+            console.log('[Persistence] Form state saved to localStorage', Object.keys(formData).length, 'fields');
         } catch (e) {
             console.warn('[Persistence] Failed to save form state:', e);
         }
