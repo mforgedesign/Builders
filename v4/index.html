@@ -629,8 +629,8 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
                                         Criação</label>
-                                    <textarea id="cover-prompt" rows="4"
-                                        class="w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                    <textarea id="cover-prompt" data-field="cover_prompt" rows="4"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
                                         placeholder="Descreva a imagem desejada..."></textarea>
                                 </div>
                                 <div class="flex gap-3">
@@ -739,8 +739,8 @@
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
                                             Criação</label>
-                                        <textarea id="leaf-prompt" rows="4"
-                                            class="w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                        <textarea id="leaf-prompt" data-field="leaf_prompt" rows="4"
+                                            class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
                                             placeholder="Descreva o design da folha..."></textarea>
                                     </div>
 
@@ -779,7 +779,7 @@
                                             <div class="relative inline-block w-12 mr-2 align-middle select-none">
                                                 <input type="checkbox" id="animate-background-toggle"
                                                     data-field="animate_background"
-                                                    class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-purple-300" />
+                                                    class="form-input toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-purple-300" />
                                                 <label for="animate-background-toggle"
                                                     class="toggle-label block overflow-hidden h-6 rounded-full bg-purple-300 cursor-pointer"></label>
                                             </div>
@@ -882,8 +882,8 @@
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
                                                 Movimento</label>
-                                            <textarea id="intro-motion-prompt" rows="3"
-                                                class="w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                            <textarea id="intro-motion-prompt" data-field="intro_motion_prompt" rows="3"
+                                                class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
                                                 placeholder="Ex: Zoom lento para fora, partículas douradas flutuando"></textarea>
                                         </div>
 
@@ -945,8 +945,8 @@
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
                                                 Movimento</label>
-                                            <textarea id="loop-motion-prompt" rows="3"
-                                                class="w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                            <textarea id="loop-motion-prompt" data-field="loop_motion_prompt" rows="3"
+                                                class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
                                                 placeholder="Ex: Movimento suave das flores, brilho pulsante"></textarea>
                                         </div>
 
@@ -1041,8 +1041,8 @@
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
                                             Preenchimento</label>
-                                        <textarea id="fill-prompt" rows="4"
-                                            class="w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                        <textarea id="fill-prompt" data-field="fill_prompt" rows="4"
+                                            class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
                                             placeholder="Descreva os elementos visuais a adicionar..."></textarea>
                                     </div>
 
@@ -1231,8 +1231,8 @@
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
                                             Geração</label>
-                                        <textarea id="gifts-image-prompt" rows="3"
-                                            class="w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                        <textarea id="gifts-image-prompt" data-field="gifts_image_prompt" rows="3"
+                                            class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
                                             placeholder="Descreva o estilo da imagem..."></textarea>
                                     </div>
 
@@ -1457,6 +1457,9 @@
                                         <p id="music-track-name" class="text-lg font-semibold text-gray-800 mt-1">
                                             Nenhuma
                                             música</p>
+                                        <!-- Hidden field for music name persistence -->
+                                        <input type="hidden" id="music-track-name-hidden" data-field="music_name"
+                                            class="form-input" value="">
                                     </div>
 
                                     <!-- Audio Element -->
@@ -1642,7 +1645,7 @@
                                         </div>
                                         <div class="relative inline-block w-12 mr-2 align-middle select-none">
                                             <input type="checkbox" id="watermark-toggle" data-field="watermark_enabled"
-                                                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-amber-300" />
+                                                class="form-input toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-amber-300" />
                                             <label for="watermark-toggle"
                                                 class="toggle-label block overflow-hidden h-6 rounded-full bg-amber-300 cursor-pointer"></label>
                                         </div>
@@ -1924,12 +1927,12 @@
 
     <!-- Original Scripts -->
     <script src="static/js/navigation.js?v=4.2.1"></script>
-    <script src="static/js/form.js?v=4.2.2"></script>
+    <script src="static/js/form.js?v=4.2.3"></script>
     <script src="static/js/links-extras.js?v=4.2.1"></script>
     <script src="static/js/preview.js?v=4.2.1"></script>
     <script src="static/js/history.js?v=4.2.1"></script>
     <script src="static/js/chatbot.js?v=4.2.1"></script>
-    <script src="static/js/windows.js?v=4.2.1"></script>
+    <script src="static/js/windows.js?v=4.2.3"></script>
     <script src="static/js/persistence.js?v=4.2.1"></script>
     <script src="static/js/app.js?v=4.2.1"></script>
 
