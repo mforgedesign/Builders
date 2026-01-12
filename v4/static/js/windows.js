@@ -1369,11 +1369,16 @@
                 // The template expects [[CAPA_URL]], etc.
 
                 const getPath = (context) => appState.assetsMap[context] ? `./${appState.assetsMap[context]}` : '';
+                const getPathWithFallback = (context, fallback) => {
+                    if (appState.assetsMap[context]) return `./${appState.assetsMap[context]}`;
+                    if (appState.assetsMap[fallback]) return `./${appState.assetsMap[fallback]}`;
+                    return '';
+                };
 
                 htmlContent = htmlContent.replace(/\[\[MUSICA_URL\]\]/g, getPath('musica'));
                 htmlContent = htmlContent.replace(/\[\[CAPA_URL\]\]/g, getPath('capa'));
                 htmlContent = htmlContent.replace(/\[\[FOLHA_URL\]\]/g, getPath('folha_vazia'));
-                htmlContent = htmlContent.replace(/\[\[FOLHA_PREENCHIDA_URL\]\]/g, getPath('folha_preenchida')); // ADDED
+                htmlContent = htmlContent.replace(/\[\[FOLHA_PREENCHIDA_URL\]\]/g, getPathWithFallback('folha_preenchida', 'folha_vazia')); // Fallback to empty leaf
                 htmlContent = htmlContent.replace(/\[\[VIDEO_ABERTURA_URL\]\]/g, getPath('vid_abertura'));
                 htmlContent = htmlContent.replace(/\[\[VIDEO_LOOP_URL\]\]/g, getPath('vid_loop'));
                 htmlContent = htmlContent.replace(/\[\[MANUAL_URL\]\]/g, getPath('manual'));
@@ -1391,6 +1396,8 @@
 
                 // Defaults if missing (from formData or default)
                 htmlContent = htmlContent.replace(/\[\[SHADOW_COLOR\]\]/g, formData.shadow_color || '#000000');
+                // Use shadow_color for button background if not specified, fallback to dark gray
+                htmlContent = htmlContent.replace(/\[\[BUTTON_COLOR\]\]/g, formData.shadow_color || '#292524');
                 htmlContent = htmlContent.replace(/\[\[TIMER_HIDE_CLASS\]\]/g, formData.data_evento ? '' : 'hidden');
 
                 // Inject Text Data
