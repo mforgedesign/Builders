@@ -1359,7 +1359,8 @@
                 filesMap['data.json'] = utf8_to_b64(JSON.stringify(appState, null, 2));
 
                 // 4. Prepare HTML with Correct Asset Links
-                const templateResp = await fetch('final_template.html');
+                // FORCE CACHE BUSTING on template fetch to ensure latest version
+                const templateResp = await fetch(`final_template.html?v=${Date.now()}`);
                 if (!templateResp.ok) throw new Error('Template não encontrado');
                 let htmlContent = await templateResp.text();
 
