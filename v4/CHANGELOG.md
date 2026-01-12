@@ -4,6 +4,38 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [2026-01-12 14:03] - Correções de Persistência e Formulário (v4.2.2)
+
+### Problemas Corrigidos:
+1. **QuotaExceededError** - localStorage excedia 5MB com assets grandes
+2. **Formulário perdido na 2ª recarga** - dados eram sobrescritos com objeto vazio
+3. **Músicas 404** - paths errados para arquivos de sample
+4. **Autocomplete não detectado** - browser autocomplete não dispara input events
+
+### Soluções Implementadas:
+
+#### IndexedDB para Assets (persistence.js)
+* Reescrita completa usando IndexedDB ao invés de localStorage para assets
+* Suporta 50MB+ de armazenamento
+* localStorage usado apenas para dados leves (formData, linksExtras)
+
+#### Fix Form Populate (form.js)
+* `populateForm()` agora verifica se state está vazio antes de popular
+* Não sobrescreve campos existentes com valores vazios
+* Adicionado listener `blur` para detectar autocomplete do navegador
+
+#### Paths das Músicas (index.html)
+* Corrigido de `musica-base/` para `música base/` (pasta real)
+* Sample names corrigidos para match com arquivos existentes
+
+### Arquivos Modificados:
+* `static/js/persistence.js`: IndexedDB storage completo
+* `static/js/form.js`: Skip empty state + blur listener
+* `static/js/windows.js`: Clear IndexedDB on reset
+* `index.html`: Music paths, script versions v4.2.2
+
+---
+
 ## [2026-01-12 13:08] - Cache Busting para Scripts
 
 ### Problema:
