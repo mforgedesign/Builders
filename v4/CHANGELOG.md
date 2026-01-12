@@ -4,6 +4,21 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [2026-01-12 13:08] - Cache Busting para Scripts
+
+### Problema:
+* Navegador pode estar servindo versão antiga dos scripts em cache
+* Scripts não tinham parâmetros de versão consistentes
+
+### Solução:
+* Atualizados TODOS os scripts com `?v=4.1.0` para forçar invalidação do cache
+* Adicionado parâmetro de versão em scripts que não tinham
+
+### Arquivos Modificados:
+* `index.html`: Linhas 1916-1933 - Todos os scripts agora têm `?v=4.1.0`
+
+---
+
 ## [2026-01-12 12:53] - Rewrite Persistence with Eager Save Strategy
 
 ### Problema:
