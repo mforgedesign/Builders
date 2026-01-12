@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AutoBuilder v4.0{% endblock %}</title>
+
+    <!-- TailwindCSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        },
+                        saas: {
+                            bg: '#f6f8fa',
+                            sidebar: '#1e293b',
+                            border: '#e2e8f0'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* Device Frame */
+        .device-frame {
+            box-shadow: 0 0 0 12px #1f2937, 0 0 0 14px #4b5563, 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Toggle Switch */
+        .toggle-checkbox {
+            left: 0;
+            transition: left 0.3s ease-in-out, border-color 0.3s ease-in-out;
+        }
+
+        .toggle-checkbox:checked {
+            left: calc(100% - 1.5rem);
+            border-color: #4f46e5;
+        }
+
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #4f46e5;
+        }
+
+        /* Window Transitions */
+        .window-panel {
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        .window-panel.hidden {
+            display: none;
+        }
+
+            {
+            % block extra_styles %
+        }
+
+            {
+            % endblock %
+        }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+
+<body class="bg-saas-bg h-screen w-screen overflow-hidden text-gray-700">
+    {% block body %}{% endblock %}
+
+    <!-- Static Files -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>
