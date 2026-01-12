@@ -876,12 +876,20 @@
             document.getElementById('gifts-mode-link')?.click();
             document.getElementById('fill-mode-overlay')?.click();
 
-            // 6. Clear localStorage persistence
+            // 6. Clear persistence (localStorage + IndexedDB)
             try {
                 localStorage.removeItem('autobuilder_v4_state');
-                console.log('[Reset] localStorage cleared');
+                // Also clear IndexedDB if available
+                if (window.Persistence && window.Persistence.clear) {
+                    // Don't call clear() directly as it reloads page
+                    // Instead, just clear the IndexedDB database
+                    const request = indexedDB.deleteDatabase('AutoBuilderDB');
+                    request.onsuccess = () => console.log('[Reset] IndexedDB cleared');
+                    request.onerror = () => console.warn('[Reset] Failed to clear IndexedDB');
+                }
+                console.log('[Reset] Persistence cleared');
             } catch (e) {
-                console.warn('[Reset] Failed to clear localStorage:', e);
+                console.warn('[Reset] Failed to clear persistence:', e);
             }
 
             console.log('✨ Clean Slate Complete');
