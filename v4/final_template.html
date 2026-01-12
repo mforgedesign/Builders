@@ -126,38 +126,7 @@
             <i class="fa-solid fa-volume-high" id="iconMute"></i>
         </button>
         <!-- [skip] -->
-        // ==================================================================
-        // 5. LÓGICA DE TRANSIÇÃO PARA O LOOP
-        // ==================================================================
 
-        function irParaLoop() {
-        if (transicaoFeita) return;
-        transicaoFeita = true;
-
-        // Esconde botão pular
-        btnPular.classList.add('invisivel');
-
-        // Revela Video Loop E/OU Imagem Estática (Folha Preenchida)
-        videoLoop.classList.remove('invisivel');
-
-        // Se existir imagem de folha preenchida (não oculta pelo onerror), revela também
-        const imgStatic = document.getElementById('folhaPreenchida');
-        if (imgStatic && imgStatic.style.display !== 'none') {
-        imgStatic.classList.remove('invisivel');
-        }
-
-        videoAbertura.classList.add('invisivel');
-        containerBotoes.classList.remove('invisivel');
-        containerShadow.classList.remove('invisivel');
-
-        // Mostra o timer apenas se não estiver hidden (timer ativado)
-        if (countdownContainer && !countdownContainer.classList.contains('hidden')) {
-        countdownContainer.classList.remove('invisivel');
-        }
-
-        // Pausa o vídeo de abertura após a transição visual
-        setTimeout(function () { videoAbertura.pause(); }, 800);
-        }
 
         <button id="btnPular"
             class="absolute top-4 right-4 z-40 bg-white/20 backdrop-blur-sm border border-white/40 text-white px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wider invisivel hover:bg-white/30 transition-all">
