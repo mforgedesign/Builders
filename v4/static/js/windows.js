@@ -242,10 +242,11 @@
                         const resp = await fetch(sampleUrl);
                         const blob = await resp.blob();
 
-                        // Update State
+                        // Update State (usando 'musica' para consistência com persistence.js)
                         if (!window.builderState) window.builderState = {};
                         if (!window.builderState.assets) window.builderState.assets = {};
-                        window.builderState.assets.music = blob;
+                        window.builderState.assets.musica = blob;
+                        console.log('[Music] Sample saved to state: musica');
 
                         // Update Player
                         const objectUrl = URL.createObjectURL(blob);
@@ -260,6 +261,14 @@
                         // Visual Feedback
                         document.querySelectorAll('.sample-item').forEach(i => i.classList.remove('ring-2', 'ring-brand-500', 'bg-brand-50'));
                         item.classList.add('ring-2', 'ring-brand-500', 'bg-brand-50');
+
+                        // Dispatch event for persistence
+                        document.dispatchEvent(new CustomEvent('mediaUpdated', {
+                            detail: {
+                                type: 'musica',
+                                data: { url: objectUrl, blob: blob, name: sampleName }
+                            }
+                        }));
 
                     } catch (err) {
                         console.error('Error loading sample:', err);
@@ -524,6 +533,14 @@
                     }
                 }
 
+                // Salvar blob no estado global para persistência
+                if (context !== 'capa_referencia') {
+                    if (!window.builderState) window.builderState = {};
+                    if (!window.builderState.assets) window.builderState.assets = {};
+                    window.builderState.assets[context] = file; // Salva o blob/file
+                    console.log(`[Dropzones] Asset saved to state: ${context}`);
+                }
+
                 // Upload to server (optional, but good for persistence)
                 // For now, we just utilize the local preview state for the builder experience
                 // But we should trigger the state update
@@ -569,6 +586,14 @@
                     if (id === 'cover-reference-dropzone') {
                         const base64 = await readFileAsBase64(file);
                         dropzone.dataset.base64 = base64;
+                    }
+
+                    // Salvar blob no estado global para persistência
+                    if (context !== 'capa_referencia') {
+                        if (!window.builderState) window.builderState = {};
+                        if (!window.builderState.assets) window.builderState.assets = {};
+                        window.builderState.assets[context] = file;
+                        console.log(`[Dropzones] Asset saved to state (drop): ${context}`);
                     }
 
                     // Dispatch mediaUpdated event for preview buttons
@@ -851,6 +876,14 @@
             document.getElementById('gifts-mode-link')?.click();
             document.getElementById('fill-mode-overlay')?.click();
 
+            // 6. Clear localStorage persistence
+            try {
+                localStorage.removeItem('autobuilder_v4_state');
+                console.log('[Reset] localStorage cleared');
+            } catch (e) {
+                console.warn('[Reset] Failed to clear localStorage:', e);
+            }
+
             console.log('✨ Clean Slate Complete');
 
             if (!silent) {
@@ -902,7 +935,7 @@
 
                     // Collect Assets
                     const assetMap = {
-                        'assets/musica.mp3': { source: window.builderState?.assets?.music, context: 'musica' },
+                        'assets/musica.mp3': { source: window.builderState?.assets?.musica, context: 'musica' },
                         'assets/capa.png': { selector: '#cover-dropzone', type: 'bg', context: 'capa' },
                         'assets/folha.png': { selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia' },
                         'assets/intro.mp4': { selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura' },
