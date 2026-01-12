@@ -269,6 +269,10 @@
             if (input.type === 'text' || input.type === 'tel' || input.type === 'url' || input.tagName === 'TEXTAREA') {
                 input.addEventListener('input', handleInputChange);
             }
+
+            // Detect browser autocomplete (doesn't fire input/change events)
+            // Using blur to capture value when user clicks away
+            input.addEventListener('blur', handleInputChange);
         });
 
         // Setup color input syncing
