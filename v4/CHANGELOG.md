@@ -4,6 +4,69 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [2026-01-12 12:28] - Fix Persistence Issues (Major Fix)
+
+### Problema:
+Após fechar e reabrir o navegador, os seguintes itens não eram restaurados:
+* Links extras
+* Imagem de capa
+* Vídeo de abertura
+* Imagem da lista de presentes
+* Imagem do manual
+* Música selecionada
+* Slug da URL
+
+### Causa Raiz:
+1. **Links extras**: `saveLinksToBackend()` não atualizava `window.builderState.linksExtras`
+2. **Assets (capa, vídeo, imagens)**: Salvando blob URLs que são inválidas após fechar o navegador
+3. **Música**: Salvando blob object que não pode ser serializado para localStorage
+4. **Slug**: Faltava a classe `form-input` no input para ser rastreado pelo `form.js`
+
+### Arquivos Modificados:
+
+* `index.html`:
+  * Line 1622: Adicionada classe `form-input` ao input do slug
+
+* `static/js/links-extras.js`:
+  * Lines 51-55: Adicionada atualização de `window.builderState.linksExtras` em `saveLinksToBackend()`
+
+* `static/js/persistence.js`:
+  * Lines 21-41: Adicionada função `blobToBase64()` helper
+  * Lines 43-71: Refatorada `saveState()` para ser async e converter blobs para Base64
+  * Lines 110-210: Refatorada restauração de assets com `base64ToBlob()` e tratamento especial para música
+
+* `static/js/windows.js`:
+  * Lines 524-537: Adicionado salvamento de blob no `builderState.assets` ao selecionar arquivo
+  * Lines 578-591: Adicionado salvamento de blob no `builderState.assets` ao fazer drop
+  * Line 248: Corrigida key de `music` para `musica` para consistência
+  * Lines 263-271: Adicionado dispatch de `mediaUpdated` ao selecionar música base
+  * Line 930: Corrigida referência de `assets.music` para `assets.musica`
+  * Lines 879-886: Adicionada limpeza do localStorage no `resetBuilderState()`
+
+### Arquivos de Backup Criados:
+* `static/js/persistence_bkp_20260112_1227.js`
+* `static/js/links-extras_bkp_20260112_1227.js`
+* `static/js/windows_bkp_20260112_1227.js`
+
+### Impacto no Botão "Novo Convite":
+* Agora também limpa o localStorage, garantindo reset completo
+
+### Verificação Necessária:
+- [ ] Links extras persistem após reload
+- [ ] Imagem de capa persiste após reload
+- [ ] Vídeo de abertura persiste após reload
+- [ ] Imagem de presentes persiste após reload
+- [ ] Imagem do manual persiste após reload
+- [ ] Música selecionada persiste após reload
+- [ ] Slug persiste após reload
+- [ ] Botão "Novo Convite" zera tudo corretamente
+
+### Prompt Original:
+> Eu preenchi no formulário [...] Agora, eu fechei o navegador e abri novamente [...]
+> O link extra que adicionei não ficou salvo; A imagem de capa não ficou salva; [...]
+
+---
+
 ## [2026-01-12 11:46] - Deploy para Novo Repositório GitHub
 
 ### Contexto:
