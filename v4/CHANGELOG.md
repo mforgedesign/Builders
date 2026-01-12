@@ -482,7 +482,13 @@ Após fechar e reabrir o navegador, os seguintes itens não eram restaurados:
     *   **FIX IMPORTAÇÃO SILENCIOSA**: Refatorado `restoreBuilderState` para usar `populateForm` em vez de iterar updates individuais. Isso preveniu o "spam de notificações" e crashes causados por centenas de requisições simultâneas durante a importação do GitHub.
 
 
-## [01/01/2026 - 20:45] - Publicação & Fixes de Encodificaçãol.ai)
+## v4.2.5 - Hotfix: Publishing replacements order
+### Fixes
+*   `static/js/windows.js`:
+    *   Moved `MENU_CONFIG`, `BUTTON_SIZE`, and `COMPANION_HIDE_CLASS` replacement logic to modify `htmlContent` **BEFORE** it is assigned to the `filesMap` payload.
+    *   Previously, the payload was created with the raw template, causing `Uncaught ReferenceError: MENU_CONFIG is not defined` on the published site.
+
+## v4.2.4 - Publishing Logic Fixes (Current)
 
 ### Arquivos Criados:
 * `utils/ai_wrapper.py`:
