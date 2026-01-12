@@ -4,6 +4,38 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [2026-01-12 12:53] - Rewrite Persistence with Eager Save Strategy
+
+### Problema:
+A correção anterior (12:28) NÃO funcionou porque:
+* `saveState()` era **async** mas `beforeunload` não espera Promises
+* O navegador fechava ANTES do `await blobToBase64()` completar
+* Debounce de 1 segundo não era adequado
+
+### Nova Estratégia:
+**Salvamento Imediato (Eager Save):**
+1. Converte blobs para Base64 **IMEDIATAMENTE** quando arquivo é selecionado
+2. Mantém **cache** de Base64 já convertido (`assetsBase64Cache`)
+3. Salva **SINCRONAMENTE** usando o cache (não depende de async)
+
+### Arquivos Modificados:
+
+* `static/js/persistence.js`: **REESCRITA COMPLETA**
+  * Adicionado `assetsBase64Cache` - cache de assets em Base64
+  * Adicionado `saveStateSync()` - função síncrona de salvamento
+  * Adicionado `processAndSaveAsset()` - converte e salva imediatamente
+  * Modificado listener `mediaUpdated` - processa assets na hora
+  * `beforeunload` agora chama função síncrona
+  * Adicionada API pública: `Persistence.processAsset`, `removeAsset`, `getCache`
+
+### Arquivos de Backup:
+* `static/js/persistence_bkp_20260112_1252.js`
+
+### Prompt Original:
+> Os itens ainda não estão sendo salvos após correção anterior
+
+---
+
 ## [2026-01-12 12:28] - Fix Persistence Issues (Major Fix)
 
 ### Problema:
