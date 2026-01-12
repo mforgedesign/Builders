@@ -10,7 +10,7 @@
 
     const REPO_OWNER = 'mforgedesign';
     const REPO_NAME = 'Convites';
-    const BRANCH = 'main';
+    const BRANCH = 'recuperaçãohoje';
     const API_BASE = 'https://api.github.com';
 
     class GitHubAdapter {
