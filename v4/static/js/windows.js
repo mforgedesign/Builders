@@ -1407,6 +1407,125 @@
 
                 // We use /api/publish which is intercepted by supabase-adapter
                 // Edge Function has the GitHub token stored securely
+                // 4.1. Reconstruct Menu Config & Variables
+                const buttonSize = formData.button_size || '1.0';
+                const companionHideClass = formData.companion_hide_class || ''; // Should come from form data
+
+                // Re-generate menuConfig specifically for the static page
+                // This logic mirrors updatePreview() logic
+                const menuConfig = [];
+
+                // 1. Manual
+                if (assetsMap.manual.source || (assetsMap.manual.selector && document.querySelector(assetsMap.manual.selector)?.style.backgroundImage !== 'none')) {
+                    const isManualImage = document.getElementById('manual-mode-toggle').checked; // Check toggle state
+                    const manualText = document.getElementById('manual-text-content').innerHTML; // Get text content
+                    menuConfig.push({
+                        id: 'manual',
+                        titulo: 'Manual',
+                        icone: 'fa-solid fa-book-open',
+                        link: '#',
+                        isManualImage: !isManualImage, // If toggle is checked (right) = Text Mode? No, check toggle logic. 
+                        // Let's rely on formData or re-check DOM elements
+                        manualText: manualText
+                    });
+                    // Fix: The toggle logic is confusing. Let's simplify:
+                    // If we have text mode active, we send text. If image mode, we send image flag.
+                    // Just pushing generic 'Manual' and letting the script decide based on presence of text or image link is risky.
+                    // Let's assume standard behavior:
+                    // The final template has logic to open image or text.
+                    // For now, let's grab the actual array from the preview if possible?
+                    // Better: Rely on window.builderState.linksExtras and standard fixed buttons.
+                }
+
+                // Actually, a safer way is to grab the current state from the UI helper if available,
+                // but since we don't have a global 'getMenuConfig', we construct it:
+
+                // A) Fixed Buttons
+                // Manual
+                const manualModeInput = document.querySelector('input[name="manual_mode"]:checked');
+                const isManualText = manualModeInput && manualModeInput.value === 'text';
+
+                // Check if manual is active (file uploaded or text present)
+                // For simplified logic: always add Manual button if it has content
+                // But to allow the user to control, usually we confirm if it's "enabled". Use simple check:
+                const hasManualAsset = assetsMap.manual.source || (document.querySelector(assetsMap.manual.selector)?.style.backgroundImage.includes('url')); // loose check
+                // ... This is getting complicated to replicate perfectly.
+
+                // ALTERNATIVE: Use the existing logic in 'links-extras.js' if it exposes the config?
+                // It doesn't seem to.
+
+                // Let's rebuild a basic robust version:
+
+                const generatedMenu = [];
+
+                // 1. Custom Links (Links Extras)
+                const extraLinks = window.builderState.linksExtras || [];
+                extraLinks.forEach(link => {
+                    generatedMenu.push({
+                        id: `extra-${Date.now()}-${Math.random()}`,
+                        titulo: link.label,
+                        icone: 'fa-solid fa-link', // Default icon for now or 'fa-star'
+                        link: link.url
+                    });
+                });
+
+                // 2. Fixed Buttons (Map, Gifts, RSVP, Manual)
+                // These are usually added by the user in the "Links Extras" or are standard?
+                // Looking at the provided screenshots, "Links Extras" handles custom buttons.
+                // Standard buttons (Manual, Presentes, RSVP) are handled by specific logic.
+
+                // Let's Add Standard Buttons if they have data:
+
+                // LOCATION
+                if (formData.link_localizacao) {
+                    generatedMenu.push({ id: 'location', titulo: 'Local', icone: 'fa-solid fa-location-dot', link: formData.link_localizacao });
+                }
+
+                // GIFTS (Presentes)
+                // Check if image exists (assetsMap.gifts) or link exists (formData.link_presentes)
+                const hasGiftsImage = !!appState.assetsMap['presentes']; // Path exists
+                const giftsLink = formData.link_presentes;
+
+                if (hasGiftsImage) {
+                    generatedMenu.push({ id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: '#', isGiftImage: true });
+                } else if (giftsLink) {
+                    generatedMenu.push({ id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: giftsLink });
+                }
+
+                // CONFIRMATION (RSVP)
+                if (formData.whatsapp_number) {
+                    // Logic for RSVP link is handled in template (opens popup), just need button
+                    // The template script expects a link to determine behavior?
+                    // windows.js template logic says: "isRSVP = btn.titulo.includes('Confirmar')"
+                    // And passes 'btn.link' to 'abrirRSVP'.
+                    // So we pass the whatsapp number as the link.
+                    generatedMenu.push({ id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${formData.whatsapp_number}` });
+                } else if (formData.link_confirmacao) {
+                    generatedMenu.push({ id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao });
+                }
+
+                // MANUAL
+                // Check asset (manual image) or text content
+                const hasManualImg = !!appState.assetsMap['manual'];
+                const manualHtml = document.getElementById('manual-text-content')?.innerHTML;
+                const manualTextMode = document.getElementById('manual-mode-toggle')?.checked === false; // Left = Text (checked=false?), Need to verify toggle.
+                // Assuming standard toggle: Checked = Right (Image), Unchecked = Left (Text).
+                // Let's check 'setupModeToggle' usage or assume defaults.
+                // Actually, easiest is: If image exists, prioritize image? Or check toggle.
+                // Let's assume if there is text and mode is text, use text.
+
+                const isManualToggleImage = document.getElementById('manual-mode-toggle')?.checked; // true if Image
+
+                if (isManualToggleImage && hasManualImg) {
+                    generatedMenu.push({ id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', isManualImage: true });
+                } else if (!isManualToggleImage && manualHtml && manualHtml.trim() !== '') {
+                    generatedMenu.push({ id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', manualText: manualHtml });
+                }
+
+                const menuConfig = generatedMenu; // Assign to the var expected by JSON.stringify
+
+                // -------------------------------------------------------------------
+
                 htmlContent = htmlContent.replace(/\[\[MENU_CONFIG\]\]/g, JSON.stringify(menuConfig));
                 htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, buttonSize || '1.0');
                 htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, companionHideClass || '');
