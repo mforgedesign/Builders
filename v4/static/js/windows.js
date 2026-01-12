@@ -1395,10 +1395,17 @@
 
                 // Inject Text Data
                 // formData already declared at top of scope
+                // Inject Text Data
+                // formData already declared at top of scope
                 for (const [key, value] of Object.entries(formData)) {
                     const regex = new RegExp(`\\[\\[${key.toUpperCase()}\\]\\]`, 'g');
-                    htmlContent = htmlContent.replace(regex, value || '');
+                    // FIX: Handle 0 correctly (don't treat as falsey)
+                    const safeValue = (value !== undefined && value !== null) ? value : '';
+                    htmlContent = htmlContent.replace(regex, safeValue);
                 }
+
+                console.log("DEBUG PUBLISH: AssetsMap", appState.assetsMap);
+                console.log("DEBUG PUBLISH: Generated Menu", generatedMenu);
 
 
                 // 4.1. Reconstruct Menu Config & Variables (moved UP before payload generation)
@@ -1427,6 +1434,7 @@
                 }
 
                 // GIFTS (Presentes)
+                // Fix: Check context 'presentes' which matches DROPZONE_CONTEXTS
                 const hasGiftsImage = !!appState.assetsMap['presentes'];
                 const giftsLink = formData.link_presentes;
 
@@ -1444,6 +1452,7 @@
                 }
 
                 // MANUAL
+                // Fix: Check context 'manual' which matches DROPZONE_CONTEXTS
                 const hasManualImg = !!appState.assetsMap['manual'];
                 const manualHtml = document.getElementById('manual-text-content')?.innerHTML;
                 const isManualToggleImage = document.getElementById('manual-mode-toggle')?.checked; // true if Image
