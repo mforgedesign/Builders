@@ -12,7 +12,8 @@
     const GITHUB_REPO = 'Convites';
     const GITHUB_BASE_PATH = ''; // Root of repo (invitations are in root)
     const GITHUB_PAGES_BASE = `https://mforgedesign.github.io/Convites/`;
-    const GITHUB_REPO_BASE = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/tree/main/`;
+    const GITHUB_BRANCH = 'recuperaçãohoje';
+    const GITHUB_REPO_BASE = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/tree/${GITHUB_BRANCH}/`;
 
     // DOM Elements
     let loadingEl, emptyEl, errorEl, cardsEl, gridEl, errorMessageEl;
@@ -72,7 +73,7 @@
             // Fetch entire repository tree in ONE request (recursive=2)
             // This avoids N+1 requests that hit API rate limits (403 error)
             const response = await fetch(
-                `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/trees/main?recursive=2`,
+                `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/trees/${GITHUB_BRANCH}?recursive=2`,
                 {
                     headers: {
                         'Accept': 'application/vnd.github.v3+json'
@@ -160,7 +161,7 @@
 
                         if (pathInsideSlug.includes('capa') || pathInsideSlug.includes('cover')) {
                             // Construct raw URL directly
-                            inv.coverUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${item.path}`;
+                            inv.coverUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${item.path}`;
                         }
                     }
                 }
