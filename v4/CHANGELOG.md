@@ -4,6 +4,21 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [2026-01-12 14:45] - v4.2.3 - Fix Completo de Persistência & "Esquecidos"
+### Arquivos Modificados:
+*   `static/js/persistence.js`:
+    *   **Fix Critical**: `saveFormState` reescrito para coletar dados **diretamente do DOM** (`querySelectorAll`) ao invés de confiar no objeto `window.builderState` (que chegava vazio na 2ª recarga, limpando o localStorage).
+*   `static/js/windows.js`:
+    *   **Music Name Sync**: Adicionada lógica para atualizar o input hidden `#music-track-name-hidden` quando uma música é escolhida (Sample) ou enviada (Drop/Upload).
+*   `static/js/form.js`:
+    *   **Restore Logic**: Adicionado listener para atualizar o texto visual da música quando o formulário é populado.
+*   `index.html`:
+    *   **Persistence Tracking**: Adicionados atributos `data-field="..."` e classe `form-input` em **TODOS** os campos que estavam "esquecidos":
+        *   Textareas de Prompts de IA (Capa, Folha, Intro Motion, Loop Motion, Fill Prompt, Gifts Prompt)
+        *   Toggles (Watermark, Animate Background)
+    *   **Hidden Field**: Adicionado `<input type="hidden" id="music-track-name-hidden">` para persistir o nome da música.
+    *   **Version Bump**: Scripts atualizados para `v4.2.3`.
+
 ## [2026-01-12 14:03] - Correções de Persistência e Formulário (v4.2.2)
 
 ### Problemas Corrigidos:
