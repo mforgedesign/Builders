@@ -255,6 +255,15 @@
 
                         // Update UI
                         if (trackName) trackName.textContent = sampleName;
+
+                        // Update hidden input for persistence
+                        const hiddenInput = document.getElementById('music-track-name-hidden');
+                        if (hiddenInput) {
+                            hiddenInput.value = sampleName;
+                            // Trigger change event to save immediately
+                            hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+
                         playBtn.disabled = false;
                         if (removeBtn) removeBtn.classList.remove('hidden');
 
@@ -522,6 +531,18 @@
                 const type = file.type.startsWith('video') ? 'video' : 'image';
                 updateDropzonePreview(dropzone, url, type);
 
+                // Update hidden input for music name persistence if this is the music dropzone
+                if (id === 'music-dropzone') {
+                    const hiddenInput = document.getElementById('music-track-name-hidden');
+                    if (hiddenInput) {
+                        hiddenInput.value = file.name;
+                        hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    // Also update visible text
+                    const trackName = document.getElementById('music-track-name');
+                    if (trackName) trackName.textContent = file.name;
+                }
+
                 // Store Base64 for Reference Dropzone immediately (needed for API)
                 if (id === 'cover-reference-dropzone') {
                     try {
@@ -582,6 +603,18 @@
                     const url = URL.createObjectURL(file);
                     const type = file.type.startsWith('video') ? 'video' : 'image';
                     updateDropzonePreview(dropzone, url, type);
+
+                    // Update hidden input for music name persistence if this is the music dropzone
+                    if (id === 'music-dropzone') {
+                        const hiddenInput = document.getElementById('music-track-name-hidden');
+                        if (hiddenInput) {
+                            hiddenInput.value = file.name;
+                            hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                        // Also update visible text
+                        const trackName = document.getElementById('music-track-name');
+                        if (trackName) trackName.textContent = file.name;
+                    }
 
                     if (id === 'cover-reference-dropzone') {
                         const base64 = await readFileAsBase64(file);
