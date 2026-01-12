@@ -82,7 +82,11 @@
      * @param {object} state - The state object
      */
     function populateForm(state) {
-        if (!state) return;
+        // Skip if state is null, undefined, or empty
+        if (!state || Object.keys(state).length === 0) {
+            console.log('[Form] Skipping populate - state is empty');
+            return;
+        }
 
         const inputs = document.querySelectorAll('.form-input[data-field]');
         inputs.forEach(input => {
@@ -90,10 +94,16 @@
             if (state.hasOwnProperty(fieldName)) {
                 const value = state[fieldName];
 
+                // Skip if the value is null/undefined/empty string
+                // This prevents overwriting existing values with empty ones
+                if (value === null || value === undefined || value === '') {
+                    return; // Keep existing value
+                }
+
                 if (input.type === 'checkbox') {
                     input.checked = Boolean(value);
                 } else {
-                    input.value = value || '';
+                    input.value = value;
                 }
             }
         });
