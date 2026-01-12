@@ -114,6 +114,20 @@
         // Update range display
         updateRangeDisplay();
 
+        // Restore Music Name in UI if hidden field was populated
+        const musicNameInput = document.getElementById('music-track-name-hidden');
+        if (musicNameInput && musicNameInput.value) {
+            const trackNameDisplay = document.getElementById('music-track-name');
+            if (trackNameDisplay) {
+                trackNameDisplay.textContent = musicNameInput.value;
+            }
+            // Enable play/remove buttons if music exists
+            const removeBtn = document.getElementById('music-remove-btn');
+            const playBtn = document.getElementById('music-play-btn');
+            if (removeBtn) removeBtn.classList.remove('hidden');
+            if (playBtn) playBtn.disabled = false;
+        }
+
         console.log('[Form] Populated form with state');
     }
 
