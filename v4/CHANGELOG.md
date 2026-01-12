@@ -4,6 +4,16 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [12/01/2026 - 17:35] - v4.2.4 - Correção Crítica de Publicação e Música
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **Fix**: Alterado chave de asset de música de `music` para `musica` (agora alinha com o estado salvo tanto por samples quanto por upload).
+    *   **Fix**: Adicionado `JSON.stringify(menuConfig)` na compilação do HTML final. Antes, entrava como `[object Object]`, o que gerava erro de sintaxe e quebrava todo o JS do convite publicado (botões e interação não funcionavam).
+    *   **Feature**: Atualizada URL final de sucesso para `https://convites.mforge.com.br/` ao invés do domínio padrão do GitHub Pages.
+    *   **Fix**: Adicionado replacements faltantes para `[[BUTTON_SIZE]]` e `[[COMPANION_HIDE_CLASS]]`.
+
+---
+
 ## [2026-01-12 14:45] - v4.2.3 - Fix Completo de Persistência & "Esquecidos"
 ### Arquivos Modificados:
 *   `static/js/persistence.js`:
