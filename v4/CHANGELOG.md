@@ -4,6 +4,67 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [2026-01-12 11:46] - Deploy para Novo Repositório GitHub
+
+### Contexto:
+* Migração do projeto para novo repositório após problema com IDE no repositório anterior
+* Novo repositório: `mforgedesign/Builders`
+* Novo domínio: `builder.mforge.com.br`
+
+### Arquivos Criados:
+* `deploy_to_github.py`: Script Python para deploy automatizado via GitHub API
+  * Faz upload de todos os arquivos do projeto
+  * Configura CNAME para domínio customizado
+  * Cria redirecionamento na raiz para `/v4/`
+  * Habilita GitHub Pages automaticamente
+
+### Arquivos Publicados (33 total):
+* `v4/index.html` - Interface principal do builder
+* `v4/final_template.html` - Template de convite final
+* `v4/static/js/*.js` - 14 módulos JavaScript
+* `v4/static/css/main.css` - Estilos
+* `v4/templates/*.html` - Templates Jinja2
+* `v4/música base/*.mp3` - Samples de música
+* Assets e configurações
+
+### URLs de Acesso:
+* **Domínio Customizado**: https://builder.mforge.com.br/v4/
+* **GitHub Pages**: https://mforgedesign.github.io/Builders/v4/
+
+### Prompt Original:
+> Quero publicar o projeto no repositório https://github.com/mforgedesign/Builders
+> CNAME builder.mforge.com.br com acesso em builder.mforge.com.br/v4
+
+---
+
+## [2026-01-12 12:15] - Fix Timer Visibility Bug
+
+### Problema:
+* O timer de contagem regressiva aparecia no preview desktop mesmo quando o checkbox "Timer de Contagem Regressiva" estava desmarcado no formulário.
+* O timer mobile já estava correto com `style="display: none;"` por padrão.
+
+### Arquivos Modificados:
+* `index.html`:
+  * Line 1765: Adicionado `style="display: none;"` ao elemento `#preview-timer` (preview desktop).
+  * Rationale: Equiparar comportamento com o preview mobile que já possuía `display: none` por padrão.
+
+### Arquivos de Backup Criados:
+* `index_bkp_20260112_1210.html`
+* `static/js/preview_bkp_20260112_1210.js`
+
+### Verificação:
+* A lógica de `updateTimerVisibility()` em `preview.js` já tratava corretamente valores `undefined`, `false`, e `null` como "ocultar timer".
+* O `final_template.html` usa `[[TIMER_HIDE_CLASS]]` que é substituído por `hidden` quando timer está desativado.
+
+### Status:
+* Timer agora inicia oculto por padrão em ambos os previews (desktop e mobile).
+* O checkbox controla corretamente a visibilidade.
+
+### Prompt Original:
+> O timer já está aparecendo, mas no formulário ele está desmarcado. Quero que arrume isso.
+
+---
+
 ## [2025-12-31 18:46] - FASE 1: Infraestrutura Backend Completa (Supabase)
 
 ### Database Schema Criado (Supabase)
