@@ -1280,7 +1280,7 @@
                 const timestamp = Date.now();
                 const assetsMap = {
                     // We use specific keys to identify context, but values will be timestamped paths
-                    'music': { source: window.builderState?.assets?.music, context: 'musica', ext: 'mp3' },
+                    'music': { source: window.builderState?.assets?.musica, context: 'musica', ext: 'mp3' },
                     'cover': { selector: '#cover-dropzone', type: 'bg', context: 'capa', ext: 'png' },
                     'leaf': { selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia', ext: 'png' },
                     'filled': { selector: '#fill-image-dropzone', type: 'bg', context: 'folha_preenchida', ext: 'png' }, // ADDED
@@ -1407,6 +1407,10 @@
 
                 // We use /api/publish which is intercepted by supabase-adapter
                 // Edge Function has the GitHub token stored securely
+                htmlContent = htmlContent.replace(/\[\[MENU_CONFIG\]\]/g, JSON.stringify(menuConfig));
+                htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, buttonSize || '1.0');
+                htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, companionHideClass || '');
+
                 const payload = {
                     slug: slug,
                     files: filesMap // { "index.html": "base64", "assets/foo.png": "base64" }
@@ -1428,7 +1432,7 @@
                 publishBtn.classList.remove('bg-brand-600');
                 publishBtn.classList.add('bg-green-600');
 
-                const liveUrl = `https://mforgedesign.github.io/${slug}/`;
+                const liveUrl = `https://convites.mforge.com.br/${slug}/`;
                 // alert(`Publicado com sucesso!\n\nAcesse: ${liveUrl}`); // Moved to polling success
                 // window.open(liveUrl, '_blank');
 
