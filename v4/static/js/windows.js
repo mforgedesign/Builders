@@ -1404,8 +1404,7 @@
                     htmlContent = htmlContent.replace(regex, safeValue);
                 }
 
-                console.log("DEBUG PUBLISH: AssetsMap", appState.assetsMap);
-                console.log("DEBUG PUBLISH: Generated Menu", generatedMenu);
+
 
 
                 // 4.1. Reconstruct Menu Config & Variables (moved UP before payload generation)
@@ -1464,6 +1463,9 @@
                 }
 
                 const menuConfig = generatedMenu; // Assign to the var expected by JSON.stringify
+
+                console.log("DEBUG PUBLISH: AssetsMap", appState.assetsMap);
+                console.log("DEBUG PUBLISH: Generated Menu", generatedMenu);
 
                 // -------------------------------------------------------------------
 
