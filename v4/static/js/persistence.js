@@ -3,15 +3,23 @@
  * ======================================
  * Saves and restores the builder state using localStorage.
  * Prevents data loss on page reload.
+ * 
+ * ESTRATÉGIA: Salvamento Imediato (Eager Save)
+ * - Converte blobs para Base64 IMEDIATAMENTE quando arquivo é selecionado
+ * - Mantém cache de Base64 já convertido
+ * - Salva SINCRONAMENTE usando o cache (não depende de beforeunload async)
  */
 
 (function () {
     'use strict';
 
     const STORAGE_KEY = 'autobuilder_v4_state';
-    const SAVE_DELAY = 1000; // 1 second debounce
+    const SAVE_DELAY = 500; // 0.5 second debounce para form data
 
     let saveTimeout;
+
+    // Cache de Base64 para assets - persiste entre saves
+    let assetsBase64Cache = {};
 
     // ========================================
     // Core Functions
@@ -19,15 +27,15 @@
 
     /**
      * Helper: Converts a Blob/File to Base64 data URL
-     * @param {Blob|File|string} blob - The blob to convert
-     * @returns {Promise<string|null>} Base64 data URL or original string
      */
     function blobToBase64(blob) {
         return new Promise((resolve) => {
             if (!blob) return resolve(null);
-            // Se já é string (URL ou base64), retorna como está
-            if (typeof blob === 'string') return resolve(blob);
-            // Se não é um Blob/File válido, retorna null
+            if (typeof blob === 'string') {
+                // Se já é string (base64 ou URL)
+                if (blob.startsWith('data:')) return resolve(blob);
+                return resolve(null); // blob URL não é serializável
+            }
             if (!(blob instanceof Blob)) return resolve(null);
 
             const reader = new FileReader();
@@ -38,34 +46,23 @@
     }
 
     /**
-     * Saves the current application state to localStorage.
-     * Converts blob assets to Base64 for persistence.
+     * Salva estado SINCRONAMENTE usando cache de Base64.
+     * Chamado após cada modificação.
      */
-    async function saveState() {
+    function saveStateSync() {
         if (!window.builderState) return;
 
         try {
-            // Converter assets (blobs) para Base64
-            const assetsBase64 = {};
-            const assetEntries = Object.entries(window.builderState.assets || {});
-
-            for (const [key, value] of assetEntries) {
-                const base64 = await blobToBase64(value);
-                if (base64) {
-                    assetsBase64[key] = base64;
-                }
-            }
-
             const stateToSave = {
                 formData: window.builderState.formData || {},
-                assets: assetsBase64,
+                assets: { ...assetsBase64Cache },
                 linksExtras: window.builderState.linksExtras || [],
                 timestamp: Date.now()
             };
 
             localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
             console.log('[Persistence] State saved', new Date().toLocaleTimeString(),
-                `(${Object.keys(assetsBase64).length} assets)`);
+                `(${Object.keys(assetsBase64Cache).length} assets cached)`);
 
         } catch (e) {
             console.warn('[Persistence] Failed to save state:', e);
@@ -73,11 +70,43 @@
     }
 
     /**
-     * Debounced save function.
+     * Debounced save function (para form data).
      */
     function scheduleSave() {
         clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(saveState, SAVE_DELAY);
+        saveTimeout = setTimeout(saveStateSync, SAVE_DELAY);
+    }
+
+    /**
+     * Processa um asset imediatamente: converte para Base64 e salva.
+     * Chamado quando um arquivo é selecionado.
+     */
+    async function processAndSaveAsset(context, blobOrFile) {
+        if (!blobOrFile) return;
+
+        console.log(`[Persistence] Processing asset: ${context}`);
+
+        try {
+            const base64 = await blobToBase64(blobOrFile);
+            if (base64) {
+                assetsBase64Cache[context] = base64;
+                console.log(`[Persistence] Asset cached: ${context} (${(base64.length / 1024).toFixed(1)}KB)`);
+
+                // Salvar imediatamente
+                saveStateSync();
+            }
+        } catch (e) {
+            console.error(`[Persistence] Failed to process asset ${context}:`, e);
+        }
+    }
+
+    /**
+     * Remove um asset do cache.
+     */
+    function removeAsset(context) {
+        delete assetsBase64Cache[context];
+        saveStateSync();
+        console.log(`[Persistence] Asset removed: ${context}`);
     }
 
     /**
@@ -98,7 +127,6 @@
             if (savedState.formData) {
                 console.log('[Persistence] Broadcasting restored state...');
 
-                // Dispatch event which form.js and preview.js will catch
                 document.dispatchEvent(new CustomEvent('stateUpdated', {
                     detail: {
                         source: 'persistence',
@@ -108,10 +136,13 @@
             }
 
             // 2. Restore Assets (Dropzones)
-            if (savedState.assets && window.updateDropzonePreview) {
+            if (savedState.assets && Object.keys(savedState.assets).length > 0) {
                 console.log('[Persistence] Restoring assets...');
 
-                // Map context to dropzone IDs (Keep synced with windows.js DROPZONE_CONTEXTS)
+                // Restaurar cache de Base64
+                assetsBase64Cache = { ...savedState.assets };
+
+                // Map context to dropzone IDs
                 const dropzoneMap = {
                     'capa': 'cover-dropzone',
                     'folha_vazia': 'leaf-dropzone',
@@ -121,11 +152,7 @@
                     'vid_loop': 'loop-video-dropzone',
                     'musica': 'music-dropzone',
                     'presentes': 'gifts-image-dropzone',
-                    'manual': 'manual-image-dropzone',
-                    // Legacy mappings for backward compatibility
-                    'abertura': 'intro-video-dropzone',
-                    'loop': 'loop-video-dropzone',
-                    'music': 'music-dropzone'
+                    'manual': 'manual-image-dropzone'
                 };
 
                 // Helper: Convert Base64 data URL back to Blob
@@ -149,7 +176,7 @@
                     }
                 };
 
-                // Initialize assets object
+                // Initialize assets object in builderState
                 if (window.builderState) {
                     window.builderState.assets = {};
                 }
@@ -162,9 +189,9 @@
                     // Determine type based on context
                     let type = 'image';
                     if (context.includes('video') || context === 'vid_abertura' || context === 'vid_loop' ||
-                        context === 'abertura' || context === 'loop' || context === 'folha_animada') {
+                        context === 'folha_animada') {
                         type = 'video';
-                    } else if (context === 'musica' || context === 'music') {
+                    } else if (context === 'musica') {
                         type = 'audio';
                     }
 
@@ -180,9 +207,8 @@
                     if (dropzoneId) {
                         const dropzone = document.getElementById(dropzoneId);
                         if (dropzone) {
-                            // Para música, tratamento especial
                             if (type === 'audio') {
-                                // Atualizar player de música
+                                // Tratamento especial para música
                                 const audioPlayer = document.getElementById('music-audio-player');
                                 const trackName = document.getElementById('music-track-name');
                                 const removeBtn = document.getElementById('music-remove-btn');
@@ -195,7 +221,7 @@
                                 if (trackName) trackName.textContent = 'Música Restaurada';
                                 if (removeBtn) removeBtn.classList.remove('hidden');
                                 if (playBtn) playBtn.disabled = false;
-                            } else {
+                            } else if (window.updateDropzonePreview) {
                                 window.updateDropzonePreview(dropzone, dataUrl, type);
                             }
 
@@ -220,14 +246,12 @@
 
                 window.AutoBuilderLinksExtras.populateLinks(savedState.linksExtras);
 
-                // Sync preview
                 document.dispatchEvent(new CustomEvent('linksExtrasUpdated', {
                     detail: { links: savedState.linksExtras }
                 }));
             }
 
             // 4. Force Preview Update
-            // Some things might need a final nudging
             document.dispatchEvent(new CustomEvent('stateUpdated', {
                 detail: { source: 'persistence', data: savedState }
             }));
@@ -237,8 +261,6 @@
 
         } catch (e) {
             console.error('[Persistence] Error restoring state:', e);
-            // If state is corrupt, maybe clear it?
-            // localStorage.removeItem(STORAGE_KEY);
         }
     }
 
@@ -259,27 +281,47 @@
     }
 
     // ========================================
-    // Initialization
+    // Event Listeners
     // ========================================
 
     function init() {
-        // Listen for all possible state changes
-        document.addEventListener('stateUpdated', scheduleSave);
-        document.addEventListener('linksExtrasUpdated', scheduleSave);
-        document.addEventListener('mediaUpdated', scheduleSave);
+        // Listen for form state changes (debounced)
+        document.addEventListener('stateUpdated', (e) => {
+            // Ignore events from persistence itself
+            if (e.detail && e.detail.source === 'persistence') return;
+            scheduleSave();
+        });
 
-        // Also listen for form inputs directly as a fallback
+        // Listen for links extras changes (debounced)
+        document.addEventListener('linksExtrasUpdated', scheduleSave);
+
+        // Listen for media changes - PROCESS IMMEDIATELY
+        document.addEventListener('mediaUpdated', async (e) => {
+            if (e.detail && e.detail.type && e.detail.data) {
+                const { type, data } = e.detail;
+
+                // Se tem blob/file, processar imediatamente
+                if (data.blob || data.file) {
+                    await processAndSaveAsset(type, data.blob || data.file);
+                } else if (data.url && data.url.startsWith('data:')) {
+                    // Já é base64
+                    assetsBase64Cache[type] = data.url;
+                    saveStateSync();
+                }
+            }
+        });
+
+        // Listen for form inputs directly as fallback
         document.addEventListener('input', (e) => {
             if (e.target.matches('input, textarea, select')) {
                 scheduleSave();
             }
         });
 
-        // Attempt restore
-        // Small delay to ensure other modules are ready
+        // Attempt restore after modules are ready
         setTimeout(restoreState, 500);
 
-        console.log('[Persistence] Initialized');
+        console.log('[Persistence] Initialized with Eager Save strategy');
     }
 
     // ========================================
@@ -287,8 +329,8 @@
     // ========================================
 
     window.addEventListener('beforeunload', () => {
-        // Try to save immediately before close
-        saveState();
+        // Tentativa final de salvar (síncrono)
+        saveStateSync();
     });
 
     if (document.readyState === 'loading') {
@@ -297,15 +339,22 @@
         init();
     }
 
-    // Expose for debugging/clearing
+    // ========================================
+    // Public API
+    // ========================================
+
     window.Persistence = {
         clear: () => {
             localStorage.removeItem(STORAGE_KEY);
+            assetsBase64Cache = {};
             console.log('[Persistence] State cleared');
             location.reload();
         },
-        forceSave: saveState,
-        forceRestore: restoreState
+        forceSave: saveStateSync,
+        forceRestore: restoreState,
+        removeAsset: removeAsset,
+        processAsset: processAndSaveAsset,
+        getCache: () => ({ ...assetsBase64Cache })
     };
 
 })();
