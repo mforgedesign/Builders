@@ -297,16 +297,33 @@
 
         // Listen for media changes - PROCESS IMMEDIATELY
         document.addEventListener('mediaUpdated', async (e) => {
+            console.log('[Persistence] mediaUpdated received:', e.detail);
+
             if (e.detail && e.detail.type && e.detail.data) {
                 const { type, data } = e.detail;
+
+                console.log(`[Persistence] mediaUpdated: type=${type}, hasBlob=${!!data.blob}, hasFile=${!!data.file}, hasUrl=${!!data.url}`);
 
                 // Se tem blob/file, processar imediatamente
                 if (data.blob || data.file) {
                     await processAndSaveAsset(type, data.blob || data.file);
                 } else if (data.url && data.url.startsWith('data:')) {
                     // Já é base64
+                    console.log(`[Persistence] Caching base64 directly for: ${type}`);
                     assetsBase64Cache[type] = data.url;
                     saveStateSync();
+                } else if (data.url && data.url.startsWith('blob:')) {
+                    // É blob URL, precisamos fetch e converter
+                    console.log(`[Persistence] Fetching blob URL for: ${type}`);
+                    try {
+                        const response = await fetch(data.url);
+                        const blob = await response.blob();
+                        await processAndSaveAsset(type, blob);
+                    } catch (err) {
+                        console.error(`[Persistence] Failed to fetch blob URL for ${type}:`, err);
+                    }
+                } else {
+                    console.warn(`[Persistence] mediaUpdated: No processable data for ${type}`, data);
                 }
             }
         });
