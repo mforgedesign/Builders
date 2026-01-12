@@ -50,6 +50,11 @@
     async function saveLinksToBackend() {
         linksExtras = getLinksFromDOM();
 
+        // Atualizar estado global para persistência
+        if (window.builderState) {
+            window.builderState.linksExtras = linksExtras;
+        }
+
         try {
             const response = await fetch(API_BASE + UPDATE_ENDPOINT, {
                 method: 'POST',
