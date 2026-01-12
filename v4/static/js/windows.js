@@ -1400,15 +1400,8 @@
                     htmlContent = htmlContent.replace(regex, value || '');
                 }
 
-                filesMap['index.html'] = utf8_to_b64(htmlContent);
 
-                // 5. Send to API
-                updateDeployStep('step-build', 'done');
-                updateDeployStep('step-upload', 'loading');
-
-                // We use /api/publish which is intercepted by supabase-adapter
-                // Edge Function has the GitHub token stored securely
-                // 4.1. Reconstruct Menu Config & Variables
+                // 4.1. Reconstruct Menu Config & Variables (moved UP before payload generation)
                 const buttonSize = formData.button_size || '1.0';
                 const companionHideClass = formData.companion_hide_class || '';
 
@@ -1469,9 +1462,20 @@
                 htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, buttonSize || '1.0');
                 htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, companionHideClass || '');
 
+                filesMap['index.html'] = utf8_to_b64(htmlContent);
+
+                // 5. Send to API
+                updateDeployStep('step-build', 'done');
+                updateDeployStep('step-upload', 'loading');
+
+                // We use /api/publish which is intercepted by supabase-adapter
+                // Edge Function has the GitHub token stored securely
+                // 4.1. Reconstruct Menu Config & Variables
+
+
                 const payload = {
                     slug: slug,
-                    files: filesMap // { "index.html": "base64", "assets/foo.png": "base64" }
+                    files: filesMap
                 };
 
                 const response = await fetch('/api/publish', {
