@@ -65,6 +65,30 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [2026-01-12 12:12] - Fix History Branch Configuration
+
+### Problema:
+* O módulo de Histórico (`history.js`) estava buscando convites do branch `main`, mas o repositório `mforgedesign/Convites` usa o branch `recuperaçãohoje`.
+
+### Arquivos Modificados:
+* `static/js/history.js`:
+  * Line 15: Adicionada constante `GITHUB_BRANCH = 'recuperaçãohoje'`
+  * Line 15: Atualizado `GITHUB_REPO_BASE` para usar a variável `GITHUB_BRANCH`
+  * Line 75: Atualizada API call do Git Trees para usar `GITHUB_BRANCH`
+  * Line 163: Atualizada URL do raw.githubusercontent para usar `GITHUB_BRANCH`
+
+### Arquivos de Backup Criados:
+* `static/js/history_bkp_20260112_1210.js`
+
+### Status:
+* O histórico agora busca convites do branch correto (`recuperaçãohoje`).
+
+### Prompt Original:
+> O histórico precisa buscar nesse local ( https://github.com/mforgedesign/Convites )
+> Atualmente está buscando em outro branch.
+
+---
+
 ## [2025-12-31 18:46] - FASE 1: Infraestrutura Backend Completa (Supabase)
 
 ### Database Schema Criado (Supabase)
