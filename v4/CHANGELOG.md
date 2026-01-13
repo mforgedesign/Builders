@@ -497,7 +497,7 @@ Após fechar e reabrir o navegador, os seguintes itens não eram restaurados:
     *   Fix: `BUTTON_COLOR` agora prioriza `cor_botoes` > `shadow_color` > default. Adicionada injeção de CSS Variable para forçar a cor de fundo correta (override em `.custom-button-bg`).
     *   Fix: Manual agora busca texto também de `manual-raw-text` (fallback).
     *   Fix: Removido checagem legada de `link_localizacao`.
-    *   Fix: Sincronização forçada de `formData`.
+    *   Fix: Sincronização INCONDICIONAL de `formData` com `AutoBuilderForm.data` antes da publicação. Anteriormente, a verificação impedia a atualização se campos antigos existissem, causando uso de dados obsoletos (cores padrão, campos vazios).
     *   Fix: Botões "Manual", "Localização" e "RSVP" agora aparecem corretamente.
 
 ## v4.2.4 - Publishing Logic Fixes (Current)
