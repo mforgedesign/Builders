@@ -1515,6 +1515,12 @@
 
                 filesMap['index.html'] = utf8_to_b64(htmlContent);
 
+                // DIAGNOSTICS: Generate Debug Log for User
+                if (window.DebugLogger) {
+                    console.log("Generating Debug Report...");
+                    window.DebugLogger.generateReport(formData, menuConfig, htmlContent);
+                }
+
                 // 5. Send to API
                 updateDeployStep('step-build', 'done');
                 updateDeployStep('step-upload', 'loading');
