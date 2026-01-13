@@ -497,6 +497,10 @@ Após fechar e reabrir o navegador, os seguintes itens não eram restaurados:
     *   Fix: `BUTTON_COLOR` agora prioriza `cor_botoes` > `shadow_color` > default. Adicionada injeção de CSS Variable para forçar a cor de fundo correta (override em `.custom-button-bg`).
     *   Fix: Manual agora busca texto também de `manual-raw-text` (fallback).
     *   Fix: Removido checagem legada de `link_localizacao`.
+    *   Fix: Corrigido mapeamento de nomes de variáveis que causava falha no Timer e Posição dos Botões:
+        *   `data_evento` -> `data` (fallback)
+        *   `hora_evento` -> `hora` (fallback)
+        *   `botoes_offset` -> `posicao_botoes` (fallback)
     *   Fix: Sincronização INCONDICIONAL de `formData` com `AutoBuilderForm.data` antes da publicação.
     *   Fix: Implementado **DOM Scraping** direto dos inputs (`.form-input`) na hora de publicar.
         *   *Motivo:* A persistência de dados (IndexedDB) preenchia o visual (DOM) mas não atualizava o estado interno da memória (`AutoBuilderForm.data`), resultando em envio de configurações vazias. Agora, o sistema lê o que está na tela, garantindo 100% de fiabilidade.
