@@ -504,8 +504,9 @@ Após fechar e reabrir o navegador, os seguintes itens não eram restaurados:
     *   Fix: Sincronização INCONDICIONAL de `formData` com `AutoBuilderForm.data` antes da publicação.
     *   Fix: Implementado **DOM Scraping** direto dos inputs (`.form-input`) na hora de publicar.
     *   New: Adicionado Checkbox "Baixar Log de Debug" na tela de publicação (desmarcado por padrão).
-    *   Fix: Corrigido Timer/Contagem não aparecendo (faltava lógica de substituição `[[TIMER_HIDE_CLASS]]`).
-    *   Fix: Corrigido Botão Manual não aparecendo (fallback para `manual_raw_content` adicionado à persistência).
+    *   Fix: Corrigido Timer/Contagem não aparecendo (fallback seguro para verificação booleana `String(val) === 'true'`).
+    *   Fix: Implementada lógica de fallback para Modo Manual/Presentes: Se houver imagem e o texto estiver vazio, o builder força o modo de Imagem, prevenindo erro caso a persistência visual falhe.
+    *   Fix: Reimplementada a **Marca d'Água (Pagamento Pendente)**. A estrutura HTML não existia no template final e foi reinserida com z-index alto para garantir visibilidade.
     *   Fix: Implementada **Persistência de Toggles** (Modo Imagem/Texto) no `persistence.js`. Agora o builder lembra qual aba estava selecionada após o recarregamento.
         *   *Motivo:* A persistência de dados (IndexedDB) preenchia o visual (DOM) mas não atualizava o estado interno da memória (`AutoBuilderForm.data`), resultando em envio de configurações vazias. Agora, o sistema lê o que está na tela, garantindo 100% de fiabilidade.
     *   Fix: Botões "Manual", "Localização" e "RSVP" agora aparecem corretamente.
