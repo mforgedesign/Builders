@@ -1435,12 +1435,12 @@
                 }
 
                 // 3.5. Computed Replacements (Date/Time, Offset, Color)
-                const eventDate = formData.data_evento;
-                const eventTime = formData.hora_evento || '00:00';
+                const eventDate = formData.data_evento || formData.data;
+                const eventTime = formData.hora_evento || formData.hora || '00:00';
                 const eventDateTime = eventDate ? `${eventDate}T${eventTime}:00` : '';
                 htmlContent = htmlContent.replace(/\[\[EVENT_DATETIME\]\]/g, eventDateTime);
 
-                const buttonsOffset = formData.botoes_offset || formData.buttons_offset || '0';
+                const buttonsOffset = formData.botoes_offset || formData.posicao_botoes || formData.buttons_offset || '0';
                 htmlContent = htmlContent.replace(/\[\[BUTTONS_OFFSET\]\]/g, buttonsOffset);
 
                 // Prioritize 'cor_botoes', then 'shadow_color', then default
