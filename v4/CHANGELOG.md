@@ -492,12 +492,13 @@ Após fechar e reabrir o navegador, os seguintes itens não eram restaurados:
 *   `final_template.html`:
     *   Fix: `folhaPreenchida` agora é revelada explicitamente na transição para o loop, garantindo que o fundo não fique preto se o video loop for transparente ou demorar a carregar.
 *   `static/js/windows.js`:
-    *   Fix: Manual agora busca texto também de `manual-raw-text` (fallback) se o editor HTML estiver vazio.
-    *   Fix: Removido checagem legada de `link_localizacao` que duplicava lógica.
-    *   Fix: Sincronização forçada de `formData` com `AutoBuilderForm.data` antes da publicação para garantir cores e dados atualizados.
-    *   Fix: Lógica de detecção do modo Manual corrigida (verificação por classe CSS).
-    *   Fix: Botão Localização agora usa o campo correto `formData.link_google_maps`.
-    *   Fix: Botão RSVP agora usa o campo correto `formData.numero_whatsapp`.
+    *   Fix: `BUTTONS_OFFSET` agora é calculado e substituído corretamente (`formData.botoes_offset`).
+    *   Fix: `EVENT_DATETIME` é gerado unindo data e hora do evento, corrigindo o Timer/Contagem Regressiva.
+    *   Fix: `BUTTON_COLOR` agora prioriza `cor_botoes` > `shadow_color` > default. Adicionada injeção de CSS Variable para forçar a cor de fundo correta (override em `.custom-button-bg`).
+    *   Fix: Manual agora busca texto também de `manual-raw-text` (fallback).
+    *   Fix: Removido checagem legada de `link_localizacao`.
+    *   Fix: Sincronização forçada de `formData`.
+    *   Fix: Botões "Manual", "Localização" e "RSVP" agora aparecem corretamente.
 
 ## v4.2.4 - Publishing Logic Fixes (Current)
 
