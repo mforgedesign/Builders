@@ -1395,9 +1395,9 @@
                 htmlContent = htmlContent.replace(/\[\[CAPA_FILENAME\]\]/g, capaFilename);
 
                 // Defaults if missing (from formData or default)
+                // Defaults if missing (from formData or default)
                 htmlContent = htmlContent.replace(/\[\[SHADOW_COLOR\]\]/g, formData.shadow_color || '#000000');
-                // Use shadow_color for button background if not specified, fallback to dark gray
-                htmlContent = htmlContent.replace(/\[\[BUTTON_COLOR\]\]/g, formData.shadow_color || '#292524');
+                // BUTTON_COLOR handled in computed section below
                 htmlContent = htmlContent.replace(/\[\[TIMER_HIDE_CLASS\]\]/g, formData.data_evento ? '' : 'hidden');
 
                 // Inject Text Data
@@ -1409,12 +1409,29 @@
                     Object.assign(formData, window.AutoBuilderForm.data);
                 }
 
+                // 3.5. Computed Replacements (Date/Time, Offset, Color)
+                const eventDate = formData.data_evento;
+                const eventTime = formData.hora_evento || '00:00';
+                const eventDateTime = eventDate ? `${eventDate}T${eventTime}:00` : '';
+                htmlContent = htmlContent.replace(/\[\[EVENT_DATETIME\]\]/g, eventDateTime);
+
+                const buttonsOffset = formData.botoes_offset || formData.buttons_offset || '0';
+                htmlContent = htmlContent.replace(/\[\[BUTTONS_OFFSET\]\]/g, buttonsOffset);
+
+                // Prioritize 'cor_botoes', then 'shadow_color', then default
+                const btnColor = formData.cor_botoes || formData.shadow_color || '#292524';
+                htmlContent = htmlContent.replace(/\[\[BUTTON_COLOR\]\]/g, btnColor);
+
                 for (const [key, value] of Object.entries(formData)) {
                     const regex = new RegExp(`\\[\\[${key.toUpperCase()}\\]\\]`, 'g');
                     // FIX: Handle 0 correctly (don't treat as falsey)
                     const safeValue = (value !== undefined && value !== null) ? value : '';
                     htmlContent = htmlContent.replace(regex, safeValue);
                 }
+
+                // Inject CSS Variable for Button Color (if template uses it)
+                const customStyle = `<style>:root { --button-color: ${btnColor}; } .custom-button-bg { background-color: var(--button-color) !important; }</style>`;
+                htmlContent = htmlContent.replace('</head>', `${customStyle}</head>`);
 
 
 
