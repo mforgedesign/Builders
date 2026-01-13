@@ -1405,8 +1405,13 @@
                 // Inject Text Data
                 // formData already declared at top of scope
                 // Ensure formData is populated (sometimes appState is stale vs Form.data)
-                if (window.AutoBuilderForm && window.AutoBuilderForm.data && (!formData.shadow_color && !formData.cor_botoes)) {
+                // Ensure formData is populated (sometimes appState is stale vs Form.data)
+                // FORCE COMPLETE SYNC from UI State if available
+                if (window.AutoBuilderForm && window.AutoBuilderForm.data) {
+                    console.log("DEBUG PUBLISH: Syncing formData from AutoBuilderForm:", window.AutoBuilderForm.data);
                     Object.assign(formData, window.AutoBuilderForm.data);
+                } else {
+                    console.warn("DEBUG PUBLISH: AutoBuilderForm data not available, using existing appState.formData");
                 }
 
                 // 3.5. Computed Replacements (Date/Time, Offset, Color)
