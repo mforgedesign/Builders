@@ -1448,6 +1448,11 @@
                 const timerHideClass = isTimerEnabled ? '' : 'hidden';
                 htmlContent = htmlContent.replace(/\[\[TIMER_HIDE_CLASS\]\]/g, timerHideClass);
 
+                // Watermark Logic
+                const isWatermarkEnabled = String(formData.watermark_enabled).toLowerCase().trim() === 'true';
+                const watermarkHideClass = isWatermarkEnabled ? '' : 'hidden';
+                htmlContent = htmlContent.replace(/\[\[WATERMARK_HIDE_CLASS\]\]/g, watermarkHideClass);
+
                 // Prioritize 'cor_botoes', then 'shadow_color', then default
                 const btnColor = formData.cor_botoes || formData.shadow_color || '#292524';
                 htmlContent = htmlContent.replace(/\[\[BUTTON_COLOR\]\]/g, btnColor);
