@@ -483,10 +483,21 @@ Após fechar e reabrir o navegador, os seguintes itens não eram restaurados:
 
 
 ## v4.2.5 - Hotfix: Publishing replacements order
-### Fixes
+### v4.2.5 - Hotfix - 12/01/2026
 *   `static/js/windows.js`:
-    *   Moved `MENU_CONFIG`, `BUTTON_SIZE`, and `COMPANION_HIDE_CLASS` replacement logic to modify `htmlContent` **BEFORE** it is assigned to the `filesMap` payload.
-    *   Previously, the payload was created with the raw template, causing `Uncaught ReferenceError: MENU_CONFIG is not defined` on the published site.
+    *   Lines 1400+: Corrigida ordem de execução das substituições para garantir que `[[MENU_CONFIG]]`, `[[BUTTON_SIZE]]`, e `[[COMPANION_HIDE_CLASS]]` sejam processados ANTES de povoar `filesMap`. Isso corrige o erro de referência e a falta de interatividade no convite publicado.
+    *   Movidos logs de debug para escopo correto.
+
+### v4.2.6 - Fix Visual e Botões - 13/01/2026
+*   `final_template.html`:
+    *   Fix: `folhaPreenchida` agora é revelada explicitamente na transição para o loop, garantindo que o fundo não fique preto se o video loop for transparente ou demorar a carregar.
+*   `static/js/windows.js`:
+    *   Fix: Manual agora busca texto também de `manual-raw-text` (fallback) se o editor HTML estiver vazio.
+    *   Fix: Removido checagem legada de `link_localizacao` que duplicava lógica.
+    *   Fix: Sincronização forçada de `formData` com `AutoBuilderForm.data` antes da publicação para garantir cores e dados atualizados.
+    *   Fix: Lógica de detecção do modo Manual corrigida (verificação por classe CSS).
+    *   Fix: Botão Localização agora usa o campo correto `formData.link_google_maps`.
+    *   Fix: Botão RSVP agora usa o campo correto `formData.numero_whatsapp`.
 
 ## v4.2.4 - Publishing Logic Fixes (Current)
 
