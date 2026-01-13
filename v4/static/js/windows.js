@@ -1406,12 +1406,32 @@
                 // formData already declared at top of scope
                 // Ensure formData is populated (sometimes appState is stale vs Form.data)
                 // Ensure formData is populated (sometimes appState is stale vs Form.data)
-                // FORCE COMPLETE SYNC from UI State if available
-                if (window.AutoBuilderForm && window.AutoBuilderForm.data) {
-                    console.log("DEBUG PUBLISH: Syncing formData from AutoBuilderForm:", window.AutoBuilderForm.data);
-                    Object.assign(formData, window.AutoBuilderForm.data);
-                } else {
-                    console.warn("DEBUG PUBLISH: AutoBuilderForm data not available, using existing appState.formData");
+                // FORCE COMPLETE SYNC from DOM elements (Bulletproof against stale state)
+                try {
+                    console.log("DEBUG PUBLISH: Scraping Fresh Data from DOM Inputs...");
+                    const domData = {};
+                    document.querySelectorAll('.form-input[data-field]').forEach(input => {
+                        const field = input.getAttribute('data-field');
+                        if (!field) return;
+
+                        if (input.type === 'checkbox') {
+                            domData[field] = input.checked;
+                        } else if (input.type === 'radio') {
+                            if (input.checked) domData[field] = input.value;
+                        } else {
+                            domData[field] = input.value;
+                        }
+                    });
+
+                    console.log("DEBUG PUBLISH: DOM Data Scraped:", domData);
+                    Object.assign(formData, domData);
+
+                    // Also sync back to global state for consistency
+                    if (window.AutoBuilderForm) {
+                        Object.assign(window.AutoBuilderForm.data, domData);
+                    }
+                } catch (err) {
+                    console.error("DEBUG PUBLISH: Error scraping DOM data", err);
                 }
 
                 // 3.5. Computed Replacements (Date/Time, Offset, Color)
