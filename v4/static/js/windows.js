@@ -1443,6 +1443,11 @@
                 const buttonsOffset = formData.botoes_offset || formData.posicao_botoes || formData.buttons_offset || '0';
                 htmlContent = htmlContent.replace(/\[\[BUTTONS_OFFSET\]\]/g, buttonsOffset);
 
+                // Timer Logic
+                const isTimerEnabled = formData.timer_contagem === true || formData.timer_contagem === 'true';
+                const timerHideClass = isTimerEnabled ? '' : 'hidden';
+                htmlContent = htmlContent.replace(/\[\[TIMER_HIDE_CLASS\]\]/g, timerHideClass);
+
                 // Prioritize 'cor_botoes', then 'shadow_color', then default
                 const btnColor = formData.cor_botoes || formData.shadow_color || '#292524';
                 htmlContent = htmlContent.replace(/\[\[BUTTON_COLOR\]\]/g, btnColor);
