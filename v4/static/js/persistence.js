@@ -206,6 +206,12 @@
             const stateToSave = {
                 formData: formData,
                 linksExtras: window.builderState?.linksExtras || [],
+                toggles: {
+                    manualMode: document.querySelector('#manual-mode-buttons .bg-white')?.dataset?.mode || 'text',
+                    giftsMode: document.querySelector('#gifts-mode-buttons .bg-white')?.dataset?.mode || 'link',
+                    fillMode: document.querySelector('#fill-mode-buttons .bg-white')?.dataset?.mode || 'overlay',
+                    animateBackground: document.getElementById('animate-background-toggle')?.checked || false
+                },
                 timestamp: Date.now()
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
@@ -270,6 +276,20 @@
                     document.dispatchEvent(new CustomEvent('linksExtrasUpdated', {
                         detail: { links: savedState.linksExtras }
                     }));
+                }
+
+                // Restore Toggles
+                if (savedState.toggles) {
+                    console.log('[Persistence] Restoring toggles:', savedState.toggles);
+                    if (savedState.toggles.manualMode) document.getElementById(`manual-mode-${savedState.toggles.manualMode}`)?.click();
+                    if (savedState.toggles.giftsMode) document.getElementById(`gifts-mode-${savedState.toggles.giftsMode}`)?.click();
+                    if (savedState.toggles.fillMode) document.getElementById(`fill-mode-${savedState.toggles.fillMode}`)?.click();
+
+                    const animateToggle = document.getElementById('animate-background-toggle');
+                    if (animateToggle && savedState.toggles.animateBackground !== undefined) {
+                        animateToggle.checked = savedState.toggles.animateBackground;
+                        animateToggle.dispatchEvent(new Event('change'));
+                    }
                 }
             }
 
