@@ -1535,8 +1535,9 @@
 
                 filesMap['index.html'] = utf8_to_b64(htmlContent);
 
-                // DIAGNOSTICS: Generate Debug Log for User
-                if (window.DebugLogger) {
+                // DIAGNOSTICS: Generate Debug Log for User (Optional)
+                const isDebugEnabled = document.getElementById('debug-log-toggle')?.checked;
+                if (window.DebugLogger && isDebugEnabled) {
                     console.log("Generating Debug Report...");
                     window.DebugLogger.generateReport(formData, menuConfig, htmlContent);
                 }
