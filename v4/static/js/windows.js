@@ -1404,6 +1404,11 @@
                 // formData already declared at top of scope
                 // Inject Text Data
                 // formData already declared at top of scope
+                // Ensure formData is populated (sometimes appState is stale vs Form.data)
+                if (window.AutoBuilderForm && window.AutoBuilderForm.data && (!formData.shadow_color && !formData.cor_botoes)) {
+                    Object.assign(formData, window.AutoBuilderForm.data);
+                }
+
                 for (const [key, value] of Object.entries(formData)) {
                     const regex = new RegExp(`\\[\\[${key.toUpperCase()}\\]\\]`, 'g');
                     // FIX: Handle 0 correctly (don't treat as falsey)
@@ -1435,9 +1440,7 @@
                 // 2. Fixed Buttons (Map, Gifts, RSVP, Manual)
 
                 // LOCATION
-                if (formData.link_localizacao) {
-                    generatedMenu.push({ id: 'location', titulo: 'Local', icone: 'fa-solid fa-location-dot', link: formData.link_localizacao });
-                }
+
 
                 // GIFTS (Presentes)
                 // Fix: Check context 'presentes' which matches DROPZONE_CONTEXTS
@@ -1450,9 +1453,14 @@
                     generatedMenu.push({ id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: giftsLink });
                 }
 
+                // LOCALIZACAO (Map)
+                if (formData.link_google_maps) {
+                    generatedMenu.push({ id: 'location', titulo: 'Localização', icone: 'fa-solid fa-location-dot', link: formData.link_google_maps });
+                }
+
                 // CONFIRMATION (RSVP)
-                if (formData.whatsapp_number) {
-                    generatedMenu.push({ id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${formData.whatsapp_number}` });
+                if (formData.numero_whatsapp) {
+                    generatedMenu.push({ id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${formData.numero_whatsapp}` });
                 } else if (formData.link_confirmacao) {
                     generatedMenu.push({ id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao });
                 }
@@ -1460,12 +1468,15 @@
                 // MANUAL
                 // Fix: Check context 'manual' which matches DROPZONE_CONTEXTS
                 const hasManualImg = !!appState.assetsMap['manual'];
-                const manualHtml = document.getElementById('manual-text-content')?.innerHTML;
-                const isManualToggleImage = document.getElementById('manual-mode-toggle')?.checked; // true if Image
+                // Fix: Get value from the correct textarea (manual-html-editor) OR fallback to raw text
+                const manualHtml = document.getElementById('manual-html-editor')?.value || document.getElementById('manual-raw-text')?.value;
+                // Fix: Determine mode by checking visibility of image mode container (hidden = text mode)
+                const manualImageModeDiv = document.getElementById('manual-image-mode');
+                const isManualImageMode = manualImageModeDiv && !manualImageModeDiv.classList.contains('hidden');
 
-                if (isManualToggleImage && hasManualImg) {
+                if (isManualImageMode && hasManualImg) {
                     generatedMenu.push({ id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', isManualImage: true });
-                } else if (!isManualToggleImage && manualHtml && manualHtml.trim() !== '') {
+                } else if (!isManualImageMode && manualHtml && manualHtml.trim() !== '') {
                     generatedMenu.push({ id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', manualText: manualHtml });
                 }
 
