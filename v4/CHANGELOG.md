@@ -503,6 +503,7 @@ Após fechar e reabrir o navegador, os seguintes itens não eram restaurados:
         *   `botoes_offset` -> `posicao_botoes` (fallback)
     *   Fix: Sincronização INCONDICIONAL de `formData` com `AutoBuilderForm.data` antes da publicação.
     *   Fix: Implementado **DOM Scraping** direto dos inputs (`.form-input`) na hora de publicar.
+    *   New: Adicionado Checkbox "Baixar Log de Debug" na tela de publicação (desmarcado por padrão). Mantém a ferramenta disponível mas opcional.
         *   *Motivo:* A persistência de dados (IndexedDB) preenchia o visual (DOM) mas não atualizava o estado interno da memória (`AutoBuilderForm.data`), resultando em envio de configurações vazias. Agora, o sistema lê o que está na tela, garantindo 100% de fiabilidade.
     *   Fix: Botões "Manual", "Localização" e "RSVP" agora aparecem corretamente.
 *   `static/js/debug-logger.js`:
