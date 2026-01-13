@@ -506,6 +506,7 @@ Após fechar e reabrir o navegador, os seguintes itens não eram restaurados:
     *   New: Adicionado Checkbox "Baixar Log de Debug" na tela de publicação (desmarcado por padrão).
     *   Fix: Corrigido Timer/Contagem não aparecendo (faltava lógica de substituição `[[TIMER_HIDE_CLASS]]`).
     *   Fix: Corrigido Botão Manual não aparecendo (fallback para `manual_raw_content` adicionado à persistência).
+    *   Fix: Implementada **Persistência de Toggles** (Modo Imagem/Texto) no `persistence.js`. Agora o builder lembra qual aba estava selecionada após o recarregamento.
         *   *Motivo:* A persistência de dados (IndexedDB) preenchia o visual (DOM) mas não atualizava o estado interno da memória (`AutoBuilderForm.data`), resultando em envio de configurações vazias. Agora, o sistema lê o que está na tela, garantindo 100% de fiabilidade.
     *   Fix: Botões "Manual", "Localização" e "RSVP" agora aparecem corretamente.
 *   `static/js/debug-logger.js`:
