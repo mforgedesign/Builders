@@ -1443,8 +1443,8 @@
                 const buttonsOffset = formData.botoes_offset || formData.posicao_botoes || formData.buttons_offset || '0';
                 htmlContent = htmlContent.replace(/\[\[BUTTONS_OFFSET\]\]/g, buttonsOffset);
 
-                // Timer Logic
-                const isTimerEnabled = formData.timer_contagem === true || formData.timer_contagem === 'true';
+                // Timer Logic: Safe Boolean Conversion
+                const isTimerEnabled = String(formData.timer_contagem).toLowerCase().trim() === 'true';
                 const timerHideClass = isTimerEnabled ? '' : 'hidden';
                 htmlContent = htmlContent.replace(/\[\[TIMER_HIDE_CLASS\]\]/g, timerHideClass);
 
@@ -1493,10 +1493,13 @@
                 // Fix: Check context 'presentes' which matches DROPZONE_CONTEXTS
                 const hasGiftsImage = !!appState.assetsMap['presentes'];
                 const giftsLink = formData.link_presentes;
+                const giftsModeDiv = document.getElementById('gifts-image-mode');
+                // Fallback: If has image and no link, force image mode
+                const isGiftsImageMode = (giftsModeDiv && !giftsModeDiv.classList.contains('hidden')) || (hasGiftsImage && !giftsLink);
 
-                if (hasGiftsImage) {
+                if (isGiftsImageMode && hasGiftsImage) {
                     generatedMenu.push({ id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: '#', isGiftImage: true });
-                } else if (giftsLink) {
+                } else if (!isGiftsImageMode && giftsLink) {
                     generatedMenu.push({ id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: giftsLink });
                 }
 
@@ -1519,7 +1522,8 @@
                 const manualHtml = document.getElementById('manual-html-editor')?.value || document.getElementById('manual-raw-text')?.value;
                 // Fix: Determine mode by checking visibility of image mode container (hidden = text mode)
                 const manualImageModeDiv = document.getElementById('manual-image-mode');
-                const isManualImageMode = manualImageModeDiv && !manualImageModeDiv.classList.contains('hidden');
+                // Fallback: If has image and no text, force image mode
+                const isManualImageMode = (manualImageModeDiv && !manualImageModeDiv.classList.contains('hidden')) || (hasManualImg && (!manualHtml || manualHtml.trim() === ''));
 
                 if (isManualImageMode && hasManualImg) {
                     generatedMenu.push({ id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', isManualImage: true });
