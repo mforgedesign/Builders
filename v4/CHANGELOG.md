@@ -499,6 +499,10 @@ Após fechar e reabrir o navegador, os seguintes itens não eram restaurados:
     *   Fix: Removido checagem legada de `link_localizacao`.
     *   Fix: Sincronização INCONDICIONAL de `formData` com `AutoBuilderForm.data` antes da publicação. Anteriormente, a verificação impedia a atualização se campos antigos existissem, causando uso de dados obsoletos (cores padrão, campos vazios).
     *   Fix: Botões "Manual", "Localização" e "RSVP" agora aparecem corretamente.
+*   `static/js/debug-logger.js`:
+    *   New: Ferramenta de diagnóstico adicionada. Gera e baixa automaticamente um relatório `debug_report_X.txt` ao publicar. Contém snapshots dos dados do formulário, configuração de menus e trechos cruciais do HTML gerado.
+*   `index.html` e `windows.js`:
+    *   Injeção do script de debug e gatilho de geração de relatório.
 
 ## v4.2.4 - Publishing Logic Fixes (Current)
 
