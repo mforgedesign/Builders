@@ -508,6 +508,10 @@ Após fechar e reabrir o navegador, os seguintes itens não eram restaurados:
     *   Fix: Implementada lógica de fallback para Modo Manual/Presentes: Se houver imagem e o texto estiver vazio, o builder força o modo de Imagem, prevenindo erro caso a persistência visual falhe.
     *   Fix: Reimplementada a **Marca d'Água (Pagamento Pendente)**. A estrutura HTML não existia no template final e foi reinserida com z-index alto para garantir visibilidade.
     *   Fix: Implementada **Persistência de Toggles** (Modo Imagem/Texto) no `persistence.js`. Agora o builder lembra qual aba estava selecionada após o recarregamento.
+    *   **UX Upgrade (Publicação):**
+        *   Removido o popup bloqueante durante a publicação. O status agora é exibido diretamente no painel "Finalizar".
+        *   Adicionado acompanhamento "Real-Time" (verificação ativa se o link já está no ar).
+        *   Adicionado botão **"Abrir Pasta no GitHub"** para acesso rápido aos arquivos gerados.
         *   *Motivo:* A persistência de dados (IndexedDB) preenchia o visual (DOM) mas não atualizava o estado interno da memória (`AutoBuilderForm.data`), resultando em envio de configurações vazias. Agora, o sistema lê o que está na tela, garantindo 100% de fiabilidade.
     *   Fix: Botões "Manual", "Localização" e "RSVP" agora aparecem corretamente.
 *   `static/js/debug-logger.js`:
