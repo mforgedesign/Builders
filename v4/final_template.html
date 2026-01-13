@@ -652,6 +652,8 @@
             // O loop já está tocando na camada de trás desde o início
             // Apenas revelamos ele escondendo a abertura (crossfade)
             videoLoop.classList.remove('invisivel');
+            // FIX: Show background image (folha preenchida) in case loop video is transparent or missing
+            document.getElementById('folhaPreenchida')?.classList.remove('invisivel');
             videoAbertura.classList.add('invisivel');
             containerBotoes.classList.remove('invisivel');
             containerShadow.classList.remove('invisivel');
