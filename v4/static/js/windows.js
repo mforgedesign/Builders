@@ -1592,6 +1592,7 @@
 
                 // 6. Poll for Deployment Status (GitHub Actions)
                 // Pass SHA from deployBatch result to track specific build
+                logDebug(`Resultado do Deploy: ${JSON.stringify(result)}`);
                 await pollDeployStatus(slug, liveUrl, result.sha);
 
             } catch (err) {
