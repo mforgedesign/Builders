@@ -17,6 +17,7 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
     *   Integration: Atualizada lógica de publicação para usar `deployBatch` e polling robusto via `getLatestWorkflowStatus`.
     *   UI Update: Indicadores de status agora usam Amarelo (Amber-500) para "Processando/Carregando" e Verde para "Sucesso".
     *   Fix: Link do repositório final corrigido para apontar para a pasta do slug em `mforgedesign/Convites`.
+    *   Optim: Reduzido intervalo de polling para 2s e adicionado anti-cache na requisição do status para feedback imediato.
 *   **URL**: https://builder.mforge.com.br/v4/
 
 ---
