@@ -1670,11 +1670,12 @@
         let attempts = 0;
         const maxAttempts = 60; // 5 minutes (5s interval)
 
+        // Ensure UI is visible FIRST (resets steps to pending)
+        showDeployStatusArea();
+
+        // THEN set status to loading
         updateDeployStep('step-live', 'loading');
         checkBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Construindo...';
-
-        // Ensure UI is visible
-        showDeployStatusArea();
 
         // Update Status Text
         const statusText = document.getElementById('deploy-status-text');
