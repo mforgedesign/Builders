@@ -167,6 +167,14 @@
                 }
             });
 
+            // Load sorting timestamps
+            let historyTimestamps = {};
+            try {
+                historyTimestamps = JSON.parse(localStorage.getItem('autoBuilder_historyTimestamps') || '{}');
+            } catch (e) {
+                console.warn('[History] Failed to load timestamps', e);
+            }
+
             // Convert to array and sort
             invitations = Array.from(invitationsMap.values())
                 .filter(inv => inv.slug !== '404.html' && inv.slug !== 'assets' && inv.slug !== 'static')
@@ -175,11 +183,18 @@
                     coverUrl: inv.coverUrl,
                     liveUrl: `${GITHUB_PAGES_BASE}${inv.slug}/`,
                     repoUrl: `${GITHUB_REPO_BASE}${inv.slug}`,
-                    timestamp: Date.now() // We don't get individual timestamps in tree view, using now
+                    timestamp: historyTimestamps[inv.slug] || 0 // Use saved timestamp or 0
                 }));
 
-            // Sort alphabetical for now (tree doesn't give dates)
-            invitations.sort((a, b) => a.slug.localeCompare(b.slug));
+            // Sort: Timestamp Descending (Newest First) -> Then Alphabetical
+            invitations.sort((a, b) => {
+                // Primary: Timestamp
+                if (b.timestamp !== a.timestamp) {
+                    return b.timestamp - a.timestamp;
+                }
+                // Secondary: Alphabetical
+                return a.slug.localeCompare(b.slug);
+            });
 
             if (invitations.length === 0) {
                 showState('empty');
