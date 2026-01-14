@@ -15,6 +15,8 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
     *   Rationale: Resolver problema de múltiplos workflows disparados e mensagem de sucesso prematura.
 *   `static/js/windows.js`:
     *   Integration: Atualizada lógica de publicação para usar `deployBatch` e polling robusto via `getLatestWorkflowStatus`.
+    *   UI Update: Indicadores de status agora usam Amarelo (Amber-500) para "Processando/Carregando" e Verde para "Sucesso".
+    *   Fix: Link do repositório final corrigido para apontar para a pasta do slug em `mforgedesign/Convites`.
 *   **URL**: https://builder.mforge.com.br/v4/
 
 ---
