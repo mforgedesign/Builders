@@ -1662,6 +1662,28 @@
         }
     }
 
+    // Debug Helper
+    function logDebug(msg) {
+        console.log(`[DeployDebug] ${msg}`);
+        let debugEl = document.getElementById('deploy-debug-log');
+        if (!debugEl) {
+            // Lazy create debug container if missing
+            const container = document.getElementById('step-live')?.parentElement?.parentElement;
+            if (container) {
+                debugEl = document.createElement('div');
+                debugEl.id = 'deploy-debug-log';
+                debugEl.className = 'mt-4 p-2 bg-gray-900 text-xs font-mono text-green-400 overflow-y-auto max-h-32 rounded border border-gray-700';
+                container.appendChild(debugEl);
+            }
+        }
+        if (debugEl) {
+            const line = document.createElement('div');
+            line.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            debugEl.appendChild(line);
+            debugEl.scrollTop = debugEl.scrollHeight;
+        }
+    }
+
     /**
      * Poll GitHub Actions status until success or timeout
      */
@@ -1669,6 +1691,8 @@
         const checkBtn = document.getElementById('btn-publish');
         let attempts = 0;
         const maxAttempts = 60; // 5 minutes (5s interval)
+
+        logDebug(`Iniciando Polling. Slug: ${slug}, SHA: ${commitSha?.substring(0, 7)}...`);
 
         // Ensure UI is visible FIRST (resets steps to pending)
         showDeployStatusArea();
@@ -1688,7 +1712,6 @@
         return new Promise((resolve, reject) => {
             const interval = setInterval(async () => {
                 attempts++;
-                const timestamp = Date.now();
 
                 // 1. GitHub Workflow Check (Primary)
                 if (commitSha && window.githubAdapter) {
@@ -1698,38 +1721,45 @@
                             const status = workflow.status; // queued, in_progress, completed
                             const conclusion = workflow.conclusion; // success, failure, neutral, cancelled
 
+                            logDebug(`Workflow: ${status} [${conclusion || '...'}]`);
+
                             if (statusText) {
                                 // Translate status for user
                                 let msg = 'Processando...';
                                 if (status === 'queued') msg = 'Na fila...';
                                 else if (status === 'in_progress') msg = 'Construindo site...';
                                 else if (conclusion === 'success') msg = 'Concluído!';
-                                statusText.innerText = `${msg} (${Math.round(attempts * 5)}s)`;
+                                statusText.innerText = `${msg} (${Math.round(attempts * 2)}s)`;
                             }
 
                             if (status === 'completed') {
                                 if (conclusion === 'success') {
+                                    logDebug('Workflow Success!');
                                     finishPolling(true);
                                     return;
                                 } else {
+                                    logDebug(`Workflow Failed: ${conclusion}`);
                                     finishPolling(false, `Erro no Build: ${conclusion}`);
                                     return;
                                 }
                             }
                         } else {
+                            logDebug(`Aguardando Workflow... (Tentativa ${attempts})`);
                             if (statusText) statusText.innerText = 'Inicializando workflow...';
                         }
                     } catch (e) {
+                        logDebug(`Erro no check: ${e.message}`);
                         console.warn("Workflow check failed", e);
                     }
                 } else if (statusText) {
+                    logDebug('Sem SHA ou Adapter. Usando Fallback.');
                     // Fallback messaging
                     if (attempts % 4 === 0) statusText.innerText = 'Verificando disponibilidade...';
                 }
 
                 // 2. Timeout Check
                 if (attempts >= maxAttempts) {
-                    // Timeout doesn't mean failure, maybe just slow. But stop polling.
+                    logDebug('Timeout. Assumindo sucesso (Otimista).');
                     finishPolling(true); // Optimistic success
                     return;
                 }
@@ -1738,18 +1768,21 @@
                 // If we don't have SHA, or as backup if workflow API fails but site is live
                 if (!commitSha && assetPath) {
                     const img = new Image();
-                    img.onload = () => finishPolling(true);
-                    img.src = `${checkUrl}?t=${timestamp}`;
+                    img.onload = () => {
+                        logDebug('Imagem carregou. Site Online.');
+                        finishPolling(true);
+                    };
+                    img.src = `${checkUrl}?t=${Date.now()}`;
                 }
 
-            }, 5000);
+            }, 2000);
 
             function finishPolling(success, errorMsg) {
                 clearInterval(interval);
                 if (success) {
                     updateDeployStep('step-live', 'done');
                     checkBtn.innerHTML = '<i class="fa-solid fa-check"></i> Publicado!';
-                    checkBtn.classList.remove('bg-brand-600', 'bg-blue-600', 'bg-yellow-600');
+                    checkBtn.classList.remove('bg-brand-600', 'bg-blue-600', 'bg-yellow-600', 'bg-red-600'); // Ensure all removed
                     checkBtn.classList.add('bg-green-600');
 
                     if (statusText) statusText.innerText = 'Disponível Online!';
@@ -1761,7 +1794,6 @@
                     checkBtn.classList.remove('bg-brand-600', 'bg-blue-600');
                     checkBtn.classList.add('bg-red-600');
                     if (statusText && errorMsg) statusText.innerText = errorMsg;
-                    // Dont reject promise to avoid unhandled rejections crashing UI, just log
                     console.error(errorMsg);
                     resolve(); // Resolve anyway to stop spinner
                 }
