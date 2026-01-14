@@ -212,11 +212,15 @@
          * Checks the workflow status for a specific commit
          * @param {string} sha - The commit SHA
          */
+        /**
+         * Checks the workflow status for a specific commit
+         * @param {string} sha - The commit SHA
+         */
         async getLatestWorkflowStatus(sha) {
             if (!await this.ensureAuth()) return null;
 
-            // List runs for this commit
-            const url = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/actions/runs?head_sha=${sha}`;
+            // List runs for this commit with cache buster
+            const url = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/actions/runs?head_sha=${sha}&t=${Date.now()}`;
             try {
                 const res = await fetch(url, { headers: this.getHeaders() });
                 if (!res.ok) return null;
