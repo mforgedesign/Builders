@@ -1639,8 +1639,8 @@
         const text = stepEl.querySelector('span');
 
         if (status === 'loading') {
-            if (icon) icon.className = 'step-icon fa-solid fa-spinner fa-spin text-brand-600 w-4 text-center';
-            stepEl.className = 'flex items-center gap-3 text-sm text-brand-600 font-bold';
+            if (icon) icon.className = 'step-icon fa-solid fa-spinner fa-spin text-amber-500 w-4 text-center';
+            stepEl.className = 'flex items-center gap-3 text-sm text-amber-600 font-bold multiline-status';
         } else if (status === 'done') {
             if (icon) icon.className = 'step-icon fa-solid fa-check-circle text-green-600 w-4 text-center';
             stepEl.className = 'flex items-center gap-3 text-sm text-green-600 font-medium opacity-70';
@@ -1782,9 +1782,9 @@
         if (btnOpenLive) btnOpenLive.href = liveUrl;
 
         // Repo URL construction
-        // Structure: https://github.com/mforgedesign/Builders/tree/main/v4/${slug}
-        // Ideally we should get the base from config, but hardcoding for now based on user request context
-        const repoUrl = `https://github.com/mforgedesign/Builders/tree/main/v4/${slug}`;
+        // Structure: https://github.com/mforgedesign/Convites/tree/recuperaçãohoje/convites/${slug}
+        // Updated to point to the correct invites repo
+        const repoUrl = `https://github.com/mforgedesign/Convites/tree/recuperaçãohoje/convites/${slug}`;
         if (btnOpenRepo) btnOpenRepo.href = repoUrl;
 
         if (btnCopyLink) {
