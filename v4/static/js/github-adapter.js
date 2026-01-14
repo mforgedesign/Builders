@@ -59,94 +59,105 @@
         }
 
         /**
-         * Deploys multiple files in a single commit (Batch Deploy)
-         * Solves the "multiple workflow runs" issue.
+         * Deploys invitation files using Atomic Subtree Replacement
+         * 1. Creates a NEW Tree for the invitation folder (convites/slug) containing ONLY the new files.
+         * 2. Updates the Root Tree to point 'convites/slug' to this new Tree.
+         * This effectively REPLACES the folder content (deleting old files) in a single commit.
          * @param {string} slug - The invitation slug
-         * @param {object} filesMap - Map of "path" => "base64 content"
+         * @param {object} filesMap - Map of "path" (e.g. index.html) => "base64 content"
          * @param {string} message - Commit message
          */
         async deployBatch(slug, filesMap, message) {
             if (!await this.ensureAuth()) throw new Error('Autenticação falhou');
 
-            console.log(`[GitHubAdapter] Starting Batch Deploy for ${slug}...`);
+            console.log(`[GitHubAdapter] Starting Atomic Batch Deploy for ${slug}...`);
 
-            // 1. Get latest commit SHA of the branch
-            const refUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/git/refs/heads/${BRANCH}`;
-            const refRes = await fetch(refUrl, { headers: this.getHeaders() });
-            if (!refRes.ok) throw new Error('Failed to get branch reference');
-            const refData = await refRes.json();
-            const latestCommitSha = refData.object.sha;
-            console.log('[GitHubAdapter] Base SHA:', latestCommitSha);
-
-            // 2. Get the tree of the latest commit
-            const commitUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/git/commits/${latestCommitSha}`;
-            const commitRes = await fetch(commitUrl, { headers: this.getHeaders() });
-            const commitData = await commitRes.json();
-            const baseTreeSha = commitData.tree.sha;
-
-            // 3. Create Blobs for each file and prepare Tree structure
-            const treeItems = [];
+            // 1. Prepare Blobs and Subtree Items
+            // We want to create a tree structure for the content of "convites/{slug}/"
+            // The items in filesMap are relative to that folder (e.g. "index.html", "assets/foo.png")
+            const subtreeItems = [];
 
             for (const [path, contentBase64] of Object.entries(filesMap)) {
-                // Determine mode (100644 for file)
-                // path is like "convites/slug/index.html"
-                // API expects full path relative to repo root
-                const fullPath = `convites/${slug}/${path}`;
-
-                // Create Blob
                 const blobSha = await this.createBlob(contentBase64);
-                treeItems.push({
-                    path: path, // relative to the tree we are creating? No, git trees are recursive. 
-                    // To keep it simple, we can update the root tree?
-                    // "path": The file referenced in the tree.
-                    // If we use base_tree, we can specify full paths.
-                    path: path, // keys in filesMap seem to be relative to slug folder?
-                    // Wait, windows.js passes: filesMap["assets/capa..."] etc. 
-                    // AND filesMap["index.html"]
-                    // The payload in windows.js was "files": { "path/to/file": "base64" }
-                    // Let's verify what windows.js sends.
-                    // filesMap['assets/filename'] = ...
-                    // filesMap['index.html'] = ...
-                    // All relative to the SLUG folder.
-                    // So we should prefix them with `convites/${slug}/`.
+                subtreeItems.push({
+                    path: path, // e.g. "index.html" or "assets/capa.png"
                     mode: '100644',
                     type: 'blob',
                     sha: blobSha
                 });
             }
 
-            // Note: filesMap keys in windows.js are like "index.html" or "assets/foo.png"
-            // We need to map these to "convites/{slug}/index.html" etc.
-            // BUT wait, windows.js logs: filesMap['index.html'] = ...
-            // Correct.
-
-            const finalTreeItems = treeItems.map(item => ({
-                ...item,
-                path: `convites/${slug}/${item.path}`
-            }));
-
-            // 4. Create New Tree
+            // 2. Create the New Invitation Tree (Clean Slate)
+            // DO NOT provide base_tree. This creates a fresh tree with ONLY our items.
+            // This is what allows us to "delete" old files that are not in this list.
             const treeUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/git/trees`;
-            const treeRes = await fetch(treeUrl, {
+            const slugTreeRes = await fetch(treeUrl, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify({
+                    tree: subtreeItems
+                })
+            });
+            if (!slugTreeRes.ok) throw new Error('Failed to create invitation tree');
+            const slugTreeData = await slugTreeRes.json();
+            const slugTreeSha = slugTreeData.sha;
+            console.log('[GitHubAdapter] Created Clean Tree for Slug:', slugTreeSha);
+
+            // 3. Get Latest Commit SHA (Base for the new commit)
+            const refUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/git/refs/heads/${BRANCH}`;
+            const refRes = await fetch(refUrl, { headers: this.getHeaders() });
+            if (!refRes.ok) throw new Error('Failed to get branch reference');
+            const refData = await refRes.json();
+            const latestCommitSha = refData.object.sha;
+
+            // 4. Get Base Tree SHA of the latest commit (Root)
+            const commitUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/git/commits/${latestCommitSha}`;
+            const commitRes = await fetch(commitUrl, { headers: this.getHeaders() });
+            const commitData = await commitRes.json();
+            const baseTreeSha = commitData.tree.sha;
+
+            // 5. Create New Root Tree
+            // We use the base_tree (Root) and UPDATE the entry for "convites/{slug}"
+            // to point to our new slugTreeSha.
+            // "path": "convites/slug" works for deep update if "recursive" creation is supported? 
+            // GitHub Tree API supports updating a subdirectory by path if using base_tree.
+            // NOTE: "path" must not start with /
+
+            const fullPath = `convites/${slug}`;
+
+            const rootTreeRes = await fetch(treeUrl, {
                 method: 'POST',
                 headers: this.getHeaders(),
                 body: JSON.stringify({
                     base_tree: baseTreeSha,
-                    tree: finalTreeItems
+                    tree: [{
+                        path: fullPath,
+                        mode: '040000', // Directory
+                        type: 'tree',
+                        sha: slugTreeSha
+                    }]
                 })
             });
-            if (!treeRes.ok) throw new Error('Failed to create tree');
-            const treeData = await treeRes.json();
-            const newTreeSha = treeData.sha;
 
-            // 5. Create Commit
+            if (!rootTreeRes.ok) {
+                // Determine if failure is due to path handling
+                // GitHub might require creating "convites" tree if it doesn't exist?
+                // But usually with base_tree it handles updates.
+                const err = await rootTreeRes.json();
+                throw new Error(`Failed to update root tree: ${err.message}`);
+            }
+
+            const newRootTreeData = await rootTreeRes.json();
+            const newRootTreeSha = newRootTreeData.sha;
+
+            // 6. Create Commit
             const newCommitUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/git/commits`;
             const newCommitRes = await fetch(newCommitUrl, {
                 method: 'POST',
                 headers: this.getHeaders(),
                 body: JSON.stringify({
                     message: message,
-                    tree: newTreeSha,
+                    tree: newRootTreeSha,
                     parents: [latestCommitSha]
                 })
             });
@@ -154,7 +165,7 @@
             const newCommitData = await newCommitRes.json();
             const newCommitSha = newCommitData.sha;
 
-            // 6. Update Reference (The Push)
+            // 7. Update Reference (The Push)
             const updateRefRes = await fetch(refUrl, {
                 method: 'PATCH',
                 headers: this.getHeaders(),
@@ -165,7 +176,7 @@
             });
             if (!updateRefRes.ok) throw new Error('Failed to update branch reference');
 
-            console.log('[GitHubAdapter] Batch Deploy Success! Commit:', newCommitSha);
+            console.log('[GitHubAdapter] Atomic Batch Deploy Success! Commit:', newCommitSha);
 
             return {
                 success: true,
