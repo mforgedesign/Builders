@@ -1668,17 +1668,22 @@
         let debugEl = document.getElementById('deploy-debug-log');
         if (!debugEl) {
             // Lazy create debug container if missing
-            const container = document.getElementById('step-live')?.parentElement?.parentElement;
+            const container = document.getElementById('publish-status-area');
             if (container) {
                 debugEl = document.createElement('div');
                 debugEl.id = 'deploy-debug-log';
-                debugEl.className = 'mt-4 p-2 bg-gray-900 text-xs font-mono text-green-400 overflow-y-auto max-h-32 rounded border border-gray-700';
+                debugEl.className = 'mt-4 p-2 bg-black text-xs font-mono text-green-400 overflow-y-auto max-h-48 rounded border border-gray-700 shadow-inner block';
+                debugEl.style.display = 'block'; // Force block
                 container.appendChild(debugEl);
+            } else {
+                console.warn("Could not find #publish-status-area to inject debug log");
             }
         }
         if (debugEl) {
             const line = document.createElement('div');
             line.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            line.style.borderBottom = '1px solid #333';
+            line.style.padding = '2px 0';
             debugEl.appendChild(line);
             debugEl.scrollTop = debugEl.scrollHeight;
         }
