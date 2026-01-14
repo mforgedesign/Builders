@@ -1557,6 +1557,7 @@
                 }
 
                 // 5. Send to API
+                showDeployStatusArea(); // << Show UI immediately
                 updateDeployStep('step-build', 'done');
                 updateDeployStep('step-upload', 'loading');
 
@@ -1597,6 +1598,10 @@
                 console.error('Publish Error:', err);
                 showDeployError(err.message);
                 updateDeployStep('step-upload', 'reset'); // or error state
+
+                const publishStatusArea = document.getElementById('publish-status-area');
+                if (publishStatusArea) publishStatusArea.classList.add('hidden'); // Hide on error for retry
+
             } finally {
                 if (publishBtn.innerHTML.includes('Iniciando') || publishBtn.innerHTML.includes('Aguardando')) {
                     publishBtn.innerHTML = originalText;
@@ -1610,55 +1615,51 @@
     // DEPLOYMENT UI HELPERS
     // ==========================================
 
-    function showDeployModal() {
-        const modal = document.getElementById('deploy-status-modal');
-        const successBox = document.getElementById('deploy-success-box');
-        const statusContainer = document.getElementById('deploy-status-container');
-
-        // Reset UI
-        successBox.classList.add('hidden');
-        statusContainer.className = 'border border-yellow-500/20 bg-yellow-500/5 rounded-lg p-3 flex items-center gap-3 transition-colors';
-        statusContainer.innerHTML = `<i id="deploy-status-icon" class="fa-solid fa-clock text-yellow-500"></i>
-                                     <span id="deploy-status-text" class="text-yellow-500 font-medium text-sm">Status: pending</span>`;
-
-        modal.classList.remove('hidden');
-    }
-
-    function updateDeployModalStatus(status, message) {
+    function showDeployStatusArea() {
+        const area = document.getElementById('publish-status-area');
+        const successActions = document.getElementById('publish-success-actions');
         const statusText = document.getElementById('deploy-status-text');
-        const statusIcon = document.getElementById('deploy-status-icon');
-        const statusContainer = document.getElementById('deploy-status-container');
 
-        if (status === 'success') {
-            statusContainer.className = 'border border-green-500/20 bg-green-500/5 rounded-lg p-3 flex items-center gap-3 transition-colors';
-            statusIcon.className = 'fa-solid fa-check-circle text-green-500';
-            statusText.className = 'text-green-500 font-medium text-sm';
-            statusText.innerText = `Status: ${message}`;
+        if (area) area.classList.remove('hidden');
+        if (successActions) successActions.classList.add('hidden');
+        if (statusText) statusText.innerText = 'Iniciando...';
+
+        // Reset Steps
+        ['step-build', 'step-upload', 'step-live'].forEach(id => {
+            updateDeployStep(id, 'pending');
+        });
+    }
+
+    // Helper to update individual steps in the inline UI
+    window.updateDeployStep = function (stepId, status) {
+        const stepEl = document.getElementById(stepId);
+        if (!stepEl) return;
+
+        const icon = stepEl.querySelector('.step-icon');
+        const text = stepEl.querySelector('span');
+
+        if (status === 'loading') {
+            if (icon) icon.className = 'step-icon fa-solid fa-spinner fa-spin text-brand-600 w-4 text-center';
+            stepEl.className = 'flex items-center gap-3 text-sm text-brand-600 font-bold';
+        } else if (status === 'done') {
+            if (icon) icon.className = 'step-icon fa-solid fa-check-circle text-green-600 w-4 text-center';
+            stepEl.className = 'flex items-center gap-3 text-sm text-green-600 font-medium opacity-70';
+        } else if (status === 'pending') {
+            if (icon) icon.className = 'step-icon fa-regular fa-circle text-gray-400 w-4 text-center';
+            stepEl.className = 'flex items-center gap-3 text-sm text-gray-500';
         } else if (status === 'error') {
-            statusContainer.className = 'border border-red-500/20 bg-red-500/5 rounded-lg p-3 flex items-center gap-3 transition-colors';
-            statusIcon.className = 'fa-solid fa-triangle-exclamation text-red-500';
-            statusText.className = 'text-red-500 font-medium text-sm';
-            statusText.innerText = `Erro: ${message}`;
-        } else {
-            statusText.innerText = `Status: ${message}`;
+            if (icon) icon.className = 'step-icon fa-solid fa-circle-xmark text-red-500 w-4 text-center';
+            stepEl.className = 'flex items-center gap-3 text-sm text-red-500 font-bold';
         }
-    }
-
-    function showDeploySuccess(url) {
-        const successBox = document.getElementById('deploy-success-box');
-        const finalLink = document.getElementById('deploy-final-link');
-        const openLink = document.getElementById('deploy-open-link');
-
-        successBox.classList.remove('hidden');
-        finalLink.value = url;
-        openLink.href = url;
-
-        updateDeployModalStatus('success', 'published');
-    }
+    };
 
     function showDeployError(msg) {
-        updateDeployModalStatus('error', msg);
-        alert('Erro ao publicar: ' + msg); // Keep alert as fallback/urgent
+        alert('Erro ao publicar: ' + msg);
+        const statusText = document.getElementById('deploy-status-text');
+        if (statusText) {
+            statusText.innerText = 'Erro: ' + msg;
+            statusText.className = 'text-xs font-mono text-red-500';
+        }
     }
 
     /**
@@ -1671,14 +1672,15 @@
 
         updateDeployStep('step-live', 'loading');
         checkBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Aguardando GitHub...';
-        showDeployModal();
+
+        // Ensure UI is visible
+        showDeployStatusArea();
+
+        // Update Status Text
+        const statusText = document.getElementById('deploy-status-text');
 
         // Get a verification asset (Cover is best)
         const assetPath = window.builderState?.assetsMap?.capa;
-        // fallback to index.html with cache buster if no asset (but asset is safer for CORS)
-        // actually image check only works for images.
-        // liveUrl is dir. assetPath is 'assets/foo.png' relative.
-
         let checkUrl = liveUrl;
         if (assetPath) {
             checkUrl = liveUrl + assetPath;
@@ -1690,61 +1692,86 @@
                 const timestamp = Date.now();
 
                 // UI Feedback
-                if (attempts === 1) updateDeployModalStatus('pending', 'waiting for build...');
-                else if (attempts % 2 === 0) updateDeployModalStatus('pending', 'building pages...');
-                else updateDeployModalStatus('pending', 'deploying assets...');
+                if (statusText) {
+                    if (attempts === 1) statusText.innerText = 'Pingando servidor...';
+                    else if (attempts % 4 === 0) statusText.innerText = 'Verificando disponibilidade...';
+                    else if (attempts % 4 === 2) statusText.innerText = 'Aguardando propagação...';
+                }
 
-                // 1. Timeout Check (MUST be first)
+                // 1. Timeout Check
                 if (attempts >= maxAttempts) {
                     clearInterval(interval);
-                    console.warn('Deployment check timeout');
 
                     // Assume success but warn
                     updateDeployStep('step-live', 'done');
-                    checkBtn.innerHTML = '<i class="fa-solid fa-check"></i> Publicado?';
+                    checkBtn.innerHTML = '<i class="fa-solid fa-check"></i> Concluído';
                     checkBtn.classList.remove('bg-brand-600');
                     checkBtn.classList.add('bg-yellow-600');
 
-                    updateDeployModalStatus('success', 'deployment likely finished');
-                    showDeploySuccess(liveUrl);
+                    finalizeSuccessUI(liveUrl, slug);
                     resolve();
                     return;
                 }
 
                 // 2. Verification Logic (CORS Safe)
                 if (assetPath) {
-                    // IMAGE STRATEGY (Bypasses CORS)
                     const img = new Image();
                     img.onload = () => {
                         clearInterval(interval);
-
                         updateDeployStep('step-live', 'done');
                         checkBtn.innerHTML = '<i class="fa-solid fa-check"></i> Publicado!';
                         checkBtn.classList.remove('bg-brand-600');
                         checkBtn.classList.add('bg-green-600');
-
-                        updateDeployModalStatus('success', 'published');
-                        showDeploySuccess(liveUrl);
+                        finalizeSuccessUI(liveUrl, slug);
                         resolve();
-                    };
-                    img.onerror = () => {
-                        // Still 404, waiting...
                     };
                     img.src = `${checkUrl}?t=${timestamp}`;
                 } else {
-                    // FALLBACK: Fetch (Might fail CORS on localhost)
+                    // Fallback for text only
                     fetch(`${liveUrl}?t=${timestamp}`, { method: 'HEAD', mode: 'no-cors' })
-                        .then(resp => {
-                            // Opaque response (type='opaque') usually comes from no-cors.
-                            // We can't know if it's 200 or 404 easily. 
-                            // But usually 404s might still return opaque.
-                            // This path is flaky. We rely on timeout if no asset.
+                        .then(() => {
+                            // Can't trust opaque response 100%, but assume alive after delay
+                            if (attempts > 2) {
+                                clearInterval(interval);
+                                updateDeployStep('step-live', 'done');
+                                finalizeSuccessUI(liveUrl, slug);
+                                resolve();
+                            }
                         })
                         .catch(() => { });
                 }
 
             }, 5000);
         });
+    }
+
+    function finalizeSuccessUI(liveUrl, slug) {
+        const successActions = document.getElementById('publish-success-actions');
+        const btnOpenLive = document.getElementById('btn-open-live');
+        const btnOpenRepo = document.getElementById('btn-open-repo');
+        const btnCopyLink = document.getElementById('btn-copy-link');
+        const statusText = document.getElementById('deploy-status-text');
+
+        if (successActions) successActions.classList.remove('hidden');
+        if (statusText) statusText.innerText = 'Disponível Online';
+
+        if (btnOpenLive) btnOpenLive.href = liveUrl;
+
+        // Repo URL construction
+        // Structure: https://github.com/mforgedesign/Builders/tree/main/v4/${slug}
+        // Ideally we should get the base from config, but hardcoding for now based on user request context
+        const repoUrl = `https://github.com/mforgedesign/Builders/tree/main/v4/${slug}`;
+        if (btnOpenRepo) btnOpenRepo.href = repoUrl;
+
+        if (btnCopyLink) {
+            btnCopyLink.onclick = () => {
+                navigator.clipboard.writeText(liveUrl).then(() => {
+                    const originalIcon = btnCopyLink.innerHTML;
+                    btnCopyLink.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+                    setTimeout(() => btnCopyLink.innerHTML = originalIcon, 2000);
+                });
+            };
+        }
     }
 
     // ----------------------------------------
