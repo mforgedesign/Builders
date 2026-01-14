@@ -1581,18 +1581,18 @@
                 if (!response.ok) throw new Error(result.error || 'Falha na publicação');
 
                 updateDeployStep('step-upload', 'done');
-                updateDeployStep('step-live', 'done');
+                // Wait for live status to mark step-live as done
+                // updateDeployStep('step-live', 'done'); // Moving this to after poll
 
-                publishBtn.innerHTML = '<i class="fa-solid fa-check"></i> Publicado!';
+                publishBtn.innerHTML = '<i class="fa-solid fa-check"></i> Enviado!';
                 publishBtn.classList.remove('bg-brand-600');
-                publishBtn.classList.add('bg-green-600');
+                publishBtn.classList.add('bg-blue-600'); // Blue = Sent, Green = Live
 
                 const liveUrl = `https://convites.mforge.com.br/${slug}/`;
-                // alert(`Publicado com sucesso!\n\nAcesse: ${liveUrl}`); // Moved to polling success
-                // window.open(liveUrl, '_blank');
 
-                // 6. Poll for Deployment Status
-                await pollDeployStatus(slug, liveUrl);
+                // 6. Poll for Deployment Status (GitHub Actions)
+                // Pass SHA from deployBatch result to track specific build
+                await pollDeployStatus(slug, liveUrl, result.sha);
 
             } catch (err) {
                 console.error('Publish Error:', err);
@@ -1665,13 +1665,13 @@
     /**
      * Poll GitHub Actions status until success or timeout
      */
-    async function pollDeployStatus(slug, liveUrl) {
+    async function pollDeployStatus(slug, liveUrl, commitSha = null) {
         const checkBtn = document.getElementById('btn-publish');
         let attempts = 0;
-        const maxAttempts = 24; // 120 seconds
+        const maxAttempts = 60; // 5 minutes (5s interval)
 
         updateDeployStep('step-live', 'loading');
-        checkBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Aguardando GitHub...';
+        checkBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Construindo...';
 
         // Ensure UI is visible
         showDeployStatusArea();
@@ -1679,71 +1679,95 @@
         // Update Status Text
         const statusText = document.getElementById('deploy-status-text');
 
-        // Get a verification asset (Cover is best)
+        // Asset Fallback Check
         const assetPath = window.builderState?.assetsMap?.capa;
         let checkUrl = liveUrl;
-        if (assetPath) {
-            checkUrl = liveUrl + assetPath;
-        }
+        if (assetPath) checkUrl = liveUrl + assetPath;
 
         return new Promise((resolve, reject) => {
-            const interval = setInterval(() => {
+            const interval = setInterval(async () => {
                 attempts++;
                 const timestamp = Date.now();
 
-                // UI Feedback
-                if (statusText) {
-                    if (attempts === 1) statusText.innerText = 'Pingando servidor...';
-                    else if (attempts % 4 === 0) statusText.innerText = 'Verificando disponibilidade...';
-                    else if (attempts % 4 === 2) statusText.innerText = 'Aguardando propagação...';
+                // 1. GitHub Workflow Check (Primary)
+                if (commitSha && window.githubAdapter) {
+                    try {
+                        const workflow = await window.githubAdapter.getLatestWorkflowStatus(commitSha);
+                        if (workflow) {
+                            const status = workflow.status; // queued, in_progress, completed
+                            const conclusion = workflow.conclusion; // success, failure, neutral, cancelled
+
+                            if (statusText) {
+                                // Translate status for user
+                                let msg = 'Processando...';
+                                if (status === 'queued') msg = 'Na fila...';
+                                else if (status === 'in_progress') msg = 'Construindo site...';
+                                else if (conclusion === 'success') msg = 'Concluído!';
+                                statusText.innerText = `${msg} (${Math.round(attempts * 5)}s)`;
+                            }
+
+                            if (status === 'completed') {
+                                if (conclusion === 'success') {
+                                    finishPolling(true);
+                                    return;
+                                } else {
+                                    finishPolling(false, `Erro no Build: ${conclusion}`);
+                                    return;
+                                }
+                            }
+                        } else {
+                            if (statusText) statusText.innerText = 'Inicializando workflow...';
+                        }
+                    } catch (e) {
+                        console.warn("Workflow check failed", e);
+                    }
+                } else if (statusText) {
+                    // Fallback messaging
+                    if (attempts % 4 === 0) statusText.innerText = 'Verificando disponibilidade...';
                 }
 
-                // 1. Timeout Check
+                // 2. Timeout Check
                 if (attempts >= maxAttempts) {
-                    clearInterval(interval);
-
-                    // Assume success but warn
-                    updateDeployStep('step-live', 'done');
-                    checkBtn.innerHTML = '<i class="fa-solid fa-check"></i> Concluído';
-                    checkBtn.classList.remove('bg-brand-600');
-                    checkBtn.classList.add('bg-yellow-600');
-
-                    finalizeSuccessUI(liveUrl, slug);
-                    resolve();
+                    // Timeout doesn't mean failure, maybe just slow. But stop polling.
+                    finishPolling(true); // Optimistic success
                     return;
                 }
 
-                // 2. Verification Logic (CORS Safe)
-                if (assetPath) {
+                // 3. Asset Availability Check (Secondary)
+                // If we don't have SHA, or as backup if workflow API fails but site is live
+                if (!commitSha && assetPath) {
                     const img = new Image();
-                    img.onload = () => {
-                        clearInterval(interval);
-                        updateDeployStep('step-live', 'done');
-                        checkBtn.innerHTML = '<i class="fa-solid fa-check"></i> Publicado!';
-                        checkBtn.classList.remove('bg-brand-600');
-                        checkBtn.classList.add('bg-green-600');
-                        finalizeSuccessUI(liveUrl, slug);
-                        resolve();
-                    };
+                    img.onload = () => finishPolling(true);
                     img.src = `${checkUrl}?t=${timestamp}`;
-                } else {
-                    // Fallback for text only
-                    fetch(`${liveUrl}?t=${timestamp}`, { method: 'HEAD', mode: 'no-cors' })
-                        .then(() => {
-                            // Can't trust opaque response 100%, but assume alive after delay
-                            if (attempts > 2) {
-                                clearInterval(interval);
-                                updateDeployStep('step-live', 'done');
-                                finalizeSuccessUI(liveUrl, slug);
-                                resolve();
-                            }
-                        })
-                        .catch(() => { });
                 }
 
             }, 5000);
+
+            function finishPolling(success, errorMsg) {
+                clearInterval(interval);
+                if (success) {
+                    updateDeployStep('step-live', 'done');
+                    checkBtn.innerHTML = '<i class="fa-solid fa-check"></i> Publicado!';
+                    checkBtn.classList.remove('bg-brand-600', 'bg-blue-600', 'bg-yellow-600');
+                    checkBtn.classList.add('bg-green-600');
+
+                    if (statusText) statusText.innerText = 'Disponível Online!';
+                    finalizeSuccessUI(liveUrl, slug);
+                    resolve();
+                } else {
+                    updateDeployStep('step-live', 'error');
+                    checkBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Erro';
+                    checkBtn.classList.remove('bg-brand-600', 'bg-blue-600');
+                    checkBtn.classList.add('bg-red-600');
+                    if (statusText && errorMsg) statusText.innerText = errorMsg;
+                    // Dont reject promise to avoid unhandled rejections crashing UI, just log
+                    console.error(errorMsg);
+                    resolve(); // Resolve anyway to stop spinner
+                }
+            }
         });
     }
+
 
     function finalizeSuccessUI(liveUrl, slug) {
         const successActions = document.getElementById('publish-success-actions');
