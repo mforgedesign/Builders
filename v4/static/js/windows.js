@@ -1593,6 +1593,17 @@
                 // 6. Poll for Deployment Status (GitHub Actions)
                 // Pass SHA from deployBatch result to track specific build
                 logDebug(`Resultado do Deploy: ${JSON.stringify(result)}`);
+
+                // Save timestamp for History Sorting (Recency)
+                try {
+                    const timestamps = JSON.parse(localStorage.getItem('autoBuilder_historyTimestamps') || '{}');
+                    timestamps[slug] = Date.now();
+                    localStorage.setItem('autoBuilder_historyTimestamps', JSON.stringify(timestamps));
+                    console.log(`[History] Timestamp updated for ${slug}`);
+                } catch (e) {
+                    console.warn('Failed to update history timestamp', e);
+                }
+
                 await pollDeployStatus(slug, liveUrl, result.sha);
 
             } catch (err) {
