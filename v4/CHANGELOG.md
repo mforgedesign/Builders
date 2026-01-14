@@ -7,10 +7,10 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 ## [2026-01-14 18:55] - UI Tweaks & Deployment Optimization
 ### Arquivos Modificados:
 *   `final_template.html`:
-    *   Lines 191-196: Reduzida a opacidade da marca d'água "Pagamento Pendente" (bg-black/20, text-white/30, border-white/20) para evitar obstrução do conteúdo.
     *   Rationale: Feedback do usuário indicou que o alerta estava cobrindo demais o convite.
+    *   Lines 191-196 (Update): Ajuste fino para `bg-black/5` e `backdrop-blur-[2px]` (quase invisível) para máxima legibilidade.
 *   `static/js/github-adapter.js`:
-    *   Added `deployBatch`: Implementada API de Tree do Git para upload em lote (um único commit para todos os arquivos).
+    *   Added `deployBatch` with **Atomic Subtree Replacement**: Agora cria uma nova árvore limpa para o slug, substituindo completamente o conteúdo anterior. Isso remove arquivos antigos/obsoletos automaticamente e evita o acúmulo de lixo no repositório.
     *   Added `getLatestWorkflowStatus`: Implementada verificação real do status do GitHub Actions.
     *   Rationale: Resolver problema de múltiplos workflows disparados e mensagem de sucesso prematura.
 *   `static/js/windows.js`:
