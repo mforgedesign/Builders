@@ -4,6 +4,27 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [2026-01-14 18:55] - UI Tweaks & Deployment Optimization
+### Arquivos Modificados:
+*   `final_template.html`:
+    *   Lines 191-196: Reduzida a opacidade da marca d'água "Pagamento Pendente" (bg-black/20, text-white/30, border-white/20) para evitar obstrução do conteúdo.
+    *   Rationale: Feedback do usuário indicou que o alerta estava cobrindo demais o convite.
+*   `static/js/github-adapter.js`:
+    *   Added `deployBatch`: Implementada API de Tree do Git para upload em lote (um único commit para todos os arquivos).
+    *   Added `getLatestWorkflowStatus`: Implementada verificação real do status do GitHub Actions.
+    *   Rationale: Resolver problema de múltiplos workflows disparados e mensagem de sucesso prematura.
+*   `static/js/windows.js`:
+    *   Integration: Atualizada lógica de publicação para usar `deployBatch` e polling robusto via `getLatestWorkflowStatus`.
+*   **URL**: https://builder.mforge.com.br/v4/
+
+---
+
+## [14/01/2026 - 18:42] - v4.2.7 - Deploy Manual da Versão Atual
+### Ações Realizadas:
+*   **Deploy**: Execução do script `deploy_to_github.py` para atualizar a versão em produção no repositório `mforgedesign/Builders`.
+*   **URL**: https://builder.mforge.com.br/v4/
+
+---
 
 ## [12/01/2026 - 17:35] - v4.2.4 - Correção Crítica de Publicação e Música
 ### Arquivos Modificados:
