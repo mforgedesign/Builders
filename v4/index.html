@@ -1663,28 +1663,50 @@
 
                         <!-- Footer: New Inline Status Area -->
                         <div id="publish-status-area"
-                            class="hidden mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4 transition-all duration-300">
-                            <div class="flex items-center justify-between mb-3">
+                            class="hidden mt-6 bg-gray-50 border border-gray-200 rounded-lg p-5 transition-all duration-300">
+
+                            <!-- Header -->
+                            <div class="flex items-center justify-between mb-4 border-b border-gray-200 pb-2">
                                 <h3 class="text-sm font-bold text-gray-700">Status da Publicação</h3>
                                 <span id="deploy-status-text"
-                                    class="text-xs font-mono text-gray-400">Iniciando...</span>
+                                    class="text-xs font-mono text-gray-500 bg-gray-200 px-2 py-1 rounded">Iniciando...</span>
                             </div>
 
-                            <!-- Steps -->
-                            <div class="space-y-3 pl-1">
-                                <div id="step-build" class="flex items-center gap-3 text-sm text-gray-500">
-                                    <i class="step-icon fa-regular fa-circle w-4 text-center"></i>
-                                    <span>Gerando Arquivos (Build)</span>
+                            <!-- Steps Container -->
+                            <div class="space-y-4 pl-2">
+
+                                <!-- Step 1: Build -->
+                                <div id="deploy-step-1"
+                                    class="flex items-center gap-3 text-gray-400 transition-colors duration-300">
+                                    <div class="w-6 flex justify-center shrink-0">
+                                        <i
+                                            class="step-icon fa-regular fa-circle text-lg transition-all duration-300"></i>
+                                    </div>
+                                    <span class="text-sm font-medium">1. Gerando Arquivos (Build)</span>
                                 </div>
-                                <div id="step-upload" class="flex items-center gap-3 text-sm text-gray-500">
-                                    <i class="step-icon fa-regular fa-circle w-4 text-center"></i>
-                                    <span>Enviando para GitHub</span>
+
+                                <!-- Step 2: Upload -->
+                                <div id="deploy-step-2"
+                                    class="flex items-center gap-3 text-gray-400 transition-colors duration-300">
+                                    <div class="w-6 flex justify-center shrink-0">
+                                        <i
+                                            class="step-icon fa-regular fa-circle text-lg transition-all duration-300"></i>
+                                    </div>
+                                    <span class="text-sm font-medium">2. Enviando para GitHub</span>
                                 </div>
-                                <div id="step-live" class="flex items-center gap-3 text-sm text-gray-500">
-                                    <i class="step-icon fa-regular fa-circle w-4 text-center"></i>
-                                    <span>Aguardando Deploy (Live)</span>
+
+                                <!-- Step 3: Live -->
+                                <div id="deploy-step-3"
+                                    class="flex items-center gap-3 text-gray-400 transition-colors duration-300">
+                                    <div class="w-6 flex justify-center shrink-0">
+                                        <i
+                                            class="step-icon fa-regular fa-circle text-lg transition-all duration-300"></i>
+                                    </div>
+                                    <span class="text-sm font-medium">3. Verificando Site Online</span>
                                 </div>
+
                             </div>
+
 
                             <!-- Success Actions -->
                             <div id="publish-success-actions" class="hidden mt-4 pt-4 border-t border-gray-200">
