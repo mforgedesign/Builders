@@ -326,11 +326,12 @@
         }
 
         // Legacy Fallback (Supabase Edge Function - triggers multiple runs)
-        const { data, error } = await supabase.functions.invoke('deploy-github', {
+        // Updated to V2: Uses Atomic Tree Replacement to ensure cleanup of old assets
+        const { data, error } = await window.supabaseClient.functions.invoke('deploy-github-v2', {
             body: {
                 slug: body.slug,
                 files: body.files || {},
-                commit_message: `Deploy ${body.slug} via AutoBuilder v4`
+                commit_message: `Deploy ${body.slug} via AutoBuilder v4 (Server-Side V2)`
             }
         });
 
