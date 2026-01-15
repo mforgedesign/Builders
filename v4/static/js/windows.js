@@ -27,14 +27,7 @@
             const btn = document.getElementById(btnKey);
             const content = document.getElementById(contentKey);
 
-            if (!btn) {
-                console.warn(`[AutoBuilder] Mode Toggle Button not found: #${btnKey}`);
-                return;
-            }
-            if (!content) {
-                console.warn(`[AutoBuilder] Mode Toggle Content not found: #${contentKey}`);
-                return;
-            }
+            if (!btn) return; // Silent return if button missing
 
             btn.addEventListener('click', (e) => {
                 // Prevent default in case it's inside a form or treated as submit
@@ -62,12 +55,11 @@
                 // Activate clicked button
                 btn.classList.remove('text-gray-500');
                 btn.classList.add('bg-white', 'shadow-sm', 'text-brand-600');
-                content.classList.remove('hidden');
+                if (content) content.classList.remove('hidden');
 
                 // Update container dataset for state persistence
                 const container = btn.closest('.flex');
                 if (container) {
-                    // We don't have an ID on the container usually, but we can set dataset
                     container.dataset.mode = mode;
                 }
             });
@@ -2724,44 +2716,47 @@
         console.log('[Windows] Initializing...');
 
         try {
-            setupDropzones();
-            console.log('[Windows] Dropzones setup complete.');
-        } catch (err) {
-            console.error('[Windows] Failed to setup dropzones:', err);
+            try {
+                setupDropzones();
+                console.log('[Windows] Dropzones setup complete.');
+            } catch (err) {
+                console.error('[Windows] Failed to setup dropzones:', err);
+            }
+
+            // Independent blocks wrapped to prevent cascading failures
+            try { setupProcessButtons(); } catch (e) { console.warn('Process Buttons setup failed', e); }
+
+            // Mode toggles
+            try { setupModeToggle('manual', ['text', 'image']); } catch (e) { console.warn('Manual Mode setup failed', e); }
+            try { setupModeToggle('gifts', ['link', 'image']); } catch (e) { console.warn('Gifts Mode setup failed', e); }
+            try { setupModeToggle('fill', ['overlay', 'flat']); } catch (e) { console.warn('Fill Mode setup failed', e); }
+
+            // Animation tabs
+            try { setupAnimationTabs(); } catch (e) { console.warn('Animation Tabs setup failed', e); }
+
+            // Auto-Prompt Listener
+            try { setupAutoPromptListener(); } catch (e) { console.warn('AutoPrompt setup failed', e); }
+
+            // Music player
+            try { setupMusicPlayer(); } catch (e) { console.warn('Music Player setup failed', e); }
+
+            // Toggle switches
+            try { setupToggleSwitches(); } catch (e) { console.warn('Toggle Switches setup failed', e); }
+
+            // Finalize buttons
+            try { setupFinalizeButtons(); } catch (e) { console.warn('Finalize Buttons setup failed', e); }
+
+            // AI generation buttons
+            try { setupCoverGeneration(); } catch (e) { console.warn('Cover Gen setup failed', e); }
+            try { setupLeafGeneration(); } catch (e) { console.warn('Leaf Gen setup failed', e); }
+
+            // Manual editor
+            try { setupManualEditor(); } catch (e) { console.warn('Manual Editor setup failed', e); }
+
+            console.log('✅ Windows controller initialized');
+        } catch (fatalError) {
+            console.error('[Windows] CRITICAL INITIALIZATION ERROR:', fatalError);
         }
-
-        setupProcessButtons();
-        // Mode toggles
-        setupModeToggle('manual', ['text', 'image']);
-        setupModeToggle('gifts', ['link', 'image']);
-        setupModeToggle('fill', ['overlay', 'flat']);
-
-        // Animation tabs
-        setupAnimationTabs();
-
-        // Auto-Prompt Listener
-        setupAutoPromptListener();
-
-        // Music player
-        setupMusicPlayer();
-
-        // Dropzones
-        setupDropzones();
-
-        // Toggle switches
-        setupToggleSwitches();
-
-        // Finalize buttons
-        setupFinalizeButtons();
-
-        // AI generation buttons
-        setupCoverGeneration();
-        setupLeafGeneration();
-
-        // Manual editor
-        setupManualEditor();
-
-        console.log('✅ Windows controller initialized');
     }
 
     // ========================================
