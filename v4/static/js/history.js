@@ -289,61 +289,148 @@
     /**
      * Import invitation to builder - FULL IMPLEMENTATION
      */
-    async function importInvitation(slug) {
-        try {
-            const message = `Importar o convite "${slug}" para o builder?\n\n` +
-                `⚠️ ATENÇÃO: Isso irá substituir todos os dados atuais!\n\n` +
-                `O que será importado:\n` +
-                `✓ Todos os campos do formulário\n` +
-                `✓ Imagens (capa, folha, etc)\n` +
-                `✓ Vídeos (abertura, loop)\n` +
-                `✓ Áudio (música)\n` +
-                `✓ Links extras\n` +
-                `✓ Configurações visuais`;
+    /**
+     * Helper: Capture first frame of video for AI context
+     */
+    async function captureVideoFrame(url) {
+        return new Promise((resolve) => {
+            try {
+                const video = document.createElement('video');
+                video.crossOrigin = 'anonymous';
+                video.src = url;
+                video.muted = true;
+                video.currentTime = 0.1; // Seek slightly to avoid black start
 
-            if (!confirm(message)) {
-                return;
+                const onComplete = (result) => {
+                    video.remove();
+                    resolve(result);
+                };
+
+                video.addEventListener('loadeddata', () => {
+                    // Ready
+                });
+
+                video.addEventListener('seeked', () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth || 640;
+                        canvas.height = video.videoHeight || 360;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        onComplete(canvas.toDataURL('image/jpeg', 0.6));
+                    } catch (e) {
+                        console.warn('Canvas capture failed (CORS?)', e);
+                        onComplete(null);
+                    }
+                });
+
+                video.addEventListener('error', () => {
+                    onComplete(null);
+                });
+
+                // Timeout 5s
+                setTimeout(() => onComplete(null), 5000);
+
+            } catch (e) {
+                resolve(null);
             }
+        });
+    }
 
-            // Show loading indicator
-            const loadingMsg = document.createElement('div');
-            loadingMsg.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
-            loadingMsg.innerHTML = `
-                <div class="bg-white rounded-lg p-6 max-w-md">
-                    <div class="flex items-center gap-4">
-                        <i class="fa-solid fa-spinner fa-spin text-3xl text-brand-500"></i>
-                        <div>
-                            <h3 class="font-semibold text-lg">Importando convite...</h3>
-                            <p class="text-sm text-gray-500" id="import-status">Baixando arquivos do GitHub...</p>
-                        </div>
+    /**
+     * Import invitation to builder - FULL IMPLEMENTATION
+     */
+    async function importInvitation(slug) {
+        // Remove confirmation dialog as requested
+        // console.log(`[History] Import confirmed for ${slug}`);
+
+        // UI: Show loading
+        const loadingMsg = document.createElement('div');
+        loadingMsg.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm';
+        loadingMsg.innerHTML = `
+            <div class="bg-gray-900 text-white rounded-xl p-8 max-w-md w-full border border-gray-700 shadow-2xl">
+                <div class="flex flex-col items-center gap-6 text-center">
+                    <div class="relative">
+                        <div class="w-16 h-16 border-4 border-brand-500/30 border-t-brand-500 rounded-full animate-spin"></div>
+                        <i class="fa-solid fa-cloud-arrow-down absolute inset-0 flex items-center justify-center text-brand-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-xl mb-2">Importando Convite</h3>
+                        <p class="text-gray-400 text-sm" id="import-status">Conectando ao GitHub...</p>
+                    </div>
+                    <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+                        <div id="import-progress" class="bg-brand-500 h-full w-0 transition-all duration-300"></div>
                     </div>
                 </div>
-            `;
-            document.body.appendChild(loadingMsg);
+            </div>
+        `;
+        document.body.appendChild(loadingMsg);
 
-            const updateStatus = (msg) => {
-                const statusEl = document.getElementById('import-status');
-                if (statusEl) statusEl.textContent = msg;
-            };
+        const updateStatus = (msg, progress = 0) => {
+            const statusEl = document.getElementById('import-status');
+            const progressEl = document.getElementById('import-progress');
+            if (statusEl) statusEl.textContent = msg;
+            if (progressEl && progress > 0) progressEl.style.width = `${progress}%`;
+        };
 
+        try {
             console.log(`[History] Starting import of ${slug}...`);
 
-            // Step 1: Fetch files list from GitHub
-            updateStatus('Listando arquivos...');
+            // Step 1: Fetch files list
+            updateStatus('Listando arquivos...', 10);
             const filesResponse = await fetch(
                 `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${slug}`,
                 { headers: { 'Accept': 'application/vnd.github.v3+json' } }
             );
 
-            if (!filesResponse.ok) {
-                throw new Error('Não foi possível acessar os arquivos do convite');
-            }
-
+            if (!filesResponse.ok) throw new Error('Não foi possível acessar os arquivos do convite');
             const files = await filesResponse.json();
 
-            // Step 2: Download data.json
-            updateStatus('Baixando configurações...');
+            // Step 2: Analyze Structure & Fetch Critical Files
+            updateStatus('Analisando estrutura...', 20);
+
+            // Files of interest
+            const indexFile = files.find(f => f.name.toLowerCase() === 'index.html');
             const dataFile = files.find(f => f.name === 'data.json' || f.name === 'data');
+            const scriptFile = files.find(f => f.name.endsWith('.js') && !f.name.includes('config')); // e.g., script.js or custom.js
+
+            // Background Candidates (for Visual Context)
+            // Priority: background.mp4 > video.mp4 > background.jpg > *.jpg/png
+            const bgVideo = files.find(f => f.name.match(/background\.mp4|video\.mp4|fundo\.mp4|loop\.mp4/i));
+            const bgImage = files.find(f => f.name.match(/background\.(jpg|png)|fundo\.(jpg|png)|bg\.(jpg|png)/i));
+
+            // Read contents
+            let htmlContent = '';
+            let jsonContentStr = '';
+            let jsContent = '';
+
+            const fetchPromises = [];
+
+            if (indexFile) fetchPromises.push(fetch(indexFile.download_url).then(r => r.text()).then(t => htmlContent = t));
+            if (dataFile) fetchPromises.push(fetch(dataFile.download_url).then(r => r.text()).then(t => jsonContentStr = t));
+            if (scriptFile) fetchPromises.push(fetch(scriptFile.download_url).then(r => r.text()).then(t => jsContent = t));
+
+            await Promise.all(fetchPromises);
+
+            // Step 3: Check Compatibility
+            let isCompatible = false;
+            let parsedData = null;
+
+            if (jsonContentStr) {
+                try {
+                    parsedData = JSON.parse(jsonContentStr);
+                    // Compatibility Criteria:
+                    // 1. Has version >= 4.0 OR
+                    // 2. Has 'fundo_tela' context (unified bg) AND valid structure
+                    if (parsedData.version && parseFloat(parsedData.version) >= 4.0) {
+                        isCompatible = true;
+                    } else if (parsedData.assetsMap && parsedData.assetsMap.fundo_tela) {
+                        isCompatible = true;
+                    }
+                } catch (e) {
+                    console.warn('Corrupted data.json', e);
+                }
+            }
 
             let appState = {
                 version: "4.0",
@@ -352,234 +439,155 @@
                 linksExtras: []
             };
 
-            if (dataFile) {
-                try {
-                    const response = await fetch(dataFile.download_url);
-                    if (response.ok) {
-                        appState = await response.json();
-
-                        // Fix for LinksExtras: Ensure it's an array
-                        if (appState.linksExtras && !Array.isArray(appState.linksExtras)) {
-                            appState.linksExtras = [];
-                        }
-                        console.log('[History] Loaded state:', appState);
-                    } else {
-                        console.warn('[History] data.json not found (Old version?)');
-                    }
-                } catch (e) {
-                    console.error('Error parsing data.json', e);
-                    // alert("Erro ao ler dados do convite (data.json inválido).");
-                }
-            }
-
-            // =================================================================
-            // INTELLIGENT IMPORT (GEMINI AI FALLBACK)
-            // =================================================================
-            // If formData is empty (because data.json was missing or invalid), try AI
-            const hasData = appState.formData && Object.keys(appState.formData).length > 0;
-
-            if (!hasData) {
-                console.log('[History] Missing data.json. Attempting intelligent import with Gemini...');
-                updateStatus('🧠 Analisando com I.A (Gemini)...');
-
-                try {
-                    // Fetch index.html to analyze
-                    const indexFile = files.find(f => f.name === 'index.html');
-                    if (indexFile && window.GeminiAdapter) {
-                        const htmlRes = await fetch(indexFile.download_url);
-                        if (htmlRes.ok) {
-                            const htmlContent = await htmlRes.text();
-
-                            // Call Gemini Adapter
-                            const aiData = await window.GeminiAdapter.parseInvitationHtml(htmlContent);
-
-                            if (aiData) {
-                                // Merge AI data
-                                appState.formData = { ...appState.formData, ...aiData.formData };
-
-                                // Handle manual content specially if needed
-                                if (aiData.manualContent && !appState.assetsMap['manual']) {
-                                    // Inject into DOM later or store in state? 
-                                    // The builder expects manual content in the textarea manually, 
-                                    // but we can try to put it in a "mock" state for restoration?
-                                    // Actually, restoreBuilderState handles formData.manual_content usually?
-                                    // Let's ensure schema matches.
-                                    if (aiData.manualContent) {
-                                        // If the AI extracted manual HTML specificially
-                                        // AutoBuilder usually stores this in dom or appState?
-                                        // It usually persists via 'manual-html-editor' value?
-                                        // appState.formData['manual_content'] is the key.
-                                        appState.formData['manual_content'] = aiData.manualContent;
-                                    }
-                                }
-
-                                console.log('[History] Intelligent Import Successful:', aiData);
-                                updateStatus('✅ Dados extraídos com Sucesso!');
-                            }
-                        }
-                    } else {
-                        console.warn('[History] Gemini Adapter not available or index.html missing');
-                    }
-                } catch (aiError) {
-                    console.error('[History] Intelligent Import Failed:', aiError);
-                    // Continue gracefully with just assets
-                    updateStatus('⚠️ I.A falhou, importando apenas arquivos...');
-                }
-            }
-            // =================================================================
-
-            // Step 3: Clean Slate (Deep Reset)
-            updateStatus('Limpando ambiente atual...');
-            if (window.resetBuilderState) {
-                window.resetBuilderState();
+            // Step 4: Decision - Direct Load vs AI Analysis
+            if (isCompatible && parsedData) {
+                console.log('[History] Compatible data.json found. Using direct import.');
+                appState = parsedData;
+                updateStatus('Carregando dados...', 60);
             } else {
-                // Fallback if not available yet (should be)
-                if (window.FormManager) window.FormManager.reset();
-                if (window.builderState) window.builderState.assets = {};
-            }
+                console.log('[History] Incompatible/Missing data. Detected trigger for AI Import.');
+                updateStatus('🧠 I.A Analisando convite antigo...', 40);
 
-            // Step 4: Asset Discovery (Enhance appState.assetsMap if empty/legacy)
-            // If it's legacy, assetsMap will be empty. We populate it from scanning 'files'.
-            // Even in new brain, we might want to ensure download_urls are used if we are not fetching by relative path?
-            // "Brain" has relative paths suitable for ZIP. For History, we need Absolute URLs.
-            // So we MUST map the "Brain" paths to real GitHub URLs or just scan files again.
+                // Prepare Visual Context
+                let visualContext = null;
 
-            // Strategy: Build a map of filename -> download_url from 'files'
-            const fileMap = {};
-            files.forEach(f => fileMap[f.name] = f.download_url);
-
-            // Also map complex paths if they exist (e.g. assets/foo.png) - GitHub API is flat for 'contents/slug' 
-            // wait, contents/{slug} returns immediate children. If assets are in a folder, they are in a subdir?
-            // "Publish" pushes structure: convites/{slug}/assets/foo.png
-            // So for 'contents/{slug}', we might see 'assets' as a dir?
-            // If so, we need to recurse or fetch assets dir.
-            // Let's check 'files' structure assumption.
-            // If 'assets' is a directory in the list, we need to fetch it?
-            // "Publish" pushes flattened? No, previous code `filesMap[\`convites/${slug}/${path}\`]`.
-            // So `contents/{slug}` will show `index.html`, `data.json` and `assets` (dir).
-
-            // WE NEED TO FETCH ASSETS DIR content if 'assets' is a dir.
-            const assetsDir = files.find(f => f.name === 'assets' && f.type === 'dir');
-            let assetFiles = [];
-
-            if (assetsDir) {
-                updateStatus('Listando pastas de assets...');
-                const assetsResponse = await fetch(assetsDir.url); // GitHub API url for the dir
-                if (assetsResponse.ok) {
-                    assetFiles = await assetsResponse.json();
+                if (bgVideo) {
+                    updateStatus('Capturando frame do vídeo...', 45);
+                    const frame = await captureVideoFrame(bgVideo.download_url);
+                    if (frame) {
+                        visualContext = { type: 'video', base64: frame };
+                    } else {
+                        visualContext = { type: 'video', url: bgVideo.download_url }; // Fallback to URL
+                    }
+                } else if (bgImage) {
+                    // For image, we can just send the URL, the Edge Function can't disable auth easily to fetch raw, 
+                    // but we can try client-side fetch -> base64?
+                    // Let's stick to URL if image, or fetch base64 to be safe.
+                    // Fetching image to base64
+                    try {
+                        const imgReq = await fetch(bgImage.download_url);
+                        const blob = await imgReq.blob();
+                        const reader = new FileReader();
+                        const base64 = await new Promise(r => { reader.onload = () => r(reader.result); reader.readAsDataURL(blob); });
+                        visualContext = { type: 'image', base64: base64 };
+                    } catch (e) {
+                        visualContext = { type: 'image', url: bgImage.download_url };
+                    }
                 }
-            } else {
-                // Legacy: assets might be mixed in root?
-                assetFiles = files.filter(f => f.type === 'file');
+
+                // Call AI
+                if (window.GeminiAdapter) {
+                    const payload = {
+                        htmlContent,
+                        jsonContent: jsonContentStr, // Send raw old JSON for context
+                        jsContent,
+                        fileList: files.map(f => f.name), // Names for pattern matching
+                        visualContext
+                    };
+
+                    try {
+                        const aiData = await window.GeminiAdapter.analyzeRepository(payload);
+
+                        // Merge AI results
+                        appState.formData = { ...appState.formData, ...aiData.formData };
+
+                        // Extra Data (Toggles, Links, etc from AI)
+                        if (aiData.linksExtras) appState.linksExtras = aiData.linksExtras;
+
+                        // Intelligent Prompt Mapping (if AI returned them)
+                        if (aiData.prompts) {
+                            // Map AI detected prompts to builder state/DOM later
+                            // e.g. aiData.prompts.cover_prompt
+                        }
+
+                    } catch (aiErr) {
+                        console.error('AI Import failed:', aiErr);
+                        // Fallback to basic parsing
+                        updateStatus('⚠️ I.A Falhou (usando básico)...', 50);
+                    }
+                }
             }
 
-            // Create a Combined File Map (Name -> URL)
-            // Handle "assets/foo.png" mapping
+            // Step 5: Asset Mapping (Robust)
+            updateStatus('Mapeando arquivos...', 80);
+
+            // Map file names to URLs
             const urlMap = {};
-            assetFiles.forEach(f => {
-                urlMap[f.name] = f.download_url; // filename -> url
-                urlMap[`assets/${f.name}`] = f.download_url; // path -> url
-            });
-            files.forEach(f => {
-                if (f.type === 'file') urlMap[f.name] = f.download_url;
-            });
+            // Fetch 'assets' folder contents if needed
+            const assetsDir = files.find(f => f.name === 'assets' && f.type === 'dir');
+            if (assetsDir) {
+                const aRes = await fetch(assetsDir.url);
+                if (aRes.ok) {
+                    const aFiles = await aRes.json();
+                    aFiles.forEach(f => {
+                        urlMap[f.name] = f.download_url;
+                        urlMap[`assets/${f.name}`] = f.download_url;
+                    });
+                }
+            }
+            files.forEach(f => { if (f.type === 'file') urlMap[f.name] = f.download_url; });
 
-            // If appState is "Legacy", we need to populate assetsMap based on known patterns
+            // Ensure assetsMap populated
+            if (!appState.assetsMap) appState.assetsMap = {};
+
+            // Legacy Fallback for Assets (Regex)
             const assetContexts = {
-                'capa': ['capa'],
-                'folha_vazia': ['folha', 'sheet'],
-                'folha_preenchida': ['preenchida', 'filled'], // Added fallback
+                'capa': ['capa', 'cover'],
+                'folha_vazia': ['folha', 'sheet', 'leaf'],
+                'fundo_tela': ['fundo', 'background', 'bg', 'loop', 'video'], // Unified
                 'vid_abertura': ['intro', 'abertura', 'opening'],
-                'vid_loop': ['loop', 'background'],
                 'musica': ['musica', 'music'],
                 'manual': ['manual'],
                 'presentes': ['presentes', 'gifts']
             };
 
-            // 4a. Update assetsMap with REAL URLs
-            if (!appState.assetsMap) appState.assetsMap = {};
-
-            // If Brain exists using relative paths (assets/foo.png), we replace them with Absolute URLs
-            for (const [context, path] of Object.entries(appState.assetsMap)) {
-                // path is 'assets/musica.mp3'
-                // find in urlMap
-                if (urlMap[path]) {
-                    appState.assetsMap[context] = urlMap[path];
-                } else {
-                    // Start of path matching? 'musica.mp3'
-                    const filename = path.split('/').pop();
-                    if (urlMap[filename]) {
-                        appState.assetsMap[context] = urlMap[filename];
-                    }
-                }
-            }
-
-            // 4b. Legacy Fallback: Detect assets if missing from map
-            // Helper: Extract timestamp from filename (e.g., name_123456789.jpg)
-            const getTimestamp = (name) => {
-                const match = name.match(/_(\d{10,14})/);
-                return match ? parseInt(match[1]) : 0;
-            };
-
             for (const [context, patterns] of Object.entries(assetContexts)) {
                 if (!appState.assetsMap[context]) {
-                    // Search in assetFiles
-                    const matches = assetFiles.filter(f => {
+                    // Try to find matching file
+                    const bestMatch = files.find(f => {
                         const lower = f.name.toLowerCase();
                         return patterns.some(p => lower.includes(p));
                     });
-
-                    if (matches.length > 0) {
-                        // Sort by Timestamp (Newest First)
-                        matches.sort((a, b) => getTimestamp(b.name) - getTimestamp(a.name));
-                        // Pick the newest
-                        appState.assetsMap[context] = matches[0].download_url;
-
-                        if (matches.length > 1) {
-                            console.log(`[History] Multiple matches for ${context}, selected newest: ${matches[0].name}`);
-                        }
+                    if (bestMatch) {
+                        appState.assetsMap[context] = bestMatch.download_url;
                     }
                 }
             }
 
-            // Step 5: Restore
-            updateStatus('Restaurando estado completo...');
+            // Step 6: Restore State
+            updateStatus('Restaurando builder...', 90);
+
+            // Pass true to suppress confirmation dialog during import
+            if (window.resetBuilderState) window.resetBuilderState(true);
             await window.restoreBuilderState(appState);
 
-
-            // Step 6: Navigate to form and trigger preview update
-            updateStatus('Finalizando...');
-
-            // Trigger state update event
-            // Trigger state update event
+            // Step 7: Finish
             document.dispatchEvent(new CustomEvent('stateUpdated', {
                 detail: { source: 'import', data: appState }
             }));
 
-            // Remove loading safely
-            if (loadingMsg && loadingMsg.parentNode) {
-                loadingMsg.parentNode.removeChild(loadingMsg);
-            }
+            // Remove loading
+            if (loadingMsg && loadingMsg.parentNode) loadingMsg.parentNode.removeChild(loadingMsg);
 
-            // Show success (silent toast preferable, but for now just logging as per silent request)
-            // alert(`✅ Convite "${slug}" importado com sucesso!\n\nVocê pode agora editar e republicar.`);
-
-            if (window.AutoBuilderNav && typeof window.AutoBuilderNav.showWindow === 'function') {
+            // Go to Form
+            if (window.AutoBuilderNav && window.AutoBuilderNav.showWindow) {
                 window.AutoBuilderNav.showWindow('form');
             }
 
-            console.log('[History] Import completed successfully');
+            // Show toast
+            if (window.showToast) window.showToast('Convite importado com sucesso!', 'success');
 
         } catch (error) {
-            console.error('[History] Import error:', error);
-
-            // Remove loading safely
-            const loadingMsgCheck = document.querySelector('.fixed.inset-0.bg-black\\/50');
-            if (loadingMsgCheck && loadingMsgCheck.parentNode) {
-                loadingMsgCheck.parentNode.removeChild(loadingMsgCheck);
+            console.error('[History] Import Error:', error);
+            const statusEl = document.getElementById('import-status');
+            if (statusEl) {
+                statusEl.className = 'text-red-400 font-bold';
+                statusEl.textContent = 'Erro: ' + error.message;
             }
-
-            alert(`❌ Erro ao importar convite:\n\n${error.message}\n\nVerifique o console para mais detalhes.`);
+            setTimeout(() => {
+                if (loadingMsg && loadingMsg.parentNode) loadingMsg.parentNode.removeChild(loadingMsg);
+                alert('Erro na importação: ' + error.message);
+            }, 2000);
         }
     }
 
