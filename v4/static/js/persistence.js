@@ -346,10 +346,9 @@
                         type = 'audio';
                     }
 
-                    // Convert to Blob for builderState
-                    const blob = base64ToBlob(dataUrl);
-                    if (blob && window.builderState) {
-                        window.builderState.assets[context] = blob;
+                    // Save dataUrl directly to builderState (APIs need URLs, not Blobs)
+                    if (window.builderState) {
+                        window.builderState.assets[context] = dataUrl;
                     }
 
                     // Update UI
