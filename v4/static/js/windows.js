@@ -901,6 +901,15 @@
             document.getElementById('gifts-mode-link')?.click();
             document.getElementById('fill-mode-overlay')?.click();
 
+            // 6. Reset Animation Prompts to Default (Base Prompt)
+            if (window.AIPrompts) {
+                const introEl = document.getElementById('intro-motion-prompt');
+                if (introEl) introEl.value = window.AIPrompts.getOpeningVideoPrompt();
+
+                const loopEl = document.getElementById('loop-motion-prompt');
+                if (loopEl) loopEl.value = window.AIPrompts.getLoopVideoPrompt();
+            }
+
             // 6. Clear persistence (localStorage + IndexedDB)
             try {
                 localStorage.removeItem('autobuilder_v4_state');
