@@ -4,6 +4,21 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 16:17] - v4.2.14 - Deploy Manual
+### Ações Realizadas:
+*   **Deploy**: Execução do script `deploy_to_github.py` para atualizar a versão em produção no repositório `mforgedesign/Builders`.
+*   **URL**: https://builder.mforge.com.br/v4/
+
+---
+
+## [15/01/2026 - 16:10] - v4.2.14 - Fix: Reset de Prompts de Animação
+### Funcionalidades:
+*   **Melhoria "Novo Convite"**: Ao resetar o builder ("Novo Convite"), os prompts de animação (Abertura e Loop) não são mais limpos completamente.
+    *   **Ação**: O sistema agora restaura automaticamente o "Prompt Base" (descrição detalhada da abertura do envelope) e o prompt padrão de Loop.
+    *   **Rationale**: Isso evita que o usuário tenha que redigir o prompt complexo novamente do zero, mantendo a "receita" ideal pré-carregada para uso imediato do botão "Gerar Animação".
+*   `static/js/windows.js`:
+    *   Atualizada função `resetBuilderState` para reinjetar os prompts padrão via `AIPrompts.getOpeningVideoPrompt()` e `getLoopVideoPrompt()`.
+
 ## [15/01/2026 - 15:45] - v4.2.8 - Importação Inteligente com I.A (Gemini)
 ### Arquivos Modificados:
 *   `static/js/gemini-adapter.js`: [NOVO] Implementado adaptador para API do Gemini 1.5 Flash. Parser inteligente de HTML para JSON.
