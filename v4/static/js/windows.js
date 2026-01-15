@@ -1383,6 +1383,12 @@
 
                 filesMap['data.json'] = utf8_to_b64(JSON.stringify(appState, null, 2));
 
+                // 4. Prepare HTML with Correct Asset Links
+                // FORCE CACHE BUSTING on template fetch to ensure latest version
+                const templateResp = await fetch(`final_template.html?v=${Date.now()}`);
+                if (!templateResp.ok) throw new Error('Template não encontrado');
+                let htmlContent = await templateResp.text();
+
                 // 3.5. Computed Replacements (Date/Time, Offset, Color)
                 const eventDate = formData.data_evento || formData.data;
                 const eventTime = formData.hora_evento || formData.hora || '00:00';
