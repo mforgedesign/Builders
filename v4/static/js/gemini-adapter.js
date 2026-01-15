@@ -27,7 +27,15 @@
          * @returns {Promise<Object>} - The partial structure to merge into appState
          */
         async parseInvitationHtml(htmlContent) {
-            console.log('[Gemini] Analyzing HTML content via Supabase Edge Function...');
+            return this.analyzeRepository({ htmlContent });
+        }
+
+        /**
+         * Analyzes full repository content for comprehensive import
+         * @param {Object} payload - { htmlContent, jsonContent, fileList, visualContext, ... }
+         */
+        async analyzeRepository(payload) {
+            console.log('[Gemini] Analyzing Repository Content...');
 
             if (!window.supabaseClient) {
                 throw new Error("Supabase client not initialized.");
@@ -36,22 +44,17 @@
             try {
                 // Call Supabase Edge Function
                 const { data, error } = await window.supabaseClient.functions.invoke('analyze-invitation', {
-                    body: { htmlContent }
+                    body: payload
                 });
 
-                if (error) {
-                    throw new Error(`Edge Function Error: ${error.message}`);
-                }
+                if (error) throw new Error(`Edge Function Error: ${error.message}`);
+                if (!data) throw new Error("No data returned from AI Analysis.");
 
-                if (!data) {
-                    throw new Error("No data returned from AI Analysis.");
-                }
-
-                console.log('[Gemini] Parsed Data:', data);
+                console.log('[Gemini] Analysis Result:', data);
                 return data;
 
             } catch (error) {
-                console.error('[Gemini] Error parsing HTML:', error);
+                console.error('[Gemini] Error analyzing repository:', error);
                 throw error;
             }
         }
