@@ -13,6 +13,7 @@
 
     // Initialize Supabase Client
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window.supabaseClient = supabase; // Expose for other modules (Edge Functions, Auth, etc)
 
     // Global State (mimics Flask session)
     window.builderState = {
