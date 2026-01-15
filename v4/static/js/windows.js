@@ -1688,38 +1688,49 @@
 
         if (area) area.classList.remove('hidden');
         if (successActions) successActions.classList.add('hidden');
-        if (statusText) statusText.innerText = 'Iniciando...';
+        if (statusText) {
+            statusText.innerText = 'Iniciando...';
+            statusText.className = 'text-xs font-mono text-gray-500 bg-gray-200 px-2 py-1 rounded';
+        }
 
-        // Reset Steps
-        ['step-build', 'step-upload', 'step-live'].forEach(id => {
-            updateDeployStep(id, 'pending');
-        });
+        // Reset Steps to Pending
+        [1, 2, 3].forEach(id => updateDeployStep(id, 'pending'));
     }
 
     // Helper to update individual steps in the inline UI
     window.updateDeployStep = function (stepId, status) {
-        // stepId matches the container ID in existing HTML
-        const containerEl = document.getElementById(stepId);
-        if (!containerEl) return;
+        // Map legacy string IDs to new numeric IDs if necessary
+        const map = { 'step-build': 1, 'step-upload': 2, 'step-live': 3 };
+        const id = map[stepId] || stepId;
 
-        // Find the icon element inside the container
-        const iconEl = containerEl.querySelector('.step-icon');
+        const container = document.getElementById(`deploy-step-${id}`);
+        if (!container) {
+            console.warn(`[DeployUI] Step container #deploy-step-${id} not found`);
+            return;
+        }
+
+        const iconEl = container.querySelector('.step-icon');
+        const textEl = container.querySelector('span');
+
+        // Reset Base Classes
+        container.className = 'flex items-center gap-3 transition-colors duration-300';
+        if (iconEl) iconEl.className = 'step-icon text-lg transition-all duration-300 w-6 text-center';
 
         if (status === 'loading') {
-            if (iconEl) iconEl.className = 'step-icon fa-solid fa-spinner fa-spin text-amber-600 w-4 text-center';
-            containerEl.className = 'flex items-center gap-3 text-sm text-amber-600 font-bold transition-colors duration-300';
+            container.classList.add('text-amber-600', 'font-bold');
+            if (iconEl) iconEl.className = 'step-icon fa-solid fa-spinner fa-spin text-lg text-amber-500';
 
         } else if (status === 'done') {
-            if (iconEl) iconEl.className = 'step-icon fa-solid fa-check-circle text-green-600 w-4 text-center';
-            containerEl.className = 'flex items-center gap-3 text-sm text-green-600 font-medium transition-colors duration-300';
+            container.classList.add('text-green-600', 'font-medium');
+            if (iconEl) iconEl.className = 'step-icon fa-solid fa-check-circle text-lg text-green-500';
 
         } else if (status === 'pending') {
-            if (iconEl) iconEl.className = 'step-icon fa-regular fa-circle text-gray-400 w-4 text-center';
-            containerEl.className = 'flex items-center gap-3 text-sm text-gray-500 transition-colors duration-300';
+            container.classList.add('text-gray-400');
+            if (iconEl) iconEl.className = 'step-icon fa-regular fa-circle text-lg text-gray-300';
 
         } else if (status === 'error') {
-            if (iconEl) iconEl.className = 'step-icon fa-solid fa-circle-xmark text-red-600 w-4 text-center';
-            containerEl.className = 'flex items-center gap-3 text-sm text-red-600 font-bold transition-colors duration-300';
+            container.classList.add('text-red-600', 'font-bold');
+            if (iconEl) iconEl.className = 'step-icon fa-solid fa-circle-xmark text-lg text-red-500';
         }
     };
 
