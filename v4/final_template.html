@@ -543,8 +543,9 @@
             // Robust check: Ensure link exists OR it's a special image button
             // Treat '#' as a valid link
             const hasLink = btn.link !== undefined && btn.link !== null && String(btn.link).trim() !== "";
+            const hasManualText = btn.id === 'manual' && btn.manualText && btn.manualText.length > 0;
 
-            if (hasLink || btn.isGiftImage || btn.isManualImage) {
+            if (hasLink || btn.isGiftImage || btn.isManualImage || hasManualText) {
 
                 const isGiftImage = btn.isGiftImage === true;
                 const isManualImage = btn.isManualImage === true;
