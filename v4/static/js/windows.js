@@ -1539,6 +1539,31 @@
                     htmlContent = htmlContent.replace(regex, safeValue);
                 }
 
+                // 3.6. Asset Replacements (Critical for Published View)
+                // We must replace [[CAPA_URL]] with relative paths like 'capa/myimage.jpg'
+                if (appState.assetsMap) {
+                    for (const [context, assetData] of Object.entries(appState.assetsMap)) {
+                        if (!assetData || !assetData.name) continue;
+
+                        const relativePath = `${context}/${assetData.name}`;
+
+                        // Standard Replacement: [[CONTEXT_URL]]
+                        let tokenKey = context.toUpperCase();
+
+                        // Handle Aliases
+                        if (tokenKey === 'PRESENTES') tokenKey = 'PRESENTS';
+                        if (tokenKey === 'FOLHA_VAZIA') tokenKey = 'FOLHA';
+
+                        // Replace URL
+                        const urlToken = `[[${tokenKey}_URL]]`;
+                        htmlContent = htmlContent.split(urlToken).join(relativePath);
+
+                        // Replace Filename (for OG tags etc)
+                        const filenameToken = `[[${tokenKey}_FILENAME]]`;
+                        htmlContent = htmlContent.split(filenameToken).join(assetData.name);
+                    }
+                }
+
                 // Inject CSS Variable for Button Color (if template uses it)
                 const customStyle = `<style>:root { --button-color: ${btnColor}; } .custom-button-bg { background-color: var(--button-color) !important; }</style>`;
                 htmlContent = htmlContent.replace('</head>', `${customStyle}</head>`);
