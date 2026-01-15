@@ -1348,56 +1348,7 @@
                 }
 
                 // 3. Add Brain to Payload
-                filesMap['data.json'] = utf8_to_b64(JSON.stringify(appState, null, 2));
 
-                // 4. Prepare HTML with Correct Asset Links
-                // FORCE CACHE BUSTING on template fetch to ensure latest version
-                const templateResp = await fetch(`final_template.html?v=${Date.now()}`);
-                if (!templateResp.ok) throw new Error('Template não encontrado');
-                let htmlContent = await templateResp.text();
-
-                // Replacement Logic: Use the timestamped paths from appState.assetsMap
-                // If an asset wasn't found/uploaded, use empty string or fallback?
-                // The template expects [[CAPA_URL]], etc.
-
-                const getPath = (context) => appState.assetsMap[context] ? `./${appState.assetsMap[context]}` : '';
-                const getPathWithFallback = (context, fallback) => {
-                    if (appState.assetsMap[context]) return `./${appState.assetsMap[context]}`;
-                    if (appState.assetsMap[fallback]) return `./${appState.assetsMap[fallback]}`;
-                    return '';
-                };
-
-                htmlContent = htmlContent.replace(/\[\[MUSICA_URL\]\]/g, getPath('musica'));
-                htmlContent = htmlContent.replace(/\[\[CAPA_URL\]\]/g, getPath('capa'));
-                htmlContent = htmlContent.replace(/\[\[FOLHA_URL\]\]/g, getPath('folha_vazia'));
-                htmlContent = htmlContent.replace(/\[\[FOLHA_PREENCHIDA_URL\]\]/g, getPathWithFallback('folha_preenchida', 'folha_vazia')); // Fallback to empty leaf
-                htmlContent = htmlContent.replace(/\[\[VIDEO_ABERTURA_URL\]\]/g, getPath('vid_abertura'));
-                htmlContent = htmlContent.replace(/\[\[VIDEO_LOOP_URL\]\]/g, getPath('vid_loop'));
-                htmlContent = htmlContent.replace(/\[\[MANUAL_URL\]\]/g, getPath('manual'));
-                htmlContent = htmlContent.replace(/\[\[PRESENTS_URL\]\]/g, getPath('presentes'));
-                htmlContent = htmlContent.replace(/\[\[SLUG\]\]/g, slug);
-
-                // Inject Computed Data
-                const pageTitle = formData.nome ? `Convite | ${formData.nome}` : 'Convite Digital';
-                htmlContent = htmlContent.replace(/\[\[OG_TITLE\]\]/g, pageTitle);
-
-                // Extract filename for meta tag (capa/filename.ext)
-                const capaPath = appState.assetsMap['capa']; // e.g., assets/capa_123.png
-                const capaFilename = capaPath ? capaPath.split('/').pop() : 'default_cover.jpg';
-                htmlContent = htmlContent.replace(/\[\[CAPA_FILENAME\]\]/g, capaFilename);
-
-                // Defaults if missing (from formData or default)
-                // Defaults if missing (from formData or default)
-                htmlContent = htmlContent.replace(/\[\[SHADOW_COLOR\]\]/g, formData.shadow_color || '#000000');
-                // BUTTON_COLOR handled in computed section below
-                htmlContent = htmlContent.replace(/\[\[TIMER_HIDE_CLASS\]\]/g, formData.data_evento ? '' : 'hidden');
-
-                // Inject Text Data
-                // formData already declared at top of scope
-                // Inject Text Data
-                // formData already declared at top of scope
-                // Ensure formData is populated (sometimes appState is stale vs Form.data)
-                // Ensure formData is populated (sometimes appState is stale vs Form.data)
                 // FORCE COMPLETE SYNC from DOM elements (Bulletproof against stale state)
                 try {
                     console.log("DEBUG PUBLISH: Scraping Fresh Data from DOM Inputs...");
@@ -1418,6 +1369,10 @@
                     console.log("DEBUG PUBLISH: DOM Data Scraped:", domData);
                     Object.assign(formData, domData);
 
+                    // Sync to appState to ensure data.json is correct
+                    if (!appState.formData) appState.formData = {};
+                    Object.assign(appState.formData, domData);
+
                     // Also sync back to global state for consistency
                     if (window.AutoBuilderForm) {
                         Object.assign(window.AutoBuilderForm.data, domData);
@@ -1425,6 +1380,8 @@
                 } catch (err) {
                     console.error("DEBUG PUBLISH: Error scraping DOM data", err);
                 }
+
+                filesMap['data.json'] = utf8_to_b64(JSON.stringify(appState, null, 2));
 
                 // 3.5. Computed Replacements (Date/Time, Offset, Color)
                 const eventDate = formData.data_evento || formData.data;
