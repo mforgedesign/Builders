@@ -1315,9 +1315,11 @@
                 // UI: Start
                 publishBtn.disabled = true;
                 publishBtn.innerHTML = '<i class="fa-solid fa-rocket fa-bounce"></i> Iniciando...';
+
+                showDeployStatusArea(); // Show immediately
                 updateDeployStep('step-build', 'loading');
-                updateDeployStep('step-upload', 'reset');
-                updateDeployStep('step-live', 'reset');
+                updateDeployStep('step-upload', 'pending');
+                updateDeployStep('step-live', 'pending');
 
                 // 1. Prepare Brain & Timestamp
                 const appState = window.generateBuilderState();
@@ -1564,7 +1566,8 @@
                 }
 
                 // 5. Send to API
-                showDeployStatusArea(); // << Show UI immediately
+                // 5. Send to API
+                // showDeployStatusArea(); // REMOVED: Do not reset steps
                 updateDeployStep('step-build', 'done');
                 updateDeployStep('step-upload', 'loading');
 
@@ -1588,8 +1591,7 @@
                 if (!response.ok) throw new Error(result.error || 'Falha na publicação');
 
                 updateDeployStep('step-upload', 'done');
-                // Wait for live status to mark step-live as done
-                // updateDeployStep('step-live', 'done'); // Moving this to after poll
+                updateDeployStep('step-live', 'loading'); // Yellow while waiting
 
                 publishBtn.innerHTML = '<i class="fa-solid fa-check"></i> Enviado!';
                 publishBtn.classList.remove('bg-brand-600');
@@ -1731,7 +1733,7 @@
         logDebug(`Iniciando Polling. Slug: ${slug}, SHA: ${commitSha?.substring(0, 7)}...`);
 
         // Ensure UI is visible FIRST (resets steps to pending)
-        showDeployStatusArea();
+        // showDeployStatusArea(); // REMOVED: Resets UI steps incorrectly
 
         // THEN set status to loading
         updateDeployStep('step-live', 'loading');
