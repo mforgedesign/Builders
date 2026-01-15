@@ -34,6 +34,15 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 *   `supabase/functions/analyze-invitation`: [NOVO]
     *   Function em Deno/TypeScript que atua como proxy seguro para a API do Google Gemini.
 *   `deploy_to_github.py`: Executado para atualizar o frontend.
+
+---
+
+## [15/01/2026 - 17:15] - v4.2.12 - Otimização de Manual com IA
+### Funcionalidades:
+*   **Maximizar com IA (Manual)**: O botão "Otimizar com IA" no editor manual agora funciona de verdade!
+    *   **Backend**: Nova Edge Function `optimize-manual` que usa Gemini AI.
+    *   **Ação**: Rewrites o texto inserido para ser mais elegante/formal e insere automaticamente ícones (FontAwesome) relevantes ao contexto.
+    *   **Frontend**: Feedback visual de carregamento ("Otimizando (IA)...") e tratamento de erros.
 *   `deploy_to_github.py`:
     *   **Optimization**: Script já em uso versão otimizada (v2).
 
