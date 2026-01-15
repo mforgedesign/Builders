@@ -360,8 +360,7 @@
         'cover-reference-dropzone': 'capa_referencia',
         'leaf-dropzone': 'folha_vazia',
         'intro-video-dropzone': 'vid_abertura',
-        'loop-video-dropzone': 'vid_loop',
-        'fill-image-dropzone': 'folha_preenchida',
+        'fill-image-dropzone': 'fundo_tela',  // Unified fundo (image or video)
         // New Layer Dropzones
         'dropzone-leaf-only': 'folha_only',
         'dropzone-background-only': 'background_only',
@@ -694,7 +693,7 @@
             toggles: {
                 manualMode: document.querySelector('#manual-mode-buttons .bg-white')?.dataset?.mode || 'text',
                 giftsMode: document.querySelector('#gifts-mode-buttons .bg-white')?.dataset?.mode || 'link',
-                fillMode: document.querySelector('#fill-mode-buttons .bg-white')?.dataset?.mode || 'overlay',
+                // fillMode removed - simplified unified approach
                 // Add others if needed
             }
         };
@@ -735,7 +734,7 @@
         if (appState.toggles) {
             if (appState.toggles.manualMode) document.getElementById(`manual-mode-${appState.toggles.manualMode}`)?.click();
             if (appState.toggles.giftsMode) document.getElementById(`gifts-mode-${appState.toggles.giftsMode}`)?.click();
-            if (appState.toggles.fillMode) document.getElementById(`fill-mode-${appState.toggles.fillMode}`)?.click();
+            // fillMode toggle removed - unified approach
         }
 
         // 4. Hydrate Assets
@@ -780,9 +779,8 @@
                         const dropzones = {
                             'capa': 'cover-dropzone',
                             'folha_vazia': 'leaf-dropzone',
-                            'folha_preenchida': 'fill-image-dropzone',
+                            'fundo_tela': 'fill-image-dropzone',  // Unified fundo
                             'vid_abertura': 'intro-video-dropzone',
-                            'vid_loop': 'loop-video-dropzone',
                             'presentes': 'gifts-image-dropzone',
                             'manual': 'manual-image-dropzone',
                             'musica': 'music-dropzone'
@@ -899,7 +897,7 @@
             // (Simulate clicks on default buttons)
             document.getElementById('manual-mode-text')?.click();
             document.getElementById('gifts-mode-link')?.click();
-            document.getElementById('fill-mode-overlay')?.click();
+            // fill-mode toggle removed - unified approach
 
             // 6. Reset Animation Prompts to Default (Base Prompt)
             if (window.AIPrompts) {
@@ -981,7 +979,8 @@
                         'assets/capa.png': { selector: '#cover-dropzone', type: 'bg', context: 'capa' },
                         'assets/folha.png': { selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia' },
                         'assets/intro.mp4': { selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura' },
-                        'assets/loop.mp4': { selector: '#loop-video-dropzone video', type: 'src', context: 'vid_loop' },
+                        // Unified fundo - can be image or video from fill-image-dropzone
+                        'assets/fundo': { selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela' },
                         'assets/manual.png': { selector: '#manual-image-dropzone', type: 'bg', context: 'manual' },
                         'assets/gifts.png': { selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes' }
                     };
@@ -994,6 +993,16 @@
                             const style = el.style.backgroundImage;
                             if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
                         } else if (type === 'src') url = el.src;
+                        else if (type === 'auto') {
+                            // Unified fundo: check for video first, then image background
+                            const video = el.querySelector('video');
+                            if (video && video.src) {
+                                url = video.src;
+                            } else {
+                                const style = el.style.backgroundImage;
+                                if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
+                            }
+                        }
                         if (url) {
                             const resp = await fetch(url);
                             return await resp.blob();
@@ -1002,6 +1011,7 @@
                     }
 
                     const slug = document.getElementById('slug-input')?.value || 'preview-local';
+                    let fundoExt = 'png'; // Default extension for fundo
 
                     for (const [path, config] of Object.entries(assetMap)) {
                         let blob = null;
@@ -1009,8 +1019,21 @@
                         else if (config.selector) blob = await fetchBlobFromSelector(config.selector, config.type);
 
                         if (blob) {
-                            filesMap[`convites/${slug}/${path}`] = await blobToBase64(blob);
-                            appState.assetsMap[config.context] = path; // Keep relative path in brain
+                            // Determine actual path with extension for fundo
+                            let actualPath = path;
+                            if (path === 'assets/fundo') {
+                                // Detect type from blob MIME
+                                if (blob.type.startsWith('video/')) {
+                                    fundoExt = 'mp4';
+                                } else if (blob.type === 'image/jpeg' || blob.type === 'image/jpg') {
+                                    fundoExt = 'jpg';
+                                } else {
+                                    fundoExt = 'png';
+                                }
+                                actualPath = `assets/fundo.${fundoExt}`;
+                            }
+                            filesMap[`convites/${slug}/${actualPath}`] = await blobToBase64(blob);
+                            appState.assetsMap[config.context] = actualPath; // Keep relative path in brain
                         }
                     }
 
@@ -1023,7 +1046,7 @@
                     htmlContent = htmlContent.replace(/\[\[CAPA_URL\]\]/g, './assets/capa.png');
                     htmlContent = htmlContent.replace(/\[\[FOLHA_URL\]\]/g, './assets/folha.png');
                     htmlContent = htmlContent.replace(/\[\[VIDEO_ABERTURA_URL\]\]/g, './assets/intro.mp4');
-                    htmlContent = htmlContent.replace(/\[\[VIDEO_LOOP_URL\]\]/g, './assets/loop.mp4');
+                    htmlContent = htmlContent.replace(/\[\[FUNDO_TELA_URL\]\]/g, `./assets/fundo.${fundoExt}`);
                     htmlContent = htmlContent.replace(/\[\[SLUG\]\]/g, slug);
 
                     // Generate menuConfig for buttons (Presentes, Manual, etc.)
@@ -1121,7 +1144,7 @@
                         cover: { filename: 'capa.png', selector: '#cover-dropzone', type: 'bg', context: 'capa' },
                         leaf: { filename: 'folha.png', selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia' },
                         intro: { filename: 'intro.mp4', selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura' },
-                        loop: { filename: 'loop.mp4', selector: '#loop-video-dropzone video', type: 'src', context: 'vid_loop' },
+                        fundo: { filename: 'fundo', selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela' },  // Unified - extension determined dynamically
                         manual: { filename: 'manual.png', selector: '#manual-image-dropzone', type: 'bg', context: 'manual' },
                         gifts: { filename: 'gifts.png', selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes' }
                     };
@@ -1284,9 +1307,8 @@
                     'music': { source: window.builderState?.assets?.musica, context: 'musica', ext: 'mp3' },
                     'cover': { selector: '#cover-dropzone', type: 'bg', context: 'capa', ext: 'png' },
                     'leaf': { selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia', ext: 'png' },
-                    'filled': { selector: '#fill-image-dropzone', type: 'bg', context: 'folha_preenchida', ext: 'png' }, // ADDED
+                    'fundo': { selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela', ext: 'auto' },  // Unified fundo
                     'intro': { selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura', ext: 'mp4' },
-                    'loop': { selector: '#loop-video-dropzone video', type: 'src', context: 'vid_loop', ext: 'mp4' },
                     'manual': { selector: '#manual-image-dropzone', type: 'bg', context: 'manual', ext: 'png' },
                     'gifts': { selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes', ext: 'png' }
                 };
@@ -1945,7 +1967,7 @@
             'capa': 'cover-dropzone',
             'folha_vazia': 'leaf-dropzone',
             'vid_abertura': 'intro-video-dropzone',
-            'vid_loop': 'loop-video-dropzone',
+            'fundo_tela': 'fill-image-dropzone',  // Unified fundo
             'presentes': 'gifts-image-dropzone',
             'manual': 'manual-image-dropzone',
             'musica': 'music-dropzone'
@@ -1983,8 +2005,7 @@
         'cover': 'cover-dropzone',
         'leaf': 'leaf-dropzone',
         'intro': 'intro-video-dropzone',
-        'loop': 'loop-video-dropzone',
-        'fill': 'fill-image-dropzone',
+        'fill': 'fill-image-dropzone',  // Unified fundo
         'manual': 'manual-image-dropzone',
         'gifts': 'gifts-image-dropzone'
     };
