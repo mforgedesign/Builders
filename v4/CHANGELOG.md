@@ -60,6 +60,7 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 ### Correções Críticas:
 *   `static/js/windows.js`:
     *   **Fix Data Saving**: A ordem de geração do `data.json` estava incorreta (antes de coletar os dados do formulário). Agora a coleta acontece ANTES do salvamento, garantindo que o arquivo json contenha todos os dados atuais.
+    *   **Critical Fix**: Restaurada definição de `htmlContent` em `windows.js` (fetch do template) que havia sido removida acidentalmente, causando erro na publicação.
 *   **Deploy System (Backend)**:
     *   **Novo**: Edge Function `deploy-github-v2` implementada.
     *   **Feature**: "Atomic Subtree Replacement". Ao fazer deploy via servidor (fallback), o sistema agora **substitui** completamente a pasta do convite, removendo automaticamente arquivos antigos (lixo acumulado) em um único commit.
@@ -68,8 +69,10 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
         *   **Hard Truncate**: O input HTML é cortado nos primeiros 100KB *antes* de qualquer processamento. Isso evita travamentos (timeouts) com Regex em arquivos gigantes.
         *   **Connectivity Probe**: Adicionado teste automático de conexão com Gemini se a chamada principal falhar, para diferenciar erro de chave vs erro de payload.
         *   **API Key Update**: Chave de API atualizada e validada.
+        *   **Upgrade**: Modelo atualizado para `gemini-3-flash-preview` (Gemini 2.0 Flash) para maior rapidez e precisão.
 *   `functions/optimize-manual`:
     *   **fix**: API Key também atualizada neste módulo.
+    *   **Upgrade**: Modelo atualizado para `gemini-3-flash-preview`.
 *   `static/js/supabase-adapter.js`:
     *   Atualizado para usar a versão v2 do deploy no GitHub.
 *   `deploy_to_github.py`:
