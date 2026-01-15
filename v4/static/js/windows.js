@@ -1350,8 +1350,6 @@
                         reader.onloadend = () => {
                             if (reader.result) {
                                 resolve(reader.result.split(',')[1]);
-                            } else {
-                                resolve('');
                             }
                         };
                         reader.onerror = reject;
@@ -1634,9 +1632,12 @@
                 }
 
                 // 5. Send to API
-                // 5. Send to API
                 // showDeployStatusArea(); // REMOVED: Do not reset steps
+
+                // STEP 1 COMPLETE: Build Done
                 updateDeployStep('step-build', 'done');
+
+                // STEP 2 START: Upload Loading
                 updateDeployStep('step-upload', 'loading');
 
                 // We use /api/publish which is intercepted by supabase-adapter
@@ -1658,8 +1659,11 @@
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error || 'Falha na publicação');
 
+                // STEP 2 COMPLETE: Upload Done
                 updateDeployStep('step-upload', 'done');
-                updateDeployStep('step-live', 'loading'); // Yellow while waiting
+
+                // STEP 3 START: Verifying (Live)
+                updateDeployStep('step-live', 'loading');
 
                 publishBtn.innerHTML = '<i class="fa-solid fa-check"></i> Enviado!';
                 publishBtn.classList.remove('bg-brand-600');
@@ -1889,6 +1893,7 @@
             function finishPolling(success, errorMsg) {
                 clearInterval(interval);
                 if (success) {
+                    // STEP 3 COMPLETE: Live Done
                     updateDeployStep('step-live', 'done');
                     checkBtn.innerHTML = '<i class="fa-solid fa-check"></i> Publicado!';
                     checkBtn.classList.remove('bg-brand-600', 'bg-blue-600', 'bg-yellow-600', 'bg-red-600'); // Ensure all removed
