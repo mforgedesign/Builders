@@ -770,9 +770,9 @@
                     if (blob) {
                         url = URL.createObjectURL(blob);
 
-                        // Update Builder State
+                        // Update Builder State with URL (APIs need URLs, not Blobs)
                         if (!window.builderState.assets) window.builderState.assets = {};
-                        window.builderState.assets[context] = blob;
+                        window.builderState.assets[context] = url;
 
                         // Update Dropzone Visuals
                         // We need a robust way to find dropzone ID.
