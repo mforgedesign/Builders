@@ -2130,24 +2130,31 @@
 
         /**
          * Get required image URL for video/image-to-image generation
+         * NOTE: Persistence uses Portuguese names (capa, folha_vazia), 
+         *       while AI generation uses English names (cover, leaf).
+         *       We check both for compatibility.
          */
         async getRequiredImage(type) {
-            const state = window.builderState || {};
+            const assets = window.builderState?.assets || {};
 
             // Image-to-Video requirements
             if (type === 'intro') {
-                return state.assets?.cover; // Needs capa.jpg
+                // Needs capa.jpg - check both naming conventions
+                return assets.cover || assets.capa;
             }
             if (type === 'loop') {
-                return state.assets?.background_only; // Needs background_only.jpg
+                // Needs background_only.jpg
+                return assets.background_only || assets.folha_vazia;
             }
 
             // Image-to-Image requirements
             if (type === 'fill') {
-                return state.assets?.leaf_only; // Needs leaf_only.png
+                // Needs leaf_only.png
+                return assets.leaf_only || assets.leaf || assets.folha_vazia;
             }
             if (type === 'manual' || type === 'gifts') {
-                return state.assets?.background_only || state.assets?.leaf; // Fallback chain
+                // Fallback chain for manual/gifts images
+                return assets.background_only || assets.leaf || assets.folha_vazia || assets.capa;
             }
 
             return null;
