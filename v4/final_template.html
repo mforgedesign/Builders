@@ -104,14 +104,14 @@
     <div id="mainContainer"
         class="relative w-full max-w-[480px] h-full bg-black shadow-2xl overflow-hidden transition-all duration-300">
 
-        <!-- Background Video (Loop) - Layer 1 -->
-        <video id="videoLoop" class="camada z-10 invisivel" playsinline loop muted>
-            <source src="[[VIDEO_LOOP_URL]]" type="video/mp4">
-        </video>
-
-        <!-- Static Overlay (Filled Sheet) - Layer 2 (Optional fallback) -->
-        <img id="folhaPreenchida" src="[[FOLHA_PREENCHIDA_URL]]" class="camada z-15 invisivel"
+        <!-- Background (Unified) - Layer 1 -->
+        <!-- Can be image or video - determined by file extension -->
+        <img id="fundoTelaImg" src="[[FUNDO_TELA_URL]]" class="camada z-10 invisivel"
             onerror="this.style.display='none'">
+        <video id="fundoTelaVideo" class="camada z-10 invisivel" playsinline loop muted
+            onerror="this.style.display='none'">
+            <source src="[[FUNDO_TELA_URL]]" type="video/mp4">
+        </video>
 
         <video id="videoAbertura" class="camada z-20" playsinline muted>
             <source src="[[VIDEO_ABERTURA_URL]]" type="video/mp4">
@@ -331,7 +331,8 @@
         // ==================================================================
         const capa = document.getElementById('capaInicial');
         const videoAbertura = document.getElementById('videoAbertura');
-        const videoLoop = document.getElementById('videoLoop');
+        const fundoTelaVideo = document.getElementById('fundoTelaVideo');
+        const fundoTelaImg = document.getElementById('fundoTelaImg');
         const audio = document.getElementById('musicaFundo');
         const btnPular = document.getElementById('btnPular');
         const btnMute = document.getElementById('btnMute');
@@ -666,11 +667,11 @@
                 }
             }
 
-            // SOLUÇÃO iOS: Inicia AMBOS os vídeos no mesmo gesto do usuário
-            // O loop fica tocando na camada de trás, invisível por enquanto
-            if (videoLoop) {
-                videoLoop.muted = true;
-                videoLoop.play().catch(function (e) { console.error("Loop play failed:", e); });
+            // SOLUÇÃO iOS: Inicia vídeo de fundo no mesmo gesto do usuário
+            // O fundo fica tocando na camada de trás, invisível por enquanto
+            if (fundoTelaVideo) {
+                fundoTelaVideo.muted = true;
+                fundoTelaVideo.play().catch(function (e) { console.log("Fundo video not used or play failed"); });
             }
 
             // Vídeo de abertura na camada da frente
@@ -695,11 +696,9 @@
             // Esconde botão pular
             btnPular.classList.add('invisivel');
 
-            // O loop já está tocando na camada de trás desde o início
-            // Apenas revelamos ele escondendo a abertura (crossfade)
-            videoLoop.classList.remove('invisivel');
-            // FIX: Show background image (folha preenchida) in case loop video is transparent or missing
-            document.getElementById('folhaPreenchida')?.classList.remove('invisivel');
+            // Mostra o fundo unificado (imagem ou vídeo)
+            fundoTelaImg?.classList.remove('invisivel');
+            fundoTelaVideo?.classList.remove('invisivel');
             videoAbertura.classList.add('invisivel');
             containerBotoes.classList.remove('invisivel');
             containerShadow.classList.remove('invisivel');
@@ -735,7 +734,7 @@
             if (estaMutado) {
                 audio.muted = true;
                 videoAbertura.muted = true;
-                videoLoop.muted = true;
+                if (fundoTelaVideo) fundoTelaVideo.muted = true;
                 iconMute.className = "fa-solid fa-volume-xmark";
                 btnMute.classList.add("bg-red-500/50");
             } else {
