@@ -4,6 +4,35 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 19:15] - v4.2.20 - Simplificação: Fundo Unificado da Tela de Botões
+### Arquivos Modificados:
+*   `index.html`:
+    *   **Removido**: Toggle de modos "Superposição" e "Composição Flat" (fill-mode-buttons).
+    *   **Removido**: Seções separadas `#fill-overlay-mode` e `#fill-flat-mode`.
+    *   **Novo**: Janela simplificada "Fundo da Tela de Botões" com dropzone único que aceita JPG, PNG ou MP4.
+    *   **Rationale**: Unificar a experiência - o usuário anexa/gera uma imagem OU vídeo que será o fundo dos botões.
+*   `final_template.html`:
+    *   **Removido**: `#videoLoop` e `#folhaPreenchida` como elementos separados.
+    *   **Novo**: `#fundoTelaImg` (para imagens) e `#fundoTelaVideo` (para vídeos MP4) - elementos unificados.
+    *   **Novo Placeholder**: `[[FUNDO_TELA_URL]]` substitui `[[VIDEO_LOOP_URL]]`.
+    *   **Atualizado**: JavaScript interno para usar novos elementos em `irParaLoop()` e controle de mute.
+*   `static/js/windows.js`:
+    *   **Removido**: Referências a `fill-mode-*`, `fillMode`, `loop-video-dropzone`, `vid_loop`.
+    *   **Novo Contexto**: `fundo_tela` substitui `vid_loop` e `folha_preenchida`.
+    *   **fetchBlobFromSelector**: Novo tipo `'auto'` que detecta se é imagem (background) ou vídeo (video src).
+    *   **Compilação**: Detecta extensão do fundo (png/jpg/mp4) a partir do MIME do blob.
+*   `static/js/persistence.js`:
+    *   **Removido**: `fillMode` toggle, `vid_loop`, `folha_preenchida`, `folha_animada` dos mapas.
+    *   **Novo**: `fundo_tela` mapeado para `fill-image-dropzone`.
+
+### Comportamento Esperado:
+1. A janela "Fundo da Tela de Botões" aceita imagens (JPG/PNG) ou vídeo (MP4).
+2. Se o usuário anexar uma imagem, ela aparece estática atrás dos botões.
+3. Se o usuário anexar um vídeo MP4, ele reproduz em loop atrás dos botões.
+4. A detecção é automática baseada no tipo de arquivo.
+
+---
+
 ## [15/01/2026 - 18:12] - v4.2.15 - Fix: Botão de Animação da Capa (Hailuo 02 First-Last-Frame)
 ### Arquivos Modificados:
 *   `generate-video` (Supabase Edge Function):
@@ -23,6 +52,15 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 2. Ao alterar o prompt, a persistência salva no localStorage.
 3. Ao clicar "Novo Convite", o prompt é restaurado para o padrão (não fica em branco).
 4. O botão "Gerar Animação" agora chama o endpoint correto com first/last frame.
+
+---
+
+## [15/01/2026 - 18:58] - v4.2.19 - Fix: Edge Function Rejeita Data URLs
+### Arquivos Modificados:
+*   `generate-video` (Supabase Edge Function v7):
+    *   **Problema**: fal.ai rejeita data URLs (base64). Persistence/Restore salva assets como data URLs.
+    *   **Solução**: Edge Function agora detecta data URLs e faz upload para Supabase Storage, usando a URL pública resultante.
+    *   **Nova Função**: `ensurePublicUrl()` - Converte data URL para URL pública via Storage.
 
 ---
 
