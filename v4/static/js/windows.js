@@ -1599,24 +1599,36 @@
 
     // Helper to update individual steps in the inline UI
     window.updateDeployStep = function (stepId, status) {
-        const stepEl = document.getElementById(stepId);
-        if (!stepEl) return;
+        const indicatorEl = document.getElementById(stepId); // The circle (1, 2, 3)
+        if (!indicatorEl) return;
 
-        const icon = stepEl.querySelector('.step-icon');
-        const text = stepEl.querySelector('span');
+        const containerEl = indicatorEl.parentElement; // The row container
+
+        // Map step IDs to their original numbers
+        const stepNumbers = {
+            'step-build': '1',
+            'step-upload': '2',
+            'step-live': '3'
+        };
+
+        const baseIndicatorClass = "w-6 h-6 rounded-full flex items-center justify-center text-xs transition-all duration-300";
 
         if (status === 'loading') {
-            if (icon) icon.className = 'step-icon fa-solid fa-spinner fa-spin text-amber-500 w-4 text-center';
-            stepEl.className = 'flex items-center gap-3 text-sm text-amber-600 font-bold multiline-status';
+            indicatorEl.className = `${baseIndicatorClass} bg-amber-100 text-amber-600 shadow-sm`;
+            indicatorEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            if (containerEl) containerEl.className = 'flex items-center gap-3 text-amber-600 font-bold transition-colors duration-300';
         } else if (status === 'done') {
-            if (icon) icon.className = 'step-icon fa-solid fa-check-circle text-green-600 w-4 text-center';
-            stepEl.className = 'flex items-center gap-3 text-sm text-green-600 font-medium opacity-70';
+            indicatorEl.className = `${baseIndicatorClass} bg-green-100 text-green-600 shadow-sm`;
+            indicatorEl.innerHTML = '<i class="fa-solid fa-check"></i>';
+            if (containerEl) containerEl.className = 'flex items-center gap-3 text-green-600 font-medium opacity-70 transition-colors duration-300';
         } else if (status === 'pending') {
-            if (icon) icon.className = 'step-icon fa-regular fa-circle text-gray-400 w-4 text-center';
-            stepEl.className = 'flex items-center gap-3 text-sm text-gray-500';
+            indicatorEl.className = `${baseIndicatorClass} bg-gray-200 text-gray-400`;
+            indicatorEl.innerHTML = stepNumbers[stepId] || '';
+            if (containerEl) containerEl.className = 'flex items-center gap-3 text-gray-500 transition-colors duration-300';
         } else if (status === 'error') {
-            if (icon) icon.className = 'step-icon fa-solid fa-circle-xmark text-red-500 w-4 text-center';
-            stepEl.className = 'flex items-center gap-3 text-sm text-red-500 font-bold';
+            indicatorEl.className = `${baseIndicatorClass} bg-red-100 text-red-600 shadow-sm`;
+            indicatorEl.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            if (containerEl) containerEl.className = 'flex items-center gap-3 text-red-600 font-bold transition-colors duration-300';
         }
     };
 
