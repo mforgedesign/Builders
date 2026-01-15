@@ -365,13 +365,68 @@
                         console.log('[History] Loaded state:', appState);
                     } else {
                         console.warn('[History] data.json not found (Old version?)');
-                        // alert("Aviso: Dados estruturados (data.json) não encontrados. Importando apenas assets visuais.");
                     }
                 } catch (e) {
                     console.error('Error parsing data.json', e);
-                    alert("Erro ao ler dados do convite (data.json inválido).");
+                    // alert("Erro ao ler dados do convite (data.json inválido).");
                 }
             }
+
+            // =================================================================
+            // INTELLIGENT IMPORT (GEMINI AI FALLBACK)
+            // =================================================================
+            // If formData is empty (because data.json was missing or invalid), try AI
+            const hasData = appState.formData && Object.keys(appState.formData).length > 0;
+
+            if (!hasData) {
+                console.log('[History] Missing data.json. Attempting intelligent import with Gemini...');
+                updateStatus('🧠 Analisando com I.A (Gemini)...');
+
+                try {
+                    // Fetch index.html to analyze
+                    const indexFile = files.find(f => f.name === 'index.html');
+                    if (indexFile && window.GeminiAdapter) {
+                        const htmlRes = await fetch(indexFile.download_url);
+                        if (htmlRes.ok) {
+                            const htmlContent = await htmlRes.text();
+
+                            // Call Gemini Adapter
+                            const aiData = await window.GeminiAdapter.parseInvitationHtml(htmlContent);
+
+                            if (aiData) {
+                                // Merge AI data
+                                appState.formData = { ...appState.formData, ...aiData.formData };
+
+                                // Handle manual content specially if needed
+                                if (aiData.manualContent && !appState.assetsMap['manual']) {
+                                    // Inject into DOM later or store in state? 
+                                    // The builder expects manual content in the textarea manually, 
+                                    // but we can try to put it in a "mock" state for restoration?
+                                    // Actually, restoreBuilderState handles formData.manual_content usually?
+                                    // Let's ensure schema matches.
+                                    if (aiData.manualContent) {
+                                        // If the AI extracted manual HTML specificially
+                                        // AutoBuilder usually stores this in dom or appState?
+                                        // It usually persists via 'manual-html-editor' value?
+                                        // appState.formData['manual_content'] is the key.
+                                        appState.formData['manual_content'] = aiData.manualContent;
+                                    }
+                                }
+
+                                console.log('[History] Intelligent Import Successful:', aiData);
+                                updateStatus('✅ Dados extraídos com Sucesso!');
+                            }
+                        }
+                    } else {
+                        console.warn('[History] Gemini Adapter not available or index.html missing');
+                    }
+                } catch (aiError) {
+                    console.error('[History] Intelligent Import Failed:', aiError);
+                    // Continue gracefully with just assets
+                    updateStatus('⚠️ I.A falhou, importando apenas arquivos...');
+                }
+            }
+            // =================================================================
 
             // Step 3: Clean Slate (Deep Reset)
             updateStatus('Limpando ambiente atual...');
