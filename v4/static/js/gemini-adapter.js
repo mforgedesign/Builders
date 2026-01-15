@@ -16,8 +16,8 @@
     class GeminiAdapter {
         constructor() {
             // Check if supabase client exists
-            if (!window.supabase) {
-                console.error('[Gemini] Supabase client not found!');
+            if (!window.supabaseClient) {
+                console.error('[Gemini] Supabase client not found! Ensure supabase-adapter.js is loaded.');
             }
         }
 
@@ -29,13 +29,13 @@
         async parseInvitationHtml(htmlContent) {
             console.log('[Gemini] Analyzing HTML content via Supabase Edge Function...');
 
-            if (!window.supabase) {
+            if (!window.supabaseClient) {
                 throw new Error("Supabase client not initialized.");
             }
 
             try {
                 // Call Supabase Edge Function
-                const { data, error } = await window.supabase.functions.invoke('analyze-invitation', {
+                const { data, error } = await window.supabaseClient.functions.invoke('analyze-invitation', {
                     body: { htmlContent }
                 });
 
