@@ -12,6 +12,27 @@
     'use strict';
 
     // ========================================
+    // Toast Notification Utility
+    // ========================================
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        const colors = {
+            info: 'bg-blue-500',
+            success: 'bg-green-500',
+            warning: 'bg-yellow-500 text-black',
+            error: 'bg-red-500'
+        };
+        toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg text-white shadow-lg ${colors[type] || colors.info} animate-fade-in`;
+        toast.innerHTML = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.5s';
+            setTimeout(() => toast.remove(), 500);
+        }, 4000);
+    }
+
+    // ========================================
     // Mode Toggle Handlers
     // ========================================
 
@@ -2284,6 +2305,11 @@
 
                     if (error) throw new Error(error.message);
                     if (!data || !data.html) throw new Error("No HTML returned from AI");
+
+                    // Show fallback toast if GPT was used
+                    if (data.usedFallback) {
+                        showToast('⚠️ Gemini falhou. Usado GPT-4o-mini como fallback.', 'warning');
+                    }
 
                     // Update Editors
                     htmlEditor.value = data.html;
