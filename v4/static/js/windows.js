@@ -1317,9 +1317,9 @@
                 publishBtn.innerHTML = '<i class="fa-solid fa-rocket fa-bounce"></i> Iniciando...';
 
                 showDeployStatusArea(); // Show immediately
-                updateDeployStep('step-build', 'loading');
-                updateDeployStep('step-upload', 'pending');
-                updateDeployStep('step-live', 'pending');
+                window.updateDeployStep('step-build', 'loading');
+                window.updateDeployStep('step-upload', 'pending');
+                window.updateDeployStep('step-live', 'pending');
 
                 // 1. Prepare Brain & Timestamp
                 const appState = window.generateBuilderState();
@@ -1540,19 +1540,22 @@
                 }
 
                 // 3.6. Asset Replacements (Critical for Published View)
-                // We must replace [[CAPA_URL]] with relative paths like 'capa/myimage.jpg'
+                // appState.assetsMap contains paths like: { 'capa': 'assets/capa_123.png' }
                 if (appState.assetsMap) {
-                    for (const [context, assetData] of Object.entries(appState.assetsMap)) {
-                        if (!assetData || !assetData.name) continue;
+                    for (const [context, assetPath] of Object.entries(appState.assetsMap)) {
+                        if (!assetPath || typeof assetPath !== 'string') continue;
 
-                        const relativePath = `${context}/${assetData.name}`;
+                        // assetPath is already the relative path like 'assets/capa_123.png'
+                        const relativePath = assetPath;
+                        const filename = assetPath.split('/').pop(); // Get just the filename
 
                         // Standard Replacement: [[CONTEXT_URL]]
                         let tokenKey = context.toUpperCase();
 
-                        // Handle Aliases
+                        // Handle Aliases for tokens in final_template.html
                         if (tokenKey === 'PRESENTES') tokenKey = 'PRESENTS';
                         if (tokenKey === 'FOLHA_VAZIA') tokenKey = 'FOLHA';
+                        if (tokenKey === 'VID_ABERTURA') tokenKey = 'VIDEO_ABERTURA';
 
                         // Replace URL
                         const urlToken = `[[${tokenKey}_URL]]`;
@@ -1560,7 +1563,9 @@
 
                         // Replace Filename (for OG tags etc)
                         const filenameToken = `[[${tokenKey}_FILENAME]]`;
-                        htmlContent = htmlContent.split(filenameToken).join(assetData.name);
+                        htmlContent = htmlContent.split(filenameToken).join(filename);
+
+                        console.log(`[Publish] Replaced ${urlToken} -> ${relativePath}`);
                     }
                 }
 
@@ -1660,10 +1665,10 @@
                 // showDeployStatusArea(); // REMOVED: Do not reset steps
 
                 // STEP 1 COMPLETE: Build Done
-                updateDeployStep('step-build', 'done');
+                window.updateDeployStep('step-build', 'done');
 
                 // STEP 2 START: Upload Loading
-                updateDeployStep('step-upload', 'loading');
+                window.updateDeployStep('step-upload', 'loading');
 
                 // We use /api/publish which is intercepted by supabase-adapter
                 // Edge Function has the GitHub token stored securely
@@ -1685,10 +1690,10 @@
                 if (!response.ok) throw new Error(result.error || 'Falha na publicação');
 
                 // STEP 2 COMPLETE: Upload Done
-                updateDeployStep('step-upload', 'done');
+                window.updateDeployStep('step-upload', 'done');
 
                 // STEP 3 START: Verifying (Live)
-                updateDeployStep('step-live', 'loading');
+                window.updateDeployStep('step-live', 'loading');
 
                 publishBtn.innerHTML = '<i class="fa-solid fa-check"></i> Enviado!';
                 publishBtn.classList.remove('bg-brand-600');
@@ -1715,7 +1720,7 @@
             } catch (err) {
                 console.error('Publish Error:', err);
                 showDeployError(err.message);
-                updateDeployStep('step-upload', 'reset'); // or error state
+                window.updateDeployStep('step-upload', 'reset'); // or error state
 
                 const publishStatusArea = document.getElementById('publish-status-area');
                 if (publishStatusArea) publishStatusArea.classList.add('hidden'); // Hide on error for retry
@@ -1746,7 +1751,7 @@
         }
 
         // Reset Steps to Pending
-        [1, 2, 3].forEach(id => updateDeployStep(id, 'pending'));
+        [1, 2, 3].forEach(id => window.updateDeployStep(id, 'pending'));
     }
 
     // Helper to update individual steps in the inline UI
@@ -1836,7 +1841,7 @@
         // showDeployStatusArea(); // REMOVED: Resets UI steps incorrectly
 
         // THEN set status to loading
-        updateDeployStep('step-live', 'loading');
+        window.updateDeployStep('step-live', 'loading');
         checkBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Construindo...';
 
         // Update Status Text
@@ -1919,7 +1924,7 @@
                 clearInterval(interval);
                 if (success) {
                     // STEP 3 COMPLETE: Live Done
-                    updateDeployStep('step-live', 'done');
+                    window.updateDeployStep('step-live', 'done');
                     checkBtn.innerHTML = '<i class="fa-solid fa-check"></i> Publicado!';
                     checkBtn.classList.remove('bg-brand-600', 'bg-blue-600', 'bg-yellow-600', 'bg-red-600'); // Ensure all removed
                     checkBtn.classList.add('bg-green-600');
@@ -1928,7 +1933,7 @@
                     finalizeSuccessUI(liveUrl, slug);
                     resolve();
                 } else {
-                    updateDeployStep('step-live', 'error');
+                    window.updateDeployStep('step-live', 'error');
                     checkBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Erro';
                     checkBtn.classList.remove('bg-brand-600', 'bg-blue-600');
                     checkBtn.classList.add('bg-red-600');
@@ -2100,25 +2105,7 @@
     }
 
 
-    function updateDeployStep(stepId, status) {
-        const step = document.getElementById(stepId);
-        if (!step) return;
-
-        step.classList.remove('bg-gray-200', 'bg-green-500', 'bg-brand-500', 'text-gray-400', 'text-white');
-
-        if (status === 'done') {
-            step.classList.add('bg-green-500', 'text-white');
-            step.innerHTML = '<i class="fa-solid fa-check text-xs"></i>';
-        } else if (status === 'loading') {
-            step.classList.add('bg-brand-500', 'text-white');
-            step.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i>';
-        } else if (status === 'reset') {
-            step.classList.add('bg-gray-200', 'text-gray-400');
-            const stepNum = stepId.replace('step-', '');
-            const nums = { 'build': '1', 'upload': '2', 'live': '3' };
-            step.textContent = nums[stepNum] || '';
-        }
-    }
+    // [REMOVED] Duplicate updateDeployStep - using the correct window.updateDeployStep from line 1753
 
     // ========================================
     // AI Generation Buttons
