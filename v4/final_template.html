@@ -535,87 +535,104 @@
         // ==================================================================
         // 3. GERAR BOTÕES DINAMICAMENTE
         // ==================================================================
-        // ==================================================================
-        // 3. GERAR BOTÕES DINAMICAMENTE
-        // ==================================================================
         console.log("[AutoBuilder] Rendering Buttons:", menuConfig);
-        menuConfig.forEach(btn => {
+
+        // 1. Filtrar botões ativos primeiro para saber a quantidade exata e configurar o container
+        const activeButtons = menuConfig.filter(btn => {
             // Robust check: Ensure link exists OR it's a special image button
             // Treat '#' as a valid link
             const hasLink = btn.link !== undefined && btn.link !== null && String(btn.link).trim() !== "";
+            // Special check for Manual Text mode (which uses manualText prop instead of link)
             const hasManualText = btn.id === 'manual' && btn.manualText && btn.manualText.length > 0;
 
-            if (hasLink || btn.isGiftImage || btn.isManualImage || hasManualText) {
+            return hasLink || btn.isGiftImage || btn.isManualImage || hasManualText;
+        });
 
-                const isGiftImage = btn.isGiftImage === true;
-                const isManualImage = btn.isManualImage === true;
-                const isManualText = btn.id === 'manual' && !isManualImage;
+        const btnCount = activeButtons.length;
 
-                console.log(`[AutoBuilder] Rendering Button: ${btn.id}`);
+        // 2. Definir classes do Container baseadas na quantidade (Lógica de Auto-Ajuste)
+        // Base: grid grid-flow-col auto-cols-fr w-full place-items-center transition-all duration-300
+        let gridClasses = "grid grid-flow-col auto-cols-fr w-full max-w-[480px] place-items-center transition-all duration-300";
 
-                // Create elements
-                const anchor = document.createElement('a');
-                anchor.className = "group flex flex-col items-center gap-1 focus:outline-none min-w-[50px] max-w-[80px] cursor-pointer";
-                anchor.target = "_blank";
+        if (btnCount <= 4) {
+            gridClasses += " gap-4"; // Espaçamento padrão elegante
+        } else if (btnCount === 5) {
+            gridClasses += " gap-2 scale-95 origin-bottom"; // Aperta um pouco
+        } else {
+            // 6 ou mais botões
+            gridClasses += " gap-1 scale-90 origin-bottom"; // Aperta mais e reduz tamanho
+        }
 
-                // Logic for href/click
-                const isRSVP = btn.titulo.toLowerCase().includes("confirmar") || btn.titulo.toLowerCase().includes("presença");
+        // Aplica as classes ao grid
+        if (gridBotoes) {
+            gridBotoes.className = gridClasses;
+        }
 
-                if (btn.id === 'manual') {
-                    // Manual Handler (Image or Text)
-                    anchor.href = "#";
-                    // Remove target blank for internal actions
-                    anchor.removeAttribute('target');
+        // 3. Gerar os botões (Loop na lista filtrada)
+        activeButtons.forEach(btn => {
+            const isGiftImage = btn.isGiftImage === true;
+            const isManualImage = btn.isManualImage === true;
 
-                    if (isManualImage) {
-                        anchor.addEventListener('click', abrirManualImage);
-                    } else {
-                        anchor.addEventListener('click', abrirManual);
-                    }
-                } else if (isGiftImage) {
-                    anchor.href = "#";
-                    anchor.removeAttribute('target');
-                    anchor.addEventListener('click', abrirPresentes);
-                } else if (isRSVP) {
-                    // Smart RSVP Logic
-                    anchor.href = "#";
-                    anchor.addEventListener('click', (e) => abrirRSVP(e, btn.link));
+            console.log(`[AutoBuilder] Rendering Button: ${btn.id}`);
+
+            // Create anchor element
+            const anchor = document.createElement('a');
+            // 'min-w-0' é crucial para permitir encolhimento em linhas cheias (grid)
+            // 'w-full' garante que ele ocupe o centro da sua fração do grid
+            anchor.className = "group flex flex-col items-center gap-1 focus:outline-none w-full min-w-0 cursor-pointer";
+
+            // Logic for href/click (Mantendo a lógica original funcional)
+            anchor.target = "_blank"; // Default
+
+            const isRSVP = btn.titulo.toLowerCase().includes("confirmar") || btn.titulo.toLowerCase().includes("presença");
+
+            if (btn.id === 'manual') {
+                // Manual Handler (Image or Text)
+                anchor.href = "#";
+                anchor.removeAttribute('target');
+                if (isManualImage) {
+                    anchor.addEventListener('click', abrirManualImage);
                 } else {
-                    anchor.href = btn.link;
+                    anchor.addEventListener('click', abrirManual);
                 }
 
-                // Calculate sizes
-                const basePx = 48;
-                const sizePx = basePx * buttonSize;
-                const baseIconRem = 1.125;
-                const iconRem = baseIconRem * buttonSize;
-
-                anchor.innerHTML = `
-                    <div class="rounded-full border border-stone-300 p-[2px] transition-transform duration-300 group-hover:scale-105 group-active:scale-95">
-                        <div class="rounded-full custom-button-bg text-white flex items-center justify-center shadow-lg group-hover:bg-stone-700 transition-colors"
-                             style="width: ${sizePx}px; height: ${sizePx}px; background-color: [[BUTTON_COLOR]];">
-                            <i class="${btn.icone}" style="font-size: ${iconRem}rem;"></i>
-                        </div>
-                    </div>
-                    <span class="text-[10px] uppercase font-bold text-white tracking-wide text-center leading-tight drop-shadow-md">
-                        ${btn.titulo}
-                    </span>
-                    `;
-
-                gridBotoes.appendChild(anchor);
-
-                // Se for manual, injeta o conteúdo se disponível
-                if (btn.id === 'manual' && btn.manualText) {
-                    // Safety check for manualContent element
-                    if (manualContent) {
-                        manualContent.innerHTML = btn.manualText;
-                    } else {
-                        console.warn("[AutoBuilder] manualContent element missing!");
-                    }
+                // Se for manual text, injeta o conteúdo
+                if (btn.manualText && manualContent) {
+                    manualContent.innerHTML = btn.manualText;
                 }
+            } else if (isGiftImage) {
+                anchor.href = "#";
+                anchor.removeAttribute('target');
+                anchor.addEventListener('click', abrirPresentes);
+            } else if (isRSVP) {
+                // Smart RSVP Logic
+                anchor.href = "#";
+                anchor.removeAttribute('target'); // RSVP popup is internal
+                anchor.addEventListener('click', (e) => abrirRSVP(e, btn.link));
             } else {
-                console.log(`[AutoBuilder] Skipping Button ${btn.titulo} - No Valid Link/Mode`, btn);
+                anchor.href = btn.link;
             }
+
+            // Calculate sizes (Mantendo a escala configurada)
+            const basePx = 48;
+            const sizePx = basePx * buttonSize;
+            const baseIconRem = 1.125;
+            const iconRem = baseIconRem * buttonSize;
+
+            // Renderização do HTML interno
+            anchor.innerHTML = `
+                <div class="rounded-full border border-stone-300 p-[2px] transition-transform duration-300 group-hover:scale-105 group-active:scale-95">
+                    <div class="rounded-full custom-button-bg text-white flex items-center justify-center shadow-lg group-hover:bg-stone-700 transition-colors"
+                         style="width: ${sizePx}px; height: ${sizePx}px; background-color: [[BUTTON_COLOR]];">
+                        <i class="${btn.icone}" style="font-size: ${iconRem}rem;"></i>
+                    </div>
+                </div>
+                <span class="text-[10px] uppercase font-bold text-white tracking-wide text-center leading-tight drop-shadow-md w-full break-words px-1">
+                    ${btn.titulo}
+                </span>
+            `;
+
+            gridBotoes.appendChild(anchor);
         });
 
         // ==================================================================
