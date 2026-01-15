@@ -2279,6 +2279,13 @@
                     </div>
                 `;
             });
+
+            // Trigger preview update on state restoration
+            document.addEventListener('stateUpdated', (e) => {
+                if (e.detail && e.detail.source === 'persistence' && htmlEditor.value) {
+                    htmlEditor.dispatchEvent(new Event('input'));
+                }
+            });
         }
 
         // Optimize button
