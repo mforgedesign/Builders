@@ -200,7 +200,28 @@
             const vid = content.querySelector('video.preview-bg-video');
             if (vid) vid.remove();
 
-            // Priority 1: Video
+            // Priority 1: Fundo Tela (Unified Background - Image or Video)
+            if (currentState.fundo_tela && currentState.fundo_tela.url) {
+                const url = currentState.fundo_tela.url;
+                const isVideo = /\.(mp4|webm|mov)$/i.test(url) || (currentState.fundo_tela.type && currentState.fundo_tela.type.startsWith('video'));
+
+                if (isVideo) {
+                    const video = document.createElement('video');
+                    video.className = 'preview-bg-video absolute inset-0 w-full h-full object-cover z-0';
+                    video.src = url;
+                    video.autoplay = true;
+                    video.loop = true;
+                    video.muted = true;
+                    video.playsInline = true;
+                    content.insertBefore(video, content.firstChild);
+                    content.style.backgroundImage = 'none';
+                } else {
+                    content.style.backgroundImage = `url('${url}')`;
+                }
+                return;
+            }
+
+            // Priority 2: Video (Legacy - media_folha_animada)
             if (currentState.media_folha_animada && currentState.media_folha_animada.url) {
                 const video = document.createElement('video');
                 video.className = 'preview-bg-video absolute inset-0 w-full h-full object-cover z-0';
@@ -214,19 +235,19 @@
                 return;
             }
 
-            // Priority 2: Folha Preenchida
+            // Priority 3: Folha Preenchida (Legacy)
             if (currentState.media_folha_preenchida && currentState.media_folha_preenchida.url) {
                 content.style.backgroundImage = `url('${currentState.media_folha_preenchida.url}')`;
                 return;
             }
 
-            // Priority 3: Folha Vazia
+            // Priority 4: Folha Vazia (Legacy)
             if (currentState.media_folha_vazia && currentState.media_folha_vazia.url) {
                 content.style.backgroundImage = `url('${currentState.media_folha_vazia.url}')`;
                 return;
             }
 
-            // Priority 4: Default
+            // Priority 5: Default Gradient
             content.style.backgroundImage = DEFAULT_GRADIENT;
         });
     }
@@ -304,7 +325,12 @@
 
         document.addEventListener('mediaUpdated', (e) => {
             const { type, data } = e.detail;
-            if (type === 'folha_animada') currentState.media_folha_animada = data;
+            console.log('[Preview] mediaUpdated:', type, data);
+
+            // Unified Background (Priority)
+            if (type === 'fundo_tela') currentState.fundo_tela = data;
+            // Legacy fields
+            else if (type === 'folha_animada') currentState.media_folha_animada = data;
             else if (type === 'folha_preenchida') currentState.media_folha_preenchida = data;
             else if (type === 'folha_vazia') currentState.media_folha_vazia = data;
             else if (type === 'presentes') currentState.media_presentes = data;
