@@ -102,12 +102,12 @@
     }
 
     /**
-     * TEMPLATE D: Opening Animation (Abertura) - Hailuo 02
-     * Image-to-Video (requires capa.jpg as input)
+     * TEMPLATE D: Opening Animation (Abertura) - Hailuo 02 First-Last-Frame
+     * Image-to-Video (requires capa.jpg as input, uses blank.jpg as last frame)
      */
     function getOpeningVideoPrompt() {
         // Fixed prompt - no variables needed
-        return `The animation begins with a focus on the closed envelope. As the wax seal gracefully detaches and falls, the envelope's flap uplifts slowly. From its interior, a spectacular eruption of glittering sparkles and smoke, shimmering dust, and glowing light trails emerges, cascading outward in a mesmerizing display. These vibrant particles swirl dynamically, increasing in density and brightness around the envelope. The radiant light and swirling glitter intensify, rapidly expanding to fill the entire scene. CRITICAL: The overwhelming brilliance transitions the frame to a solid, blinding white screen in the very final frame, achieved through a dramatic zoom-in effect.`;
+        return `The animation begins with a focus on the closed envelope. As the wax seal gracefully detaches and falls, the envelope's flap uplifts slowly. From its interior, a spectacular eruption of glittering sparkles and smoke, shimmering dust, and glowing light trails emerges, cascading outward in a mesmerizing display. These vibrant particles swirl dynamically, increasing in density and brightness around the envelope. The radiant light and swirling glitter intensify, rapidly expanding to fill the entire scene. CRITICAL: The Color of glow, light and smoke need to be the same of the image color pallete. The overwhelming brilliance transitions the frame to a solid, blinding white screen in the very final frame, achieved through a dramatic zoom-in effect.`;
     }
 
     /**
