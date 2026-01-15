@@ -4,7 +4,38 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
-## [15/01/2026 - 16:17] - v4.2.14 - Deploy Manual
+## [15/01/2026 - 18:12] - v4.2.15 - Fix: Botão de Animação da Capa (Hailuo 02 First-Last-Frame)
+### Arquivos Modificados:
+*   `generate-video` (Supabase Edge Function):
+    *   **Breaking Change**: Atualizado para usar endpoint `first-last-frame-to-video` ao invés de `image-to-video`.
+    *   **Parâmetros**: 9:16, 6s, 768p, prompt_optimizer: false.
+    *   **URL do blank.jpg**: `https://ymttaaebrqcfrgipqwvy.supabase.co/storage/v1/object/public/invitation-assets/system/blank.jpg`
+    *   **Rationale**: O endpoint anterior não suportava transição para tela branca final. O novo endpoint interpola entre o frame inicial (capa) e o frame final (tela branca).
+*   `static/js/ai-prompts.js`:
+    *   **Prompt Atualizado**: Adicionada instrução crítica sobre paleta de cores: "CRITICAL: The Color of glow, light and smoke need to be the same of the image color pallete."
+*   `static/js/windows.js`:
+    *   **Nova Função**: `initializeDefaultPrompts()` - Inicializa campos de prompt com valores padrão se vazios.
+    *   **Rationale**: Garante que o usuário sempre tenha um prompt funcional pré-carregado.
+*   **Supabase Storage**: Upload de `blank.jpg` para `invitation-assets/system/blank.jpg`.
+
+### Comportamento Esperado:
+1. Ao iniciar o builder, o campo de prompt terá o prompt padrão pré-carregado.
+2. Ao alterar o prompt, a persistência salva no localStorage.
+3. Ao clicar "Novo Convite", o prompt é restaurado para o padrão (não fica em branco).
+4. O botão "Gerar Animação" agora chama o endpoint correto com first/last frame.
+
+---
+
+## [15/01/2026 - 18:44] - v4.2.16 - Fix: Botão de Animação Não Respondia a Cliques
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **BUG CRÍTICO CORRIGIDO**: A função `setupAIButtons()` existia mas NUNCA era chamada em `initWindows()`.
+    *   **Causa**: Os click handlers dos botões "Gerar Animação" e "Gerar Loop" não eram anexados.
+    *   **Solução**: Adicionada chamada `setupAIButtons()` em `initWindows()` (linha ~2738).
+
+---
+
+## [15/01/2026 - 18:17] - v4.2.14 - Deploy Manual
 ### Ações Realizadas:
 *   **Deploy**: Execução do script `deploy_to_github.py` para atualizar a versão em produção no repositório `mforgedesign/Builders`.
 *   **URL**: https://builder.mforge.com.br/v4/
