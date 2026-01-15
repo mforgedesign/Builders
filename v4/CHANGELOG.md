@@ -22,6 +22,18 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
     *   **Fix**: Adicionado tratamento de erro para `localStorage` (Tracking Prevention) para evitar falha na leitura da chave de API.
     *   **Robustez**: Fallback garantido para a chave hardcoded caso o storage falhe.
     *   **Debug**: Log parcial da chave para verificação de integridade no console.
+
+---
+
+## [15/01/2026 - 17:00] - v4.2.11 - Migração de Segurança (Server-Side AI)
+### Arquivos Modificados:
+*   `static/js/gemini-adapter.js`:
+    *   **Refactor**: Removida toda lógica de chave de API no cliente.
+    *   **Security**: Agora invoca a *Supabase Edge Function* `analyze-invitation` para processamento seguro.
+    *   **Cleanup**: Remove automaticamente chaves antigas do `localStorage` do usuário.
+*   `supabase/functions/analyze-invitation`: [NOVO]
+    *   Function em Deno/TypeScript que atua como proxy seguro para a API do Google Gemini.
+*   `deploy_to_github.py`: Executado para atualizar o frontend.
 *   `deploy_to_github.py`:
     *   **Optimization**: Script já em uso versão otimizada (v2).
 
