@@ -117,13 +117,11 @@
             const baseTreeSha = commitData.tree.sha;
 
             // 5. Create New Root Tree
-            // We use the base_tree (Root) and UPDATE the entry for "convites/{slug}"
+            // We use the base_tree (Root) and UPDATE the entry for "{slug}"
             // to point to our new slugTreeSha.
-            // "path": "convites/slug" works for deep update if "recursive" creation is supported? 
-            // GitHub Tree API supports updating a subdirectory by path if using base_tree.
-            // NOTE: "path" must not start with /
+            // This places the invitation folder at the ROOT of the repository.
 
-            const fullPath = `convites/${slug}`;
+            const fullPath = slug; // was `convites/${slug}`
 
             const rootTreeRes = await fetch(treeUrl, {
                 method: 'POST',
@@ -140,9 +138,6 @@
             });
 
             if (!rootTreeRes.ok) {
-                // Determine if failure is due to path handling
-                // GitHub might require creating "convites" tree if it doesn't exist?
-                // But usually with base_tree it handles updates.
                 const err = await rootTreeRes.json();
                 throw new Error(`Failed to update root tree: ${err.message}`);
             }
@@ -181,7 +176,7 @@
             return {
                 success: true,
                 sha: newCommitSha,
-                url: `https://mforgedesign.github.io/${REPO_NAME}/convites/${slug}/`
+                url: `https://convites.mforge.com.br/${slug}/`
             };
         }
 
