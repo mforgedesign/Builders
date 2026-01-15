@@ -63,6 +63,13 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 *   **Deploy System (Backend)**:
     *   **Novo**: Edge Function `deploy-github-v2` implementada.
     *   **Feature**: "Atomic Subtree Replacement". Ao fazer deploy via servidor (fallback), o sistema agora **substitui** completamente a pasta do convite, removendo automaticamente arquivos antigos (lixo acumulado) em um único commit.
+*   `functions/analyze-invitation`:
+    *   **Fix 500 Error (V3)**:
+        *   **Hard Truncate**: O input HTML é cortado nos primeiros 100KB *antes* de qualquer processamento. Isso evita travamentos (timeouts) com Regex em arquivos gigantes.
+        *   **Connectivity Probe**: Adicionado teste automático de conexão com Gemini se a chamada principal falhar, para diferenciar erro de chave vs erro de payload.
+        *   **API Key Update**: Chave de API atualizada e validada.
+*   `functions/optimize-manual`:
+    *   **fix**: API Key também atualizada neste módulo.
 *   `static/js/supabase-adapter.js`:
     *   Atualizado para usar a versão v2 do deploy no GitHub.
 *   `deploy_to_github.py`:
