@@ -4,6 +4,18 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 15:45] - v4.2.8 - Importação Inteligente com I.A (Gemini)
+### Arquivos Modificados:
+*   `static/js/gemini-adapter.js`: [NOVO] Implementado adaptador para API do Gemini 1.5 Flash. Parser inteligente de HTML para JSON.
+*   `static/js/history.js`: Adicionado fallback para usar o GeminiAdapter quando `data.json` não for encontrado.
+*   `index.html`: Inclusão do script do Gemini e atualização de versões (v=4.2.8).
+*   `final_template.html`: Refatorada lógica de renderização do botão Manual e adicionados logs de debug.
+### Funcionalidades:
+*   **Importação Inteligente**: Agora, ao importar convites antigos/externos sem metadados, a I.A lê o HTML e preenche o formulário automaticamente.
+*   **Correção Manual**: Botão 'Manual' agora aparece corretamente mesmo sem modo imagem.
+
+---
+
 ## [2026-01-14 18:55] - UI Tweaks & Deployment Optimization
 ### Arquivos Modificados:
 *   `final_template.html`:
