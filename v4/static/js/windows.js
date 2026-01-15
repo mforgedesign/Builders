@@ -2257,33 +2257,37 @@
                 const text = rawText.value;
                 if (!text) return;
 
-                // Simple transformation (real implementation would use AI)
-                const lines = text.split('\n').filter(l => l.trim());
-                const icons = {
-                    'traje': 'fa-shirt',
-                    'dress': 'fa-shirt',
-                    'hora': 'fa-clock',
-                    'estacionamento': 'fa-car',
-                    'parking': 'fa-car',
-                    'crianças': 'fa-child',
-                    'kids': 'fa-child',
-                    'presente': 'fa-gift',
-                    'gift': 'fa-gift'
-                };
+                // UI Feedback: Loading state
+                const originalBtnText = optimizeBtn.innerHTML;
+                optimizeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Otimizando (IA)...';
+                optimizeBtn.disabled = true;
 
-                const html = lines.map(line => {
-                    let icon = 'fa-circle-info';
-                    for (const [keyword, iconClass] of Object.entries(icons)) {
-                        if (line.toLowerCase().includes(keyword)) {
-                            icon = iconClass;
-                            break;
-                        }
-                    }
-                    return `<p class="mb-2"><i class="fa-solid ${icon} text-brand-400 mr-2"></i>${line}</p>`;
-                }).join('\n');
+                try {
+                    if (!window.supabase) throw new Error("Supabase client not initialized");
 
-                htmlEditor.value = html;
-                preview.innerHTML = html;
+                    // Call Supabase Edge Function
+                    const { data, error } = await window.supabase.functions.invoke('optimize-manual', {
+                        body: { text }
+                    });
+
+                    if (error) throw new Error(error.message);
+                    if (!data || !data.html) throw new Error("No HTML returned from AI");
+
+                    // Update Editors
+                    htmlEditor.value = data.html;
+                    preview.innerHTML = data.html;
+
+                    // Trigger input event to save state if needed
+                    htmlEditor.dispatchEvent(new Event('input'));
+
+                } catch (err) {
+                    console.error('[Manual Optimizer] Error:', err);
+                    alert('Erro ao otimizar texto: ' + err.message);
+                } finally {
+                    // Restore Button
+                    optimizeBtn.innerHTML = originalBtnText;
+                    optimizeBtn.disabled = false;
+                }
             });
         }
     }
