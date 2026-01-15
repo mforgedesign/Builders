@@ -1498,7 +1498,7 @@
                 if (!templateResp.ok) throw new Error('Template não encontrado');
                 let htmlContent = await templateResp.text();
 
-                // 3.5. Computed Replacements (Date/Time, Offset, Color)
+                // 3.5. Computed Replacements (Date/Time, Offset, Color, Title)
                 const eventDate = formData.data_evento || formData.data;
                 const eventTime = formData.hora_evento || formData.hora || '00:00';
                 const eventDateTime = eventDate ? `${eventDate}T${eventTime}:00` : '';
@@ -1506,6 +1506,19 @@
 
                 const buttonsOffset = formData.botoes_offset || formData.posicao_botoes || formData.buttons_offset || '0';
                 htmlContent = htmlContent.replace(/\[\[BUTTONS_OFFSET\]\]/g, buttonsOffset);
+
+                // Title Generation: Name | Event Type [Age]
+                const hostName = formData.nome_anfitriao || formData.nome || 'Convite';
+                const eventType = formData.tipo_evento || formData.event_type || 'Evento';
+                let pageTitle = `${hostName} | ${eventType}`;
+
+                // Add age if it exists and event type is related to birthday
+                if ((formData.idade_aniversariante || formData.idade) &&
+                    eventType.toLowerCase().includes('aniversário')) {
+                    pageTitle += ` ${formData.idade_aniversariante || formData.idade} Anos`;
+                }
+
+                htmlContent = htmlContent.replace(/\[\[OG_TITLE\]\]/g, pageTitle);
 
                 // Timer Logic: Safe Boolean Conversion
                 const isTimerEnabled = String(formData.timer_contagem).toLowerCase().trim() === 'true';
