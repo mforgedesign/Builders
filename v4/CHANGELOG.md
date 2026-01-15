@@ -43,6 +43,16 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
     *   **Backend**: Nova Edge Function `optimize-manual` que usa Gemini AI.
     *   **Ação**: Rewrites o texto inserido para ser mais elegante/formal e insere automaticamente ícones (FontAwesome) relevantes ao contexto.
     *   **Frontend**: Feedback visual de carregamento ("Otimizando (IA)...") e tratamento de erros.
+
+---
+
+## [15/01/2026 - 17:35] - v4.2.13 - Fix: SDK Supabase Client
+### Arquivos Modificados:
+*   `static/js/supabase-adapter.js`:
+    *   **Fix**: Exposto explicitamente `window.supabaseClient` para garantir acesso global à instância autenticada.
+*   `static/js/gemini-adapter.js` & `static/js/windows.js`:
+    *   **Refactor**: Atualizadas referências para usar `window.supabaseClient` ao invés de `supabase` (que era indefinido no escopo global).
+    *   **Result**: Resolve erro `TypeError: Cannot read properties of undefined (reading 'invoke')` durante importação e otimização manual.
 *   `deploy_to_github.py`:
     *   **Optimization**: Script já em uso versão otimizada (v2).
 
