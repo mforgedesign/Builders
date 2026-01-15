@@ -26,6 +26,17 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 18:50] - v4.2.17 - Fix: Assets Restaurados Não Reconhecidos pelo Builder
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **getRequiredImage()**: Corrigido mapeamento de nomes de assets (capa/cover, folha_vazia/leaf_only).
+    *   **Causa**: Persistência usa nomes em português, AI generation usava nomes em inglês.
+*   `static/js/persistence.js`:
+    *   **restoreFromLocalStorage()**: Alterado para salvar dataUrl diretamente em builderState (antes salvava Blob).
+    *   **Causa**: APIs precisam de URLs, não de Blobs. Isso causava erro ao tentar gerar animação após restaurar sessão.
+
+---
+
 ## [15/01/2026 - 18:44] - v4.2.16 - Fix: Botão de Animação Não Respondia a Cliques
 ### Arquivos Modificados:
 *   `static/js/windows.js`:
