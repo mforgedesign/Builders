@@ -16,6 +16,17 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 16:45] - v4.2.10 - Fix: Chave de API Gemini & Storage
+### Arquivos Modificados:
+*   `static/js/gemini-adapter.js`:
+    *   **Fix**: Adicionado tratamento de erro para `localStorage` (Tracking Prevention) para evitar falha na leitura da chave de API.
+    *   **Robustez**: Fallback garantido para a chave hardcoded caso o storage falhe.
+    *   **Debug**: Log parcial da chave para verificação de integridade no console.
+*   `deploy_to_github.py`:
+    *   **Optimization**: Script já em uso versão otimizada (v2).
+
+---
+
 ## [2026-01-14 18:55] - UI Tweaks & Deployment Optimization
 ### Arquivos Modificados:
 *   `final_template.html`:
