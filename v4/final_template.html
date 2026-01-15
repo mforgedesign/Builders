@@ -535,11 +535,22 @@
         // ==================================================================
         // 3. GERAR BOTÕES DINAMICAMENTE
         // ==================================================================
+        // ==================================================================
+        // 3. GERAR BOTÕES DINAMICAMENTE
+        // ==================================================================
+        console.log("[AutoBuilder] Rendering Buttons:", menuConfig);
         menuConfig.forEach(btn => {
-            if (btn.link && (btn.link.trim() !== "" || btn.isGiftImage || btn.isManualImage)) {
+            // Robust check: Ensure link exists OR it's a special image button
+            // Treat '#' as a valid link
+            const hasLink = btn.link !== undefined && btn.link !== null && String(btn.link).trim() !== "";
+
+            if (hasLink || btn.isGiftImage || btn.isManualImage) {
 
                 const isGiftImage = btn.isGiftImage === true;
                 const isManualImage = btn.isManualImage === true;
+                const isManualText = btn.id === 'manual' && !isManualImage;
+
+                console.log(`[AutoBuilder] Rendering Button: ${btn.id}`);
 
                 // Create elements
                 const anchor = document.createElement('a');
@@ -547,22 +558,22 @@
                 anchor.target = "_blank";
 
                 // Logic for href/click
-                // Check for Confirmation Logic
                 const isRSVP = btn.titulo.toLowerCase().includes("confirmar") || btn.titulo.toLowerCase().includes("presença");
 
-                if (btn.id === 'manual' && isManualImage) {
-                    // Manual with Image mode: open image popup
+                if (btn.id === 'manual') {
+                    // Manual Handler (Image or Text)
                     anchor.href = "#";
-                    anchor.target = "";
-                    anchor.addEventListener('click', abrirManualImage);
-                } else if (btn.id === 'manual') {
-                    // Manual with Text mode: open text popup
-                    anchor.href = "#";
-                    anchor.target = "";
-                    anchor.addEventListener('click', abrirManual);
+                    // Remove target blank for internal actions
+                    anchor.removeAttribute('target');
+
+                    if (isManualImage) {
+                        anchor.addEventListener('click', abrirManualImage);
+                    } else {
+                        anchor.addEventListener('click', abrirManual);
+                    }
                 } else if (isGiftImage) {
                     anchor.href = "#";
-                    anchor.target = "";
+                    anchor.removeAttribute('target');
                     anchor.addEventListener('click', abrirPresentes);
                 } else if (isRSVP) {
                     // Smart RSVP Logic
@@ -593,10 +604,16 @@
                 gridBotoes.appendChild(anchor);
 
                 // Se for manual, injeta o conteúdo se disponível
-                // Se for manual, injeta o conteúdo se disponível
                 if (btn.id === 'manual' && btn.manualText) {
-                    manualContent.innerHTML = btn.manualText;
+                    // Safety check for manualContent element
+                    if (manualContent) {
+                        manualContent.innerHTML = btn.manualText;
+                    } else {
+                        console.warn("[AutoBuilder] manualContent element missing!");
+                    }
                 }
+            } else {
+                console.log(`[AutoBuilder] Skipping Button ${btn.titulo} - No Valid Link/Mode`, btn);
             }
         });
 
