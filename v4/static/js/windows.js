@@ -2263,10 +2263,10 @@
                 optimizeBtn.disabled = true;
 
                 try {
-                    if (!window.supabase) throw new Error("Supabase client not initialized");
+                    if (!window.supabaseClient) throw new Error("Supabase client not initialized");
 
                     // Call Supabase Edge Function
-                    const { data, error } = await window.supabase.functions.invoke('optimize-manual', {
+                    const { data, error } = await window.supabaseClient.functions.invoke('optimize-manual', {
                         body: { text }
                     });
 
