@@ -53,6 +53,18 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 *   `static/js/gemini-adapter.js` & `static/js/windows.js`:
     *   **Refactor**: Atualizadas referências para usar `window.supabaseClient` ao invés de `supabase` (que era indefinido no escopo global).
     *   **Result**: Resolve erro `TypeError: Cannot read properties of undefined (reading 'invoke')` durante importação e otimização manual.
+
+---
+
+## [15/01/2026 - 17:55] - v4.2.14 - Fix: Persistência de Dados e Limpeza
+### Correções Críticas:
+*   `static/js/windows.js`:
+    *   **Fix Data Saving**: A ordem de geração do `data.json` estava incorreta (antes de coletar os dados do formulário). Agora a coleta acontece ANTES do salvamento, garantindo que o arquivo json contenha todos os dados atuais.
+*   **Deploy System (Backend)**:
+    *   **Novo**: Edge Function `deploy-github-v2` implementada.
+    *   **Feature**: "Atomic Subtree Replacement". Ao fazer deploy via servidor (fallback), o sistema agora **substitui** completamente a pasta do convite, removendo automaticamente arquivos antigos (lixo acumulado) em um único commit.
+*   `static/js/supabase-adapter.js`:
+    *   Atualizado para usar a versão v2 do deploy no GitHub.
 *   `deploy_to_github.py`:
     *   **Optimization**: Script já em uso versão otimizada (v2).
 
