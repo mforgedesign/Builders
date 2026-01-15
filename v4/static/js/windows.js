@@ -1340,9 +1340,21 @@
 
                 // Helper: Blob to Base64
                 const blobToBase64 = (blob) => {
-                    return new Promise((resolve) => {
+                    return new Promise((resolve, reject) => {
+                        if (!(blob instanceof Blob)) {
+                            console.warn('[Publish] Invalid blob passed to blobToBase64:', blob);
+                            resolve(''); // Return empty string to avoid crash
+                            return;
+                        }
                         const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                        reader.onloadend = () => {
+                            if (reader.result) {
+                                resolve(reader.result.split(',')[1]);
+                            } else {
+                                resolve('');
+                            }
+                        };
+                        reader.onerror = reject;
                         reader.readAsDataURL(blob);
                     });
                 };
@@ -1352,19 +1364,34 @@
                     const el = document.querySelector(selector);
                     if (!el) return null;
                     let url = null;
-                    if (type === 'bg') {
+
+                    // Unified 'auto' mode for fondo_tela
+                    if (type === 'auto') {
+                        // Check for video first
+                        const video = el.querySelector('video');
+                        if (video && video.src) {
+                            url = video.src;
+                        } else {
+                            // Fallback to background image
+                            const style = el.style.backgroundImage;
+                            if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
+                        }
+                    } else if (type === 'bg') {
                         const style = el.style.backgroundImage;
                         if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
-                    } else if (type === 'src') url = el.src;
+                    } else if (type === 'src') {
+                        url = el.src;
+                    }
+
                     if (url) {
-                        if (url.startsWith('blob:')) {
+                        try {
                             const resp = await fetch(url);
+                            if (!resp.ok) throw new Error('Network error');
                             return await resp.blob();
+                        } catch (e) {
+                            console.warn('Failed to fetch asset from URL:', url, e);
+                            return null;
                         }
-                        // If it's a data URL or external URL (needs validation for CORS if external)
-                        // For now assuming mostly local blobs or same-origin
-                        const resp = await fetch(url);
-                        return await resp.blob();
                     }
                     return null;
                 }
@@ -1373,26 +1400,44 @@
                 // Format: assets/name_TIMESTAMP.ext
                 for (const [key, config] of Object.entries(assetsMap)) {
                     let blob = null;
-                    if (config.source) blob = config.source;
-                    else if (config.selector) blob = await fetchBlobFromSelector(config.selector, config.type);
 
-                    if (blob) {
+                    if (config.source) {
+                        // If source is string (URL), fetch it
+                        if (typeof config.source === 'string') {
+                            try {
+                                console.log(`[Publish] Fetching remote asset for ${config.context}:`, config.source);
+                                const r = await fetch(config.source);
+                                if (r.ok) blob = await r.blob();
+                            } catch (e) { console.warn('Failed to fetch source:', config.source); }
+                        } else if (config.source instanceof Blob) {
+                            blob = config.source;
+                        }
+                    }
+                    else if (config.selector) {
+                        blob = await fetchBlobFromSelector(config.selector, config.type);
+                    }
+
+                    if (blob && blob instanceof Blob) {
+                        // Determine extension for 'auto' type
+                        if (config.ext === 'auto') {
+                            if (blob.type.includes('video')) config.ext = 'mp4';
+                            else if (blob.type.includes('image')) config.ext = 'png';
+                            else config.ext = 'dat';
+                        }
+
                         // Define standardized name with timestamp
-                        // e.g. assets/capa_1708540000.png
                         const filename = `${config.context}_${timestamp}.${config.ext}`;
                         const path = `assets/${filename}`;
-
-                        // Add to Files Payload (path assumes inside slug folder)
-                        // Supabase Adapter expects relative paths to slug root
-                        // filesMap["assets/capa_...png"] = base64
 
                         filesMap[path] = await blobToBase64(blob);
 
                         // Update Brain Map (so restore knows exact file)
                         appState.assetsMap[config.context] = path;
 
-                        // Safety: also add back to builderState for immediate consistency?
-                        // No, generateBuilderState returns a fresh object. appState IS the snapshot.
+                        // Special case for Unified Background: update videoLoop logic if it's a video
+                        if (config.context === 'fundo_tela' && config.ext === 'mp4') {
+                            // Ensure loop context is consistent if needed
+                        }
                     }
                 }
 
