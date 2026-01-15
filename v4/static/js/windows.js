@@ -1365,33 +1365,43 @@
                     if (!el) return null;
                     let url = null;
 
-                    // Unified 'auto' mode for fondo_tela
-                    if (type === 'auto') {
-                        // Check for video first
-                        const video = el.querySelector('video');
-                        if (video && video.src) {
-                            url = video.src;
-                        } else {
-                            // Fallback to background image
+                    try {
+                        // Unified 'auto' mode for fondo_tela
+                        if (type === 'auto') {
+                            // Check for video first
+                            const video = el.querySelector('video');
+                            if (video && video.src) {
+                                url = video.src;
+                            } else {
+                                // Fallback to background image
+                                const style = el.style.backgroundImage;
+                                if (style && style !== 'none') {
+                                    // Remove 'url(' prefix, ')' suffix, and ANY quotes
+                                    url = style.slice(4, -1).replace(/['"]/g, "");
+                                }
+                            }
+                        } else if (type === 'bg') {
                             const style = el.style.backgroundImage;
-                            if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
+                            if (style && style !== 'none') {
+                                url = style.slice(4, -1).replace(/['"]/g, "");
+                            }
+                        } else if (type === 'src') {
+                            url = el.src;
                         }
-                    } else if (type === 'bg') {
-                        const style = el.style.backgroundImage;
-                        if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
-                    } else if (type === 'src') {
-                        url = el.src;
-                    }
 
-                    if (url) {
-                        try {
+                        if (url) {
+                            // Handle Data URIs directly (fetch handles them but explicit check is safer?)
+                            // Fetch handles data: fine.
                             const resp = await fetch(url);
-                            if (!resp.ok) throw new Error('Network error');
+                            if (!resp.ok) throw new Error(`Network error: ${resp.status}`);
                             return await resp.blob();
-                        } catch (e) {
-                            console.warn('Failed to fetch asset from URL:', url, e);
-                            return null;
                         }
+                    } catch (e) {
+                        console.warn('[Publish] Failed to catch asset from selector:', selector, url, e);
+                        // Fallback: If fetch fails but we have a URL, MAYBE return null so we keep the original URL?
+                        // If we return null, the loop continues and source is skipped?
+                        // Actually, if we return null here, loop logic needs to handle it.
+                        return null;
                     }
                     return null;
                 }
