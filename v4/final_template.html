@@ -552,16 +552,23 @@
         const btnCount = activeButtons.length;
 
         // 2. Definir classes do Container baseadas na quantidade (Lógica de Auto-Ajuste)
-        // Base: grid grid-flow-col auto-cols-fr w-full place-items-center transition-all duration-300
-        let gridClasses = "grid grid-flow-col auto-cols-fr w-full max-w-[480px] place-items-center transition-all duration-300";
+        // 2. Definir classes do Container baseadas na quantidade (Lógica de Auto-Ajuste)
+        let gridClasses = "";
 
         if (btnCount <= 4) {
-            gridClasses += " gap-4"; // Espaçamento padrão elegante
-        } else if (btnCount === 5) {
-            gridClasses += " gap-2 scale-95 origin-bottom"; // Aperta um pouco
+            // V4.1: Use Flexbox for better centering spacing when few buttons exist
+            // Avoids the "stretched out" look of grid-flow-col which made buttons too far apart
+            gridClasses = "flex flex-row justify-center w-full max-w-[480px] items-center transition-all duration-300 gap-6";
         } else {
-            // 6 ou mais botões
-            gridClasses += " gap-1 scale-90 origin-bottom"; // Aperta mais e reduz tamanho
+            // Use Grid for 5+ to guarantee equal distribution/squeezing
+            gridClasses = "grid grid-flow-col auto-cols-fr w-full max-w-[480px] place-items-center transition-all duration-300";
+
+            if (btnCount === 5) {
+                gridClasses += " gap-2 scale-95 origin-bottom"; // Aperta um pouco
+            } else {
+                // 6 ou mais botões
+                gridClasses += " gap-1 scale-90 origin-bottom"; // Aperta mais e reduz tamanho
+            }
         }
 
         // Aplica as classes ao grid
