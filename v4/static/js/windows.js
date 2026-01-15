@@ -2734,16 +2734,48 @@
             // Finalize buttons
             try { setupFinalizeButtons(); } catch (e) { console.warn('Finalize Buttons setup failed', e); }
 
-            // AI generation buttons
+            // AI generation buttons - CRITICAL: This sets up click handlers for all AI buttons including intro/loop
+            try { setupAIButtons(); } catch (e) { console.warn('AI Buttons setup failed', e); }
             try { setupCoverGeneration(); } catch (e) { console.warn('Cover Gen setup failed', e); }
             try { setupLeafGeneration(); } catch (e) { console.warn('Leaf Gen setup failed', e); }
 
             // Manual editor
             try { setupManualEditor(); } catch (e) { console.warn('Manual Editor setup failed', e); }
 
+            // Initialize default prompts for animation if fields are empty
+            try { initializeDefaultPrompts(); } catch (e) { console.warn('Default Prompts setup failed', e); }
+
             console.log('✅ Windows controller initialized');
         } catch (fatalError) {
             console.error('[Windows] CRITICAL INITIALIZATION ERROR:', fatalError);
+        }
+    }
+
+    /**
+     * Initialize default prompts for animation fields if they are empty.
+     * This ensures users always have a good starting point.
+     */
+    function initializeDefaultPrompts() {
+        if (!window.AIPrompts) {
+            console.warn('[Windows] AIPrompts not loaded, skipping default prompt initialization');
+            return;
+        }
+
+        const introPromptEl = document.getElementById('intro-motion-prompt');
+        const loopPromptEl = document.getElementById('loop-motion-prompt');
+
+        // Only populate if the field is truly empty (not if user cleared it intentionally via persistence)
+        // We check if the field is empty AND there's no persisted state for it
+        if (introPromptEl && !introPromptEl.value.trim()) {
+            const defaultIntroPrompt = window.AIPrompts.getOpeningVideoPrompt();
+            introPromptEl.value = defaultIntroPrompt;
+            console.log('[Windows] Initialized intro prompt with default');
+        }
+
+        if (loopPromptEl && !loopPromptEl.value.trim()) {
+            const defaultLoopPrompt = window.AIPrompts.getLoopVideoPrompt();
+            loopPromptEl.value = defaultLoopPrompt;
+            console.log('[Windows] Initialized loop prompt with default');
         }
     }
 
