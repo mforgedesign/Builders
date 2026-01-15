@@ -992,49 +992,33 @@
                     </div>
 
                     <!-- ============================== -->
-                    <!-- WINDOW: Preencher Folha -->
+                    <!-- WINDOW: Preencher Folha (SIMPLIFICADO) -->
                     <!-- ============================== -->
                     <div id="window-fill_leaf"
                         class="window-panel hidden bg-white rounded-lg shadow-sm border border-saas-border">
 
-                        <!-- Header with Mode Toggle -->
+                        <!-- Header -->
                         <div class="p-6 border-b border-gray-100">
                             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                 <div>
-                                    <h3 class="text-lg font-semibold text-gray-800">Preencher Folha</h3>
-                                    <p class="text-sm text-gray-500 mt-1">Adicione elementos à folha (overlay ou
-                                        composição)
+                                    <h3 class="text-lg font-semibold text-gray-800">Fundo da Tela de Botões</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Imagem ou vídeo que aparece atrás dos botões
                                     </p>
-                                </div>
-                                <!-- Mode Toggle -->
-                                <div id="fill-mode-buttons" class="flex items-center bg-gray-100 rounded-lg p-1">
-                                    <button id="fill-mode-overlay" data-mode="overlay"
-                                        class="fill-mode-btn flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition bg-white shadow-sm text-brand-600">
-                                        <i class="fa-solid fa-layer-group"></i>
-                                        <span>Superposição</span>
-                                    </button>
-                                    <button id="fill-mode-flat" data-mode="flat"
-                                        class="fill-mode-btn flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition text-gray-500 hover:text-gray-700">
-                                        <i class="fa-solid fa-object-ungroup"></i>
-                                        <span>Composição Flat</span>
-                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Overlay Mode -->
-                        <div id="fill-overlay-mode" class="p-6">
+                        <!-- Content -->
+                        <div class="p-6">
                             <div class="flex flex-col lg:flex-row gap-8">
                                 <div class="flex-1 space-y-4">
                                     <div
-                                        class="bg-cyan-50 border border-cyan-100 rounded-md p-4 text-sm text-cyan-800 flex gap-2 items-start">
-                                        <i class="fa-solid fa-layer-group mt-0.5"></i>
+                                        class="bg-purple-50 border border-purple-100 rounded-md p-4 text-sm text-purple-800 flex gap-2 items-start">
+                                        <i class="fa-solid fa-wand-magic-sparkles mt-0.5"></i>
                                         <div>
-                                            <strong>Modo Superposição:</strong> A folha preenchida será sobreposta ao
-                                            vídeo
-                                            de loop.
-                                            <br><span class="text-xs">O convite final carrega 2 arquivos: loop.mp4 +
-                                                folha_preenchida.png</span>
+                                            <strong>Gere ou anexe:</strong> Use a IA para gerar um fundo ou
+                                            faça upload de uma imagem/vídeo pronta.
+                                            <br><span class="text-xs">Aceita: JPG, PNG ou MP4</span>
                                         </div>
                                     </div>
 
@@ -1072,72 +1056,19 @@
                                 </div>
 
                                 <div class="w-full lg:w-80 shrink-0">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Folha Preenchida
-                                        (PNG)</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Fundo (JPG, PNG ou
+                                        MP4)</label>
                                     <div id="fill-image-dropzone"
                                         class="w-full aspect-[9/16] bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-brand-300 transition-colors cursor-pointer relative overflow-hidden">
-                                        <input type="file" accept="image/*"
+                                        <input type="file" accept="image/*,video/mp4"
                                             class="absolute inset-0 opacity-0 cursor-pointer">
                                         <button
                                             class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
                                             title="Remover">
                                             <i class="fa-solid fa-times text-xs"></i>
                                         </button>
-                                        <i class="fa-solid fa-pen-nib text-3xl mb-2"></i>
-                                        <span class="text-xs">PNG Transparente</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Flat Mode -->
-                        <div id="fill-flat-mode" class="p-6 hidden">
-                            <div class="flex flex-col lg:flex-row gap-8">
-                                <div class="flex-1 space-y-4">
-                                    <div
-                                        class="bg-orange-50 border border-orange-100 rounded-md p-4 text-sm text-orange-800 flex gap-2 items-start">
-                                        <i class="fa-solid fa-object-ungroup mt-0.5"></i>
-                                        <div>
-                                            <strong>Modo Flat:</strong> Você fez a composição externamente (ex: Canva).
-                                            <br><span class="text-xs">Faça upload de um único vídeo já composto.</span>
-                                        </div>
-                                    </div>
-
-                                    <p class="text-sm text-gray-600">
-                                        Neste modo, você deve baixar a Folha Preenchida e o Loop de Fundo, combiná-los
-                                        em um
-                                        software externo,
-                                        e fazer upload do vídeo final aqui.
-                                    </p>
-
-                                    <div class="flex gap-2">
-                                        <button
-                                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-md text-sm font-medium transition flex items-center justify-center gap-2">
-                                            <i class="fa-solid fa-download"></i>
-                                            Baixar Loop
-                                        </button>
-                                        <button
-                                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-md text-sm font-medium transition flex items-center justify-center gap-2">
-                                            <i class="fa-solid fa-download"></i>
-                                            Baixar Folha
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="w-full lg:w-80 shrink-0">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Vídeo Final
-                                        Composto</label>
-                                    <div id="fill-video-dropzone"
-                                        class="w-full aspect-[9/16] bg-gray-900 rounded-lg border-2 border-dashed border-gray-600 flex flex-col items-center justify-center text-gray-400 cursor-pointer relative overflow-hidden">
-                                        <input type="file" accept="video/*"
-                                            class="absolute inset-0 opacity-0 cursor-pointer">
-                                        <button
-                                            class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
-                                            title="Remover">
-                                            <i class="fa-solid fa-times text-xs"></i>
-                                        </button>
-                                        <i class="fa-solid fa-video text-3xl mb-2"></i>
-                                        <span class="text-xs">MP4 Composto</span>
+                                        <i class="fa-solid fa-image text-3xl mb-2"></i>
+                                        <span class="text-xs">Imagem ou Vídeo</span>
                                     </div>
                                 </div>
                             </div>
