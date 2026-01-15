@@ -209,7 +209,7 @@
                 toggles: {
                     manualMode: document.querySelector('#manual-mode-buttons .bg-white')?.dataset?.mode || 'text',
                     giftsMode: document.querySelector('#gifts-mode-buttons .bg-white')?.dataset?.mode || 'link',
-                    fillMode: document.querySelector('#fill-mode-buttons .bg-white')?.dataset?.mode || 'overlay',
+                    // fillMode removed - unified approach
                     animateBackground: document.getElementById('animate-background-toggle')?.checked || false
                 },
                 timestamp: Date.now()
@@ -283,7 +283,7 @@
                     console.log('[Persistence] Restoring toggles:', savedState.toggles);
                     if (savedState.toggles.manualMode) document.getElementById(`manual-mode-${savedState.toggles.manualMode}`)?.click();
                     if (savedState.toggles.giftsMode) document.getElementById(`gifts-mode-${savedState.toggles.giftsMode}`)?.click();
-                    if (savedState.toggles.fillMode) document.getElementById(`fill-mode-${savedState.toggles.fillMode}`)?.click();
+                    // fillMode toggle removed - unified approach
 
                     const animateToggle = document.getElementById('animate-background-toggle');
                     if (animateToggle && savedState.toggles.animateBackground !== undefined) {
@@ -303,10 +303,8 @@
                 const dropzoneMap = {
                     'capa': 'cover-dropzone',
                     'folha_vazia': 'leaf-dropzone',
-                    'folha_preenchida': 'fill-image-dropzone',
-                    'folha_animada': 'fill-video-dropzone',
+                    'fundo_tela': 'fill-image-dropzone',  // Unified fundo (replaces vid_loop)
                     'vid_abertura': 'intro-video-dropzone',
-                    'vid_loop': 'loop-video-dropzone',
                     'musica': 'music-dropzone',
                     'presentes': 'gifts-image-dropzone',
                     'manual': 'manual-image-dropzone'
