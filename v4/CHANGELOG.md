@@ -26,6 +26,14 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 18:53] - v4.2.18 - Fix: Import do GitHub Também Não Reconhecia Assets
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **restoreBuilderState()**: Alterado para salvar URL em builderState (antes salvava Blob).
+    *   **Linha 775**: `window.builderState.assets[context] = url;` (antes era `= blob;`)
+
+---
+
 ## [15/01/2026 - 18:50] - v4.2.17 - Fix: Assets Restaurados Não Reconhecidos pelo Builder
 ### Arquivos Modificados:
 *   `static/js/windows.js`:
