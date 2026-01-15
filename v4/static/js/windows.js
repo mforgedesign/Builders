@@ -1642,7 +1642,7 @@
                 publishBtn.classList.remove('bg-brand-600');
                 publishBtn.classList.add('bg-blue-600'); // Blue = Sent, Green = Live
 
-                const liveUrl = `https://convites.mforge.com.br/convites/${slug}/`;
+                const liveUrl = `https://convites.mforge.com.br/${slug}/`;
 
                 // 6. Poll for Deployment Status (GitHub Actions)
                 // Pass SHA from deployBatch result to track specific build
