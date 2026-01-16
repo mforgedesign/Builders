@@ -631,9 +631,15 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
-                                        Criação</label>
-                                    <textarea id="cover-prompt" data-field="cover_prompt" rows="4"
+                                    <div class="flex items-center justify-between mb-2">
+                                        <label class="block text-sm font-medium text-gray-700">Prompt de
+                                            Criação</label>
+                                        <button id="btn-default-cover-prompt" type="button"
+                                            class="text-xs bg-brand-50 text-brand-600 px-2 py-1 rounded hover:bg-brand-100 border border-brand-200 transition flex items-center gap-1">
+                                            <i class="fa-solid fa-rotate-left"></i> Preenchimento Padrão
+                                        </button>
+                                    </div>
+                                    <textarea id="cover-prompt" data-field="cover_prompt" rows="6"
                                         class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
                                         placeholder="Descreva a imagem desejada..."></textarea>
                                 </div>
@@ -1035,9 +1041,15 @@
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
-                                            Preenchimento</label>
-                                        <textarea id="fill-prompt" data-field="fill_prompt" rows="4"
+                                        <div class="flex items-center justify-between mb-2">
+                                            <label class="block text-sm font-medium text-gray-700">Prompt de
+                                                Preenchimento</label>
+                                            <button id="btn-default-fill-prompt" type="button"
+                                                class="text-xs bg-brand-50 text-brand-600 px-2 py-1 rounded hover:bg-brand-100 border border-brand-200 transition flex items-center gap-1">
+                                                <i class="fa-solid fa-rotate-left"></i> Preenchimento Padrão
+                                            </button>
+                                        </div>
+                                        <textarea id="fill-prompt" data-field="fill_prompt" rows="6"
                                             class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
                                             placeholder="Descreva os elementos visuais a adicionar..."></textarea>
                                     </div>
