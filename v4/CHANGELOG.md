@@ -4,6 +4,13 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 18:15] - v4.3.24 - Fix: Sync Evento Presentes
+### Arquivos Modificados:
+*   `static/js/preview.js`:
+    *   **Fix Event**: O listener `mediaUpdated` foi ajustado para popular explicitamente as chaves `presentes` e `manual` no estado local. Isso garante que a verificação de visibilidade (que checa essas chaves) funcione imediatamente após o upload, sem delay ou necessidade de reload.
+
+---
+
 ## [16/01/2026 - 18:00] - v4.3.23 - Fix: Visualização Botão Presentes
 ### Arquivos Modificados:
 *   `static/js/preview.js`:
