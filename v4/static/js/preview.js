@@ -160,8 +160,11 @@
                 return !!currentState.numero_whatsapp || !!currentState.link_confirmacao;
             case 'gifts':
                 const hasLink = !!currentState.link_presentes;
-                const hasMedia = !!(currentState.media_presentes && currentState.media_presentes.url);
-                console.log(`[Preview Debug] Gifts Button: Link='${currentState.link_presentes}' (${hasLink}), Media=${JSON.stringify(currentState.media_presentes)} (${hasMedia})`);
+                // Robust Check: Check media_presentes (event) OR presentes (state)
+                const hasMedia = !!(currentState.media_presentes && currentState.media_presentes.url) ||
+                    !!(currentState.presentes && (currentState.presentes.url || typeof currentState.presentes === 'string'));
+
+                console.log(`[Preview Debug] Gifts Button: Link='${currentState.link_presentes}' (${hasLink}), Media=${JSON.stringify(currentState.media_presentes)}, StatePresentes=${JSON.stringify(currentState.presentes)} -> HasMedia=${hasMedia}`);
                 return hasLink || hasMedia;
             case 'manual':
                 return (currentState.media_manual && currentState.media_manual.url) ||
