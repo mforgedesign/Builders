@@ -339,7 +339,9 @@
 
                     // Determine Type
                     let type = 'image';
-                    if (context.includes('video') || context === 'vid_abertura' || context === 'vid_loop' || context === 'folha_animada') {
+                    const isVideoData = dataUrl && dataUrl.startsWith('data:video/');
+
+                    if (context.includes('video') || context === 'vid_abertura' || context === 'vid_loop' || context === 'folha_animada' || isVideoData) {
                         type = 'video';
                     } else if (context === 'musica') {
                         type = 'audio';
