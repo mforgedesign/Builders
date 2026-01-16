@@ -24,6 +24,15 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 23:55] - v4.3.13 - Global Debug
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **Start/End Alerts**: Adicionados alertas globais para verificar se o arquivo JS está carregando corretamente ou travando no meio da execução.
+*   `index.html`:
+    *   **Cache Busting**: Forçada atualização de todos os scripts para `v4.3.13`.
+
+---
+
 ## [15/01/2026 - 23:50] - v4.3.12 - Full System Trace
 ### Arquivos Modificados:
 *   `static/js/persistence.js`:
