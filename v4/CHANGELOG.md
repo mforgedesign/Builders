@@ -4,6 +4,27 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 21:37] - v4.3.2 - Adicionado Link Dreamina nas Ferramentas
+### Arquivos Modificados:
+*   `index.html`:
+    *   **Novo**: Link para Dreamina (CapCut) adicionado em 5 seções de "Ferramentas Externas" (Capa, Folha Vazia, Preencher Folha, Presentes, Manual).
+    *   **URL**: `https://dreamina.capcut.com/ai-tool/generate?type=image`
+
+---
+
+## [15/01/2026 - 21:35] - v4.3.1 - Fix: Espaçamento de Botões no Template Final
+### Arquivos Modificados:
+*   `final_template.html`:
+    *   **Fix (Linha 561)**: Removido `w-full max-w-[480px]` do container de botões para ≤4 botões.
+    *   **Rationale**: O container ocupava 100% da largura, fazendo botões se espalharem mesmo com `justify-center`. Agora o container usa largura automática, permitindo agrupamento natural.
+    *   **Backup**: `final_template_bkp_20260115_2135.html`
+
+### Comportamento Esperado:
+1. Convites com 2-4 botões exibem os botões agrupados no centro (igual ao preview).
+2. Convites com 5+ botões continuam usando grid com distribuição automática.
+
+---
+
 ## [15/01/2026 - 21:10] - v4.3.0 - Botões Arrastáveis no Preview
 ### Arquivos Modificados:
 *   `index.html`:
