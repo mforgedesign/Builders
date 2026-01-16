@@ -4,6 +4,13 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 18:25] - v4.3.25 - Fix: Alinhamento de Botões
+### Arquivos Modificados:
+*   `index.html`:
+    *   **CSS Fix**: Adicionado `items-start` ao container `#preview-buttons` para corrigir o desalinhamento vertical quando um botão possui texto em duas linhas (ex: "Confirmar Presença"). Isso garante que todos os botões fiquem alinhados pelo topo.
+
+---
+
 ## [16/01/2026 - 18:15] - v4.3.24 - Fix: Sync Evento Presentes
 ### Arquivos Modificados:
 *   `static/js/preview.js`:
