@@ -105,10 +105,11 @@
                 if (!imgUrl) {
                     const giftDropzone = document.getElementById('gifts-image-dropzone');
                     if (giftDropzone) {
-                        const bgImage = window.getComputedStyle(giftDropzone).backgroundImage;
+                        // CRITICAL: Use inline style to access value even if hidden
+                        const bgImage = giftDropzone.style.backgroundImage;
                         if (bgImage && bgImage.includes('url(')) {
-                            // Extract URL from 'url("...")'
-                            imgUrl = bgImage.slice(4, -1).replace(/["']/g, ''); // Remove url( and ) and quotes
+                            // Extract URL from 'url("...")' (removes quotes too)
+                            imgUrl = bgImage.slice(4, -1).replace(/["']/g, '');
                         }
                     }
                 }
@@ -190,8 +191,11 @@
                 const giftDropzone = document.getElementById('gifts-image-dropzone');
                 let hasDomImage = false;
                 if (giftDropzone) {
-                    const bgStyles = window.getComputedStyle(giftDropzone);
-                    const bgImage = bgStyles.backgroundImage;
+                    // CRITICAL: Check INLINE style, not computed style.
+                    // Computed style returns 'none' if the parent tab is hidden (display: none).
+                    // Inline style persists even if hidden.
+                    const bgImage = giftDropzone.style.backgroundImage;
+
                     // Check for valid url(...) and not 'none'
                     hasDomImage = bgImage && bgImage.includes('url(') && bgImage !== 'none';
                 }
