@@ -24,18 +24,28 @@
     // IndexedDB Setup
     // ========================================
 
+    let dbOpenPromise = null;
+
     function openDatabase() {
-        return new Promise((resolve, reject) => {
+        if (db) return Promise.resolve(db);
+        if (dbOpenPromise) return dbOpenPromise;
+
+        dbOpenPromise = new Promise((resolve, reject) => {
             const request = indexedDB.open(DB_NAME, DB_VERSION);
 
             request.onerror = () => {
                 console.error('[Persistence] IndexedDB error:', request.error);
+                dbOpenPromise = null; // Reset on failure
                 reject(request.error);
             };
 
             request.onsuccess = () => {
                 db = request.result;
-                console.log('[Persistence] IndexedDB opened');
+                console.log('[Persistence] IndexedDB opened successfully');
+
+                // Generic error handler for DB connection
+                db.onerror = (e) => console.error('[Persistence] DB Generic Error:', e);
+
                 resolve(db);
             };
 
@@ -47,6 +57,8 @@
                 }
             };
         });
+
+        return dbOpenPromise;
     }
 
     // ========================================
@@ -482,6 +494,7 @@
             console.log('[Persistence] All data cleared');
             location.reload();
         },
+        wipeAssets: clearAllAssetsFromDB, // Safe wipe (no reload)
         forceSave: saveFormState,
         forceRestore: restoreState,
         removeAsset: deleteAssetFromDB,
