@@ -4,6 +4,15 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 18:45] - v4.3.27 - Fix Critical: Crash & Debug Presentes
+### Arquivos Modificados:
+*   `static/js/preview.js`:
+    *   **CRITICAL FIX**: Corrigido potencial crash no listener `mediaUpdated` quando o `data` é null (ao remover arquivo), que quebrava o script e impedia renderizações futuras.
+    *   **Failsafe**: Adicionado mecanismo de segurança em `isButtonVisible` para sincronizar automaticamente `currentState.presentes` se `currentState.media_presentes` existir, garantindo que o botão não fique invisível incorretamente.
+    *   **Debug**: Adicionados logs detalhados para rastrear a decisão de visibilidade do botão 'gifts'.
+
+---
+
 ## [16/01/2026 - 18:35] - v4.3.26 - Fix: Alinhamento Gerado
 ### Arquivos Modificados:
 *   `final_template.html`:
