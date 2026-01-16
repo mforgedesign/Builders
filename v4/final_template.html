@@ -558,10 +558,10 @@
         if (btnCount <= 4) {
             // V4.1: Use Flexbox for better centering spacing when few buttons exist
             // gap-2 matches the preview spacing exactly
-            gridClasses = "flex flex-row justify-center items-center transition-all duration-300 gap-2";
+            gridClasses = "flex flex-row justify-center items-start transition-all duration-300 gap-2";
         } else {
             // Use Grid for 5+ to guarantee equal distribution/squeezing
-            gridClasses = "grid grid-flow-col auto-cols-fr w-full max-w-[480px] place-items-center transition-all duration-300";
+            gridClasses = "grid grid-flow-col auto-cols-fr w-full max-w-[480px] place-items-start transition-all duration-300";
 
             if (btnCount === 5) {
                 gridClasses += " gap-2 scale-95 origin-bottom"; // Aperta um pouco
