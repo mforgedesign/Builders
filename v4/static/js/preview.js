@@ -106,9 +106,9 @@
         // 4. Manual - Priority: Text > Image
         if (btn.id === 'manual') {
             if (currentState.manual_content && currentState.manual_content.trim().length > 0) {
-                showPreviewModal('Manual dos Padrinhos', `<div class="text-left prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap">${currentState.manual_content}</div>`);
+                showPreviewModal('Manual', `<div class="text-left prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap">${currentState.manual_content}</div>`);
             } else if (currentState.media_manual && currentState.media_manual.url) {
-                showPreviewModal('Manual dos Padrinhos', `<img src="${currentState.media_manual.url}" class="max-w-full rounded mx-auto shadow-md">`);
+                showPreviewModal('Manual', `<img src="${currentState.media_manual.url}" class="max-w-full rounded mx-auto shadow-md">`);
             }
             return;
         }
@@ -311,7 +311,10 @@
             // Priority 1: Fundo Tela (Unified Background - Image or Video)
             if (currentState.fundo_tela && currentState.fundo_tela.url) {
                 const url = currentState.fundo_tela.url;
-                const isVideo = /\.(mp4|webm|mov)$/i.test(url) || (currentState.fundo_tela.type && currentState.fundo_tela.type.startsWith('video'));
+                // Robust Video Detection: Check 'blob.type' first, then URL extension
+                const isVideo = (currentState.fundo_tela.blob && currentState.fundo_tela.blob.type && currentState.fundo_tela.blob.type.startsWith('video')) ||
+                    /\.(mp4|webm|mov)$/i.test(url) ||
+                    (currentState.fundo_tela.type && currentState.fundo_tela.type.startsWith('video'));
 
                 if (isVideo) {
                     const video = document.createElement('video');
