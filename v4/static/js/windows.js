@@ -1329,37 +1329,49 @@
                             // Map assets from ZIP to appState
 
 
-                            // Map assets from ZIP to appState
-                            // Simple mapping strategy for ZIP
+                            // ----------------------------------------------------------------
+                            // NATIVE FALLBACK (Aggressive)
+                            // ----------------------------------------------------------------
                             if (!aiData.assetsMap) aiData.assetsMap = {};
-                            // Try to map basic assets from ZIP files
+
+                            // 1. Keyword Matching
                             const contexts = {
-                                'capa': ['capa', 'cover'],
-                                'folha_vazia': ['folha', 'sheet', 'leaf', 'background'],
+                                'capa': ['capa', 'cover', 'thumb'],
+                                'folha_vazia': ['folha', 'sheet', 'leaf', 'base'],
                                 'fundo_tela': ['fundo', 'background', 'bg', 'loop'],
-                                'vid_abertura': ['intro', 'abertura'],
-                                'musica': ['musica', 'music']
+                                'vid_abertura': ['intro', 'abertura', 'video'],
+                                'musica': ['musica', 'music', 'audio']
                             };
 
-                            Object.keys(zipContent.files).forEach(path => {
+                            const zipFiles = Object.keys(zipContent.files).filter(f => !zipContent.files[f].dir && !f.startsWith('__MACOSX'));
+
+                            zipFiles.forEach(path => {
                                 const lower = path.toLowerCase();
                                 for (const [ctx, keywords] of Object.entries(contexts)) {
                                     if (!aiData.assetsMap[ctx] && keywords.some(k => lower.includes(k))) {
-                                        aiData.assetsMap[ctx] = path; // In ZIP, path is key
+                                        aiData.assetsMap[ctx] = path;
                                     }
                                 }
                             });
 
-                            // Fallback for fundo_tela (Unified Background)
+                            // 2. Last Resort: Assign ANY image to Capa if missing
+                            if (!aiData.assetsMap['capa']) {
+                                const anyImage = zipFiles.find(f => f.match(/\.(jpg|jpeg|png|webp)$/i));
+                                if (anyImage) {
+                                    aiData.assetsMap['capa'] = anyImage;
+                                    console.log('[Import] Fallback: Assigned random image to Capa:', anyImage);
+                                }
+                            }
+
+                            // 3. Fallback for fundo_tela (Unified Background)
                             if (!aiData.assetsMap['fundo_tela']) {
                                 if (aiData.assetsMap['capa']) aiData.assetsMap['fundo_tela'] = aiData.assetsMap['capa'];
                                 else if (aiData.assetsMap['folha_vazia']) aiData.assetsMap['fundo_tela'] = aiData.assetsMap['folha_vazia'];
-                                console.log('[Import] Inferred fundo_tela from available assets');
                             }
 
                             alert('[DEBUG] Mapa de Assets Final: ' + JSON.stringify(aiData.assetsMap));
                             await window.restoreBuilderState(aiData, zipContent);
-                            if (window.showToast) window.showToast('Convite legado convertido com I.A!', 'success');
+                            if (window.showToast) window.showToast('Convite legado convertido (Native Fallback)!', 'success');
                         } else {
                             throw new Error('Módulo de I.A não disponível');
                         }
