@@ -1132,587 +1132,580 @@
             } catch (e) {
                 console.warn('[Reset] Error during persistence clear:', e);
             }
+
+            console.log('✨ Clean Slate Complete');
+            return true;
         };
-        console.warn('[Reset] Failed to clear persistence:', e);
     }
 
-    console.log('✨ Clean Slate Complete');
-
-    if (!silent) {
-        // Optional internal feedback if needed, but keeping it minimal as requested
+    // Bind "Novo Convite" Button
+    const newInvitationBtn = document.getElementById('btn-new-invitation');
+    if (newInvitationBtn) {
+        newInvitationBtn.addEventListener('click', async () => {
+            // We let resetBuilderState handle the confirmation (silent=false default)
+            if (await window.resetBuilderState(false)) {
+                // Optionally switch to 'form' tab
+                document.querySelector('[data-window="form"]')?.click();
+            }
+        });
     }
 
-    return true;
-};
-
-// Bind "Novo Convite" Button
-const newInvitationBtn = document.getElementById('btn-new-invitation');
-if (newInvitationBtn) {
-    newInvitationBtn.addEventListener('click', async () => {
-        // We let resetBuilderState handle the confirmation (silent=false default)
-        if (await window.resetBuilderState(false)) {
-            // Optionally switch to 'form' tab
-            document.querySelector('[data-window="form"]')?.click();
-        }
-    });
-}
-
-// Bind "Preenchimento Padrão" buttons for Cover and Fill prompts
-const defaultCoverBtn = document.getElementById('btn-default-cover-prompt');
-if (defaultCoverBtn) {
-    defaultCoverBtn.addEventListener('click', () => {
-        const coverEl = document.getElementById('cover-prompt');
-        if (coverEl && window.AIPrompts) {
-            coverEl.value = window.AIPrompts.getDefaultCoverPrompt();
-            console.log('[Windows] Cover prompt reset to default');
-        }
-    });
-}
-
-const defaultFillBtn = document.getElementById('btn-default-fill-prompt');
-if (defaultFillBtn) {
-    defaultFillBtn.addEventListener('click', () => {
-        const fillEl = document.getElementById('fill-prompt');
-        if (fillEl && window.AIPrompts) {
-            fillEl.value = window.AIPrompts.getDefaultFillPrompt();
-            console.log('[Windows] Fill prompt reset to default');
-        }
-    });
-}
-
-// Bind "Local Import" (Folder/ZIP)
-const localImportBtn = document.getElementById('btn-local-import');
-const localImportInput = document.getElementById('local-import-input');
-
-if (localImportBtn && localImportInput) {
-    localImportBtn.addEventListener('click', () => {
-        localImportInput.click();
-    });
-
-    localImportInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        // Reset input
-        localImportInput.value = '';
-
-        console.log(`[Import] Selected file: ${file.name}`);
-
-        // Show loading
-        document.body.style.cursor = 'wait';
-        const originalText = localImportBtn.innerHTML;
-        localImportBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Importando...';
-
-        try {
-            // Check for JSZip
-            if (!window.JSZip) {
-                throw new Error('JSZip library not loaded');
+    // Bind "Preenchimento Padrão" buttons for Cover and Fill prompts
+    const defaultCoverBtn = document.getElementById('btn-default-cover-prompt');
+    if (defaultCoverBtn) {
+        defaultCoverBtn.addEventListener('click', () => {
+            const coverEl = document.getElementById('cover-prompt');
+            if (coverEl && window.AIPrompts) {
+                coverEl.value = window.AIPrompts.getDefaultCoverPrompt();
+                console.log('[Windows] Cover prompt reset to default');
             }
+        });
+    }
 
-            const zip = new JSZip();
-            const zipContent = await zip.loadAsync(file);
-
-            console.log('[Import] ZIP loaded, analyzing contents...');
-
-            // 1. Look for Data
-            let appState = null;
-            let isCompatible = false;
-            const dataFile = zipContent.file('data.json') || zipContent.file('form_data.json');
-            const indexFile = zipContent.file('index.html');
-
-            // Slug detection from filename
-            const filenameSlug = file.name.replace(/\.[^/.]+$/, "").toLowerCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                .replace(/[^a-z0-9]/g, '-')
-                .replace(/-+/g, '-');
-
-            console.log('[Import] Derived Slug from filename:', filenameSlug);
-
-            // Content extraction
-            let jsonContentStr = '';
-            let htmlContent = '';
-
-            if (dataFile) {
-                jsonContentStr = await dataFile.async('string');
-                try {
-                    const parsed = JSON.parse(jsonContentStr);
-                    if ((parsed.version && parseFloat(parsed.version) >= 4.0) || (parsed.assetsMap && parsed.assetsMap.fundo_tela)) {
-                        appState = parsed;
-                        isCompatible = true;
-                        console.log('[Import] Compatible V4+ JSON found');
-                    }
-                } catch (e) { console.warn('JSON Parse Error', e); }
+    const defaultFillBtn = document.getElementById('btn-default-fill-prompt');
+    if (defaultFillBtn) {
+        defaultFillBtn.addEventListener('click', () => {
+            const fillEl = document.getElementById('fill-prompt');
+            if (fillEl && window.AIPrompts) {
+                fillEl.value = window.AIPrompts.getDefaultFillPrompt();
+                console.log('[Windows] Fill prompt reset to default');
             }
+        });
+    }
 
-            // 2. If valid V4 data, direct load
-            if (isCompatible && appState) {
-                if (!appState.slug) appState.slug = filenameSlug; // Inject slug
-                // Pass zip context for asset hydration
-                await window.restoreBuilderState(appState, zipContent);
-                if (window.showToast) window.showToast('Convite importado com sucesso!', 'success');
-            } else {
-                // 3. AI Import Strategy (Legacy)
-                console.log('[Import] Legacy format detected. Initiating AI Analysis...');
+    // Bind "Local Import" (Folder/ZIP)
+    const localImportBtn = document.getElementById('btn-local-import');
+    const localImportInput = document.getElementById('local-import-input');
 
-                if (indexFile) htmlContent = await indexFile.async('string');
+    if (localImportBtn && localImportInput) {
+        localImportBtn.addEventListener('click', () => {
+            localImportInput.click();
+        });
 
-                // Detect assets for Visual Context
-                // Priority: Folha > Fundo > Capa > Any Large Image
-                let visualContext = null;
-                const validExts = ['.jpg', '.jpeg', '.png', '.webp'];
-                const files = Object.values(zipContent.files).filter(f => !f.dir);
+        localImportInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-                let visualFile = files.find(f => {
-                    const n = f.name.toLowerCase();
-                    return validExts.some(ext => n.endsWith(ext)) &&
-                        (n.includes('folha') || n.includes('convite') || n.includes('sheet'));
-                });
+            // Reset input
+            localImportInput.value = '';
 
-                if (!visualFile) {
-                    visualFile = files.find(f => {
+            console.log(`[Import] Selected file: ${file.name}`);
+
+            // Show loading
+            document.body.style.cursor = 'wait';
+            const originalText = localImportBtn.innerHTML;
+            localImportBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Importando...';
+
+            try {
+                // Check for JSZip
+                if (!window.JSZip) {
+                    throw new Error('JSZip library not loaded');
+                }
+
+                const zip = new JSZip();
+                const zipContent = await zip.loadAsync(file);
+
+                console.log('[Import] ZIP loaded, analyzing contents...');
+
+                // 1. Look for Data
+                let appState = null;
+                let isCompatible = false;
+                const dataFile = zipContent.file('data.json') || zipContent.file('form_data.json');
+                const indexFile = zipContent.file('index.html');
+
+                // Slug detection from filename
+                const filenameSlug = file.name.replace(/\.[^/.]+$/, "").toLowerCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]/g, '-')
+                    .replace(/-+/g, '-');
+
+                console.log('[Import] Derived Slug from filename:', filenameSlug);
+
+                // Content extraction
+                let jsonContentStr = '';
+                let htmlContent = '';
+
+                if (dataFile) {
+                    jsonContentStr = await dataFile.async('string');
+                    try {
+                        const parsed = JSON.parse(jsonContentStr);
+                        if ((parsed.version && parseFloat(parsed.version) >= 4.0) || (parsed.assetsMap && parsed.assetsMap.fundo_tela)) {
+                            appState = parsed;
+                            isCompatible = true;
+                            console.log('[Import] Compatible V4+ JSON found');
+                        }
+                    } catch (e) { console.warn('JSON Parse Error', e); }
+                }
+
+                // 2. If valid V4 data, direct load
+                if (isCompatible && appState) {
+                    if (!appState.slug) appState.slug = filenameSlug; // Inject slug
+                    // Pass zip context for asset hydration
+                    await window.restoreBuilderState(appState, zipContent);
+                    if (window.showToast) window.showToast('Convite importado com sucesso!', 'success');
+                } else {
+                    // 3. AI Import Strategy (Legacy)
+                    console.log('[Import] Legacy format detected. Initiating AI Analysis...');
+
+                    if (indexFile) htmlContent = await indexFile.async('string');
+
+                    // Detect assets for Visual Context
+                    // Priority: Folha > Fundo > Capa > Any Large Image
+                    let visualContext = null;
+                    const validExts = ['.jpg', '.jpeg', '.png', '.webp'];
+                    const files = Object.values(zipContent.files).filter(f => !f.dir);
+
+                    let visualFile = files.find(f => {
                         const n = f.name.toLowerCase();
                         return validExts.some(ext => n.endsWith(ext)) &&
-                            (n.includes('fundo') || n.includes('back'));
+                            (n.includes('folha') || n.includes('convite') || n.includes('sheet'));
                     });
-                }
 
-                if (!visualFile) {
-                    visualFile = files.find(f => {
-                        const n = f.name.toLowerCase();
-                        return validExts.some(ext => n.endsWith(ext)) &&
-                            (n.includes('capa') || n.includes('cover'));
-                    });
-                }
-
-                // Fallback: Find largest image (likely the main art)
-                if (!visualFile) {
-                    // This is async in JSZip so we can't easily sort by size without loading metadata?
-                    // JSZip file objects have ._data but internal. 
-                    // We'll just pick the first valid image as last resort.
-                    visualFile = files.find(f => {
-                        const n = f.name.toLowerCase();
-                        return validExts.some(ext => n.endsWith(ext));
-                    });
-                }
-
-                if (visualFile) {
-                    const blob = await visualFile.async('blob');
-                    // Sanity check size (ignore icons < 10KB)
-                    if (blob.size > 10000) {
-                        const base64 = await new Promise((resolve) => {
-                            const reader = new FileReader();
-                            reader.onloadend = () => resolve(reader.result);
-                            reader.readAsDataURL(blob);
+                    if (!visualFile) {
+                        visualFile = files.find(f => {
+                            const n = f.name.toLowerCase();
+                            return validExts.some(ext => n.endsWith(ext)) &&
+                                (n.includes('fundo') || n.includes('back'));
                         });
-                        visualContext = { type: 'image', base64: base64 };
-                        console.log(`[Import] Found visual context: ${visualFile.name} (${(blob.size / 1024).toFixed(1)}KB)`);
                     }
-                }
 
-                // Prepare Payload for AI
-                const payload = {
-                    htmlContent,
-                    jsonContent: jsonContentStr,
-                    fileList: Object.keys(zipContent.files),
-                    visualContext
-                };
+                    if (!visualFile) {
+                        visualFile = files.find(f => {
+                            const n = f.name.toLowerCase();
+                            return validExts.some(ext => n.endsWith(ext)) &&
+                                (n.includes('capa') || n.includes('cover'));
+                        });
+                    }
 
-                if (window.GeminiAdapter) {
-                    alert('[DEBUG] Iniciando AI... Aguarde.');
-                    // Use GeminiAdapter (which will bridge to GPT via Edge Function)
-                    const aiData = await window.GeminiAdapter.analyzeRepository(payload);
-                    // alert('[DEBUG] AI Retornou. Slug: ' + aiData.slug);
+                    // Fallback: Find largest image (likely the main art)
+                    if (!visualFile) {
+                        // This is async in JSZip so we can't easily sort by size without loading metadata?
+                        // JSZip file objects have ._data but internal. 
+                        // We'll just pick the first valid image as last resort.
+                        visualFile = files.find(f => {
+                            const n = f.name.toLowerCase();
+                            return validExts.some(ext => n.endsWith(ext));
+                        });
+                    }
 
-                    // Inject Slug
-                    aiData.slug = filenameSlug;
+                    if (visualFile) {
+                        const blob = await visualFile.async('blob');
+                        // Sanity check size (ignore icons < 10KB)
+                        if (blob.size > 10000) {
+                            const base64 = await new Promise((resolve) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result);
+                                reader.readAsDataURL(blob);
+                            });
+                            visualContext = { type: 'image', base64: base64 };
+                            console.log(`[Import] Found visual context: ${visualFile.name} (${(blob.size / 1024).toFixed(1)}KB)`);
+                        }
+                    }
 
-                    // Map assets from ZIP to appState
-
-
-                    // ----------------------------------------------------------------
-                    // NATIVE FALLBACK (Aggressive)
-                    // ----------------------------------------------------------------
-                    if (!aiData.assetsMap) aiData.assetsMap = {};
-
-                    // 1. Keyword Matching
-                    const contexts = {
-                        'capa': ['capa', 'cover', 'thumb'],
-                        'folha_vazia': ['folha', 'sheet', 'leaf', 'base'],
-                        'fundo_tela': ['fundo', 'background', 'bg', 'loop'],
-                        'vid_abertura': ['intro', 'abertura', 'video'],
-                        'musica': ['musica', 'music', 'audio']
+                    // Prepare Payload for AI
+                    const payload = {
+                        htmlContent,
+                        jsonContent: jsonContentStr,
+                        fileList: Object.keys(zipContent.files),
+                        visualContext
                     };
 
-                    const zipFiles = Object.keys(zipContent.files).filter(f => !zipContent.files[f].dir && !f.startsWith('__MACOSX'));
+                    if (window.GeminiAdapter) {
+                        alert('[DEBUG] Iniciando AI... Aguarde.');
+                        // Use GeminiAdapter (which will bridge to GPT via Edge Function)
+                        const aiData = await window.GeminiAdapter.analyzeRepository(payload);
+                        // alert('[DEBUG] AI Retornou. Slug: ' + aiData.slug);
 
-                    zipFiles.forEach(path => {
-                        const lower = path.toLowerCase();
-                        for (const [ctx, keywords] of Object.entries(contexts)) {
-                            if (!aiData.assetsMap[ctx] && keywords.some(k => lower.includes(k))) {
-                                aiData.assetsMap[ctx] = path;
+                        // Inject Slug
+                        aiData.slug = filenameSlug;
+
+                        // Map assets from ZIP to appState
+
+
+                        // ----------------------------------------------------------------
+                        // NATIVE FALLBACK (Aggressive)
+                        // ----------------------------------------------------------------
+                        if (!aiData.assetsMap) aiData.assetsMap = {};
+
+                        // 1. Keyword Matching
+                        const contexts = {
+                            'capa': ['capa', 'cover', 'thumb'],
+                            'folha_vazia': ['folha', 'sheet', 'leaf', 'base'],
+                            'fundo_tela': ['fundo', 'background', 'bg', 'loop'],
+                            'vid_abertura': ['intro', 'abertura', 'video'],
+                            'musica': ['musica', 'music', 'audio']
+                        };
+
+                        const zipFiles = Object.keys(zipContent.files).filter(f => !zipContent.files[f].dir && !f.startsWith('__MACOSX'));
+
+                        zipFiles.forEach(path => {
+                            const lower = path.toLowerCase();
+                            for (const [ctx, keywords] of Object.entries(contexts)) {
+                                if (!aiData.assetsMap[ctx] && keywords.some(k => lower.includes(k))) {
+                                    aiData.assetsMap[ctx] = path;
+                                }
+                            }
+                        });
+
+                        // 2. Last Resort: Assign ANY image to Capa if missing
+                        if (!aiData.assetsMap['capa']) {
+                            const anyImage = zipFiles.find(f => f.match(/\.(jpg|jpeg|png|webp)$/i));
+                            if (anyImage) {
+                                aiData.assetsMap['capa'] = anyImage;
+                                console.log('[Import] Fallback: Assigned random image to Capa:', anyImage);
                             }
                         }
-                    });
 
-                    // 2. Last Resort: Assign ANY image to Capa if missing
-                    if (!aiData.assetsMap['capa']) {
-                        const anyImage = zipFiles.find(f => f.match(/\.(jpg|jpeg|png|webp)$/i));
-                        if (anyImage) {
-                            aiData.assetsMap['capa'] = anyImage;
-                            console.log('[Import] Fallback: Assigned random image to Capa:', anyImage);
+                        // 3. Fallback for fundo_tela (Unified Background)
+                        if (!aiData.assetsMap['fundo_tela']) {
+                            if (aiData.assetsMap['capa']) aiData.assetsMap['fundo_tela'] = aiData.assetsMap['capa'];
+                            else if (aiData.assetsMap['folha_vazia']) aiData.assetsMap['fundo_tela'] = aiData.assetsMap['folha_vazia'];
                         }
-                    }
 
-                    // 3. Fallback for fundo_tela (Unified Background)
-                    if (!aiData.assetsMap['fundo_tela']) {
-                        if (aiData.assetsMap['capa']) aiData.assetsMap['fundo_tela'] = aiData.assetsMap['capa'];
-                        else if (aiData.assetsMap['folha_vazia']) aiData.assetsMap['fundo_tela'] = aiData.assetsMap['folha_vazia'];
-                    }
-
-                    // Debug removed
-                    await window.restoreBuilderState(aiData, zipContent);
-                    // Toast preserved, Alert removed
-                } else {
-                    throw new Error('Módulo de I.A não disponível');
-                }
-            }
-
-            // Go to Form
-            document.querySelector('[data-window="form"]')?.click();
-
-        } catch (error) {
-            console.error('[Import] Error:', error);
-            alert('Erro na importação: ' + error.message);
-        } finally {
-            localImportBtn.innerHTML = originalText;
-            document.body.style.cursor = 'default';
-        }
-    });
-}
-
-
-// ----------------------------------------
-// 1. PREVIEW LOCAL (Client-Side)
-// ----------------------------------------
-const previewBtn = document.getElementById('btn-preview-local');
-if (previewBtn) {
-    previewBtn.addEventListener('click', async () => {
-        const originalText = previewBtn.innerHTML;
-        try {
-            // 1. Collect Assets (Base64)
-            const filesMap = {};
-
-            // Generate Brain
-            const appState = window.generateBuilderState();
-
-            // Template
-            const templateResp = await fetch('final_template.html');
-            if (!templateResp.ok) throw new Error('Template não encontrado.');
-            let htmlContent = await templateResp.text();
-
-            // Helper: Blob to Base64
-            const blobToBase64 = (blob) => {
-                return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
-                    reader.readAsDataURL(blob);
-                });
-            };
-
-            // Collect Assets
-            const assetMap = {
-                'assets/musica.mp3': { source: window.builderState?.assets?.musica, context: 'musica' },
-                'assets/capa.png': { selector: '#cover-dropzone', type: 'bg', context: 'capa' },
-                'assets/folha.png': { selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia' },
-                'assets/intro.mp4': { selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura' },
-                // Unified fundo - can be image or video from fill-image-dropzone
-                'assets/fundo': { selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela' },
-                'assets/manual.png': { selector: '#manual-image-dropzone', type: 'bg', context: 'manual' },
-                'assets/gifts.png': { selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes' }
-            };
-
-            async function fetchBlobFromSelector(selector, type) {
-                const el = document.querySelector(selector);
-                if (!el) return null;
-                let url = null;
-                if (type === 'bg') {
-                    const style = el.style.backgroundImage;
-                    if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
-                } else if (type === 'src') url = el.src;
-                else if (type === 'auto') {
-                    // Unified fundo: check for video first, then image background
-                    const video = el.querySelector('video');
-                    if (video && video.src) {
-                        url = video.src;
+                        // Debug removed
+                        await window.restoreBuilderState(aiData, zipContent);
+                        // Toast preserved, Alert removed
                     } else {
+                        throw new Error('Módulo de I.A não disponível');
+                    }
+                }
+
+                // Go to Form
+                document.querySelector('[data-window="form"]')?.click();
+
+            } catch (error) {
+                console.error('[Import] Error:', error);
+                alert('Erro na importação: ' + error.message);
+            } finally {
+                localImportBtn.innerHTML = originalText;
+                document.body.style.cursor = 'default';
+            }
+        });
+    }
+
+
+    // ----------------------------------------
+    // 1. PREVIEW LOCAL (Client-Side)
+    // ----------------------------------------
+    const previewBtn = document.getElementById('btn-preview-local');
+    if (previewBtn) {
+        previewBtn.addEventListener('click', async () => {
+            const originalText = previewBtn.innerHTML;
+            try {
+                // 1. Collect Assets (Base64)
+                const filesMap = {};
+
+                // Generate Brain
+                const appState = window.generateBuilderState();
+
+                // Template
+                const templateResp = await fetch('final_template.html');
+                if (!templateResp.ok) throw new Error('Template não encontrado.');
+                let htmlContent = await templateResp.text();
+
+                // Helper: Blob to Base64
+                const blobToBase64 = (blob) => {
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                        reader.readAsDataURL(blob);
+                    });
+                };
+
+                // Collect Assets
+                const assetMap = {
+                    'assets/musica.mp3': { source: window.builderState?.assets?.musica, context: 'musica' },
+                    'assets/capa.png': { selector: '#cover-dropzone', type: 'bg', context: 'capa' },
+                    'assets/folha.png': { selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia' },
+                    'assets/intro.mp4': { selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura' },
+                    // Unified fundo - can be image or video from fill-image-dropzone
+                    'assets/fundo': { selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela' },
+                    'assets/manual.png': { selector: '#manual-image-dropzone', type: 'bg', context: 'manual' },
+                    'assets/gifts.png': { selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes' }
+                };
+
+                async function fetchBlobFromSelector(selector, type) {
+                    const el = document.querySelector(selector);
+                    if (!el) return null;
+                    let url = null;
+                    if (type === 'bg') {
                         const style = el.style.backgroundImage;
                         if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
-                    }
-                }
-                if (url) {
-                    const resp = await fetch(url);
-                    return await resp.blob();
-                }
-                return null;
-            }
-
-            const slug = document.getElementById('slug-input')?.value || 'preview-local';
-            let fundoExt = 'png'; // Default extension for fundo
-
-            for (const [path, config] of Object.entries(assetMap)) {
-                let blob = null;
-                if (config.source) blob = config.source;
-                else if (config.selector) blob = await fetchBlobFromSelector(config.selector, config.type);
-
-                if (blob) {
-                    // Determine actual path with extension for fundo
-                    let actualPath = path;
-                    if (path === 'assets/fundo') {
-                        // Detect type from blob MIME
-                        if (blob.type.startsWith('video/')) {
-                            fundoExt = 'mp4';
-                        } else if (blob.type === 'image/jpeg' || blob.type === 'image/jpg') {
-                            fundoExt = 'jpg';
+                    } else if (type === 'src') url = el.src;
+                    else if (type === 'auto') {
+                        // Unified fundo: check for video first, then image background
+                        const video = el.querySelector('video');
+                        if (video && video.src) {
+                            url = video.src;
                         } else {
-                            fundoExt = 'png';
-                        }
-                        actualPath = `assets/fundo.${fundoExt}`;
-                    }
-                    filesMap[`convites/${slug}/${actualPath}`] = await blobToBase64(blob);
-                    appState.assetsMap[config.context] = actualPath; // Keep relative path in brain
-                }
-            }
-
-            // Add Brain (Base64)
-            filesMap[`convites/${slug}/data.json`] = btoa(JSON.stringify(appState, null, 2));
-
-            // Inject Variables and Add HTML
-            // Basic replacements for the published HTML
-            htmlContent = htmlContent.replace(/\[\[MUSICA_URL\]\]/g, './assets/musica.mp3');
-            htmlContent = htmlContent.replace(/\[\[CAPA_URL\]\]/g, './assets/capa.png');
-            htmlContent = htmlContent.replace(/\[\[FOLHA_URL\]\]/g, './assets/folha.png');
-            htmlContent = htmlContent.replace(/\[\[VIDEO_ABERTURA_URL\]\]/g, './assets/intro.mp4');
-            htmlContent = htmlContent.replace(/\[\[FUNDO_TELA_URL\]\]/g, `./assets/fundo.${fundoExt}`);
-            htmlContent = htmlContent.replace(/\[\[SLUG\]\]/g, slug);
-
-            // Generate menuConfig for buttons (Presentes, Manual, etc.)
-            const formData = window.AutoBuilderForm ? window.AutoBuilderForm.data : {};
-            const menuConfig = [];
-
-            // Google Maps
-            if (formData.link_google_maps || formData.google_maps_link) {
-                menuConfig.push({ titulo: 'Como Chegar', icone: 'fa-solid fa-map-marker-alt', link: formData.link_google_maps || formData.google_maps_link, id: 'maps' });
-            }
-
-            // Gifts
-            const giftsDropzone = document.querySelector('#gifts-image-dropzone');
-            const hasGiftImage = giftsDropzone && giftsDropzone.style.backgroundImage && giftsDropzone.style.backgroundImage !== 'none';
-            if (formData.link_presentes || formData.gifts_link) {
-                menuConfig.push({ titulo: 'Lista de Presentes', icone: 'fa-solid fa-gift', link: formData.link_presentes || formData.gifts_link, id: 'gifts' });
-            } else if (hasGiftImage) {
-                menuConfig.push({ titulo: 'Sugestões de Presentes', icone: 'fa-solid fa-gift', link: '#', id: 'gifts', isGiftImage: true });
-            }
-
-            // Manual
-            const manualDropzone = document.querySelector('#manual-image-dropzone');
-            const hasManualImage = manualDropzone && manualDropzone.style.backgroundImage && manualDropzone.style.backgroundImage !== 'none';
-            if (formData.manual_html || formData.manual_text) {
-                menuConfig.push({ titulo: 'Manual do Convidado', icone: 'fa-solid fa-book-open', link: '#', id: 'manual', manualText: formData.manual_html || formData.manual_text });
-            } else if (hasManualImage) {
-                menuConfig.push({ titulo: 'Manual do Convidado', icone: 'fa-solid fa-book-open', link: '#', id: 'manual', isManualImage: true });
-            }
-
-            // RSVP (WhatsApp/Link)
-            if (formData.numero_whatsapp || formData.whatsapp_number) {
-                const cleanNum = (formData.numero_whatsapp || formData.whatsapp_number).replace(/\D/g, '');
-                menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: `https://wa.me/${cleanNum}`, id: 'rsvp' });
-            } else if (formData.link_confirmacao || formData.confirmation_link) {
-                menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao || formData.confirmation_link, id: 'rsvp' });
-            }
-
-            // Inject menuConfig
-            htmlContent = htmlContent.replace(/\[\[MENU_CONFIG\]\]/g, JSON.stringify(menuConfig));
-
-            // Inject Text (form fields)
-            for (const [key, value] of Object.entries(formData)) {
-                const regex = new RegExp(`\\[\\[${key.toUpperCase()}\\]\\]`, 'g');
-                htmlContent = htmlContent.replace(regex, value || '');
-            }
-
-            // Inject default values for remaining placeholders
-            htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, formData.button_size || '1.0');
-            htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, '');
-            htmlContent = htmlContent.replace(/\[\[MANUAL_CONTENT\]\]/g, formData.manual_html || '');
-            htmlContent = htmlContent.replace(/\[\[GIFTS_IMAGE_URL\]\]/g, './assets/gifts.png');
-            htmlContent = htmlContent.replace(/\[\[MANUAL_IMAGE_URL\]\]/g, './assets/manual.png');
-
-            filesMap[`convites/${slug}/index.html`] = btoa(htmlContent); // HTML base64
-
-            // Open in new tab
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const blobUrl = URL.createObjectURL(blob);
-            window.open(blobUrl, '_blank');
-
-        } catch (err) {
-            console.error('Preview error:', err);
-            alert('Erro na prévia: ' + err.message);
-        } finally {
-            previewBtn.innerHTML = originalText;
-            previewBtn.disabled = false;
-        }
-    });
-}
-
-
-// ----------------------------------------
-// 2. DOWNLOAD ZIP (Export with Brain)
-// ----------------------------------------
-const downloadBtn = document.getElementById('btn-download-zip');
-if (downloadBtn) {
-    downloadBtn.addEventListener('click', async () => {
-        const slug = document.getElementById('slug-input')?.value || 'meu-convite';
-        const originalText = downloadBtn.innerHTML;
-
-        try {
-            downloadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Empacotando...';
-            downloadBtn.disabled = true;
-
-            if (!window.JSZip) throw new Error('Biblioteca JSZip não carregada.');
-
-            const zip = new JSZip();
-            const assetsFolder = zip.folder("assets");
-
-            // 1. Prepare Data Brain (State)
-            const appState = window.generateBuilderState();
-            // Asset Map
-            const assetMap = {
-                music: { filename: 'musica.mp3', source: window.builderState?.assets?.music, context: 'musica' },
-                cover: { filename: 'capa.png', selector: '#cover-dropzone', type: 'bg', context: 'capa' },
-                leaf: { filename: 'folha.png', selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia' },
-                intro: { filename: 'intro.mp4', selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura' },
-                fundo: { filename: 'fundo', selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela' },  // Unified - extension determined dynamically
-                manual: { filename: 'manual.png', selector: '#manual-image-dropzone', type: 'bg', context: 'manual' },
-                gifts: { filename: 'gifts.png', selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes' }
-            };
-
-            // Helper: Fetch Blob
-            async function fetchBlob(url) {
-                if (!url) return null;
-                try {
-                    const resp = await fetch(url);
-                    return await resp.blob();
-                } catch (e) { console.warn('Failed to fetch:', url); return null; }
-            }
-
-            // Collect and Zip Assets
-            for (const [key, config] of Object.entries(assetMap)) {
-                let blob = null;
-                if (config.source) {
-                    blob = config.source;
-                } else if (config.selector) {
-                    const el = document.querySelector(config.selector);
-                    if (el) {
-                        let url = null;
-                        if (config.type === 'bg') {
                             const style = el.style.backgroundImage;
                             if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
-                        } else if (config.type === 'src') url = el.src;
+                        }
+                    }
+                    if (url) {
+                        const resp = await fetch(url);
+                        return await resp.blob();
+                    }
+                    return null;
+                }
 
-                        if (url) blob = await fetchBlob(url);
+                const slug = document.getElementById('slug-input')?.value || 'preview-local';
+                let fundoExt = 'png'; // Default extension for fundo
+
+                for (const [path, config] of Object.entries(assetMap)) {
+                    let blob = null;
+                    if (config.source) blob = config.source;
+                    else if (config.selector) blob = await fetchBlobFromSelector(config.selector, config.type);
+
+                    if (blob) {
+                        // Determine actual path with extension for fundo
+                        let actualPath = path;
+                        if (path === 'assets/fundo') {
+                            // Detect type from blob MIME
+                            if (blob.type.startsWith('video/')) {
+                                fundoExt = 'mp4';
+                            } else if (blob.type === 'image/jpeg' || blob.type === 'image/jpg') {
+                                fundoExt = 'jpg';
+                            } else {
+                                fundoExt = 'png';
+                            }
+                            actualPath = `assets/fundo.${fundoExt}`;
+                        }
+                        filesMap[`convites/${slug}/${actualPath}`] = await blobToBase64(blob);
+                        appState.assetsMap[config.context] = actualPath; // Keep relative path in brain
                     }
                 }
 
-                if (blob) {
-                    assetsFolder.file(config.filename, blob);
-                    appState.assetsMap[config.context] = `assets/${config.filename}`;
+                // Add Brain (Base64)
+                filesMap[`convites/${slug}/data.json`] = btoa(JSON.stringify(appState, null, 2));
+
+                // Inject Variables and Add HTML
+                // Basic replacements for the published HTML
+                htmlContent = htmlContent.replace(/\[\[MUSICA_URL\]\]/g, './assets/musica.mp3');
+                htmlContent = htmlContent.replace(/\[\[CAPA_URL\]\]/g, './assets/capa.png');
+                htmlContent = htmlContent.replace(/\[\[FOLHA_URL\]\]/g, './assets/folha.png');
+                htmlContent = htmlContent.replace(/\[\[VIDEO_ABERTURA_URL\]\]/g, './assets/intro.mp4');
+                htmlContent = htmlContent.replace(/\[\[FUNDO_TELA_URL\]\]/g, `./assets/fundo.${fundoExt}`);
+                htmlContent = htmlContent.replace(/\[\[SLUG\]\]/g, slug);
+
+                // Generate menuConfig for buttons (Presentes, Manual, etc.)
+                const formData = window.AutoBuilderForm ? window.AutoBuilderForm.data : {};
+                const menuConfig = [];
+
+                // Google Maps
+                if (formData.link_google_maps || formData.google_maps_link) {
+                    menuConfig.push({ titulo: 'Como Chegar', icone: 'fa-solid fa-map-marker-alt', link: formData.link_google_maps || formData.google_maps_link, id: 'maps' });
                 }
+
+                // Gifts
+                const giftsDropzone = document.querySelector('#gifts-image-dropzone');
+                const hasGiftImage = giftsDropzone && giftsDropzone.style.backgroundImage && giftsDropzone.style.backgroundImage !== 'none';
+                if (formData.link_presentes || formData.gifts_link) {
+                    menuConfig.push({ titulo: 'Lista de Presentes', icone: 'fa-solid fa-gift', link: formData.link_presentes || formData.gifts_link, id: 'gifts' });
+                } else if (hasGiftImage) {
+                    menuConfig.push({ titulo: 'Sugestões de Presentes', icone: 'fa-solid fa-gift', link: '#', id: 'gifts', isGiftImage: true });
+                }
+
+                // Manual
+                const manualDropzone = document.querySelector('#manual-image-dropzone');
+                const hasManualImage = manualDropzone && manualDropzone.style.backgroundImage && manualDropzone.style.backgroundImage !== 'none';
+                if (formData.manual_html || formData.manual_text) {
+                    menuConfig.push({ titulo: 'Manual do Convidado', icone: 'fa-solid fa-book-open', link: '#', id: 'manual', manualText: formData.manual_html || formData.manual_text });
+                } else if (hasManualImage) {
+                    menuConfig.push({ titulo: 'Manual do Convidado', icone: 'fa-solid fa-book-open', link: '#', id: 'manual', isManualImage: true });
+                }
+
+                // RSVP (WhatsApp/Link)
+                if (formData.numero_whatsapp || formData.whatsapp_number) {
+                    const cleanNum = (formData.numero_whatsapp || formData.whatsapp_number).replace(/\D/g, '');
+                    menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: `https://wa.me/${cleanNum}`, id: 'rsvp' });
+                } else if (formData.link_confirmacao || formData.confirmation_link) {
+                    menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao || formData.confirmation_link, id: 'rsvp' });
+                }
+
+                // Inject menuConfig
+                htmlContent = htmlContent.replace(/\[\[MENU_CONFIG\]\]/g, JSON.stringify(menuConfig));
+
+                // Inject Text (form fields)
+                for (const [key, value] of Object.entries(formData)) {
+                    const regex = new RegExp(`\\[\\[${key.toUpperCase()}\\]\\]`, 'g');
+                    htmlContent = htmlContent.replace(regex, value || '');
+                }
+
+                // Inject default values for remaining placeholders
+                htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, formData.button_size || '1.0');
+                htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, '');
+                htmlContent = htmlContent.replace(/\[\[MANUAL_CONTENT\]\]/g, formData.manual_html || '');
+                htmlContent = htmlContent.replace(/\[\[GIFTS_IMAGE_URL\]\]/g, './assets/gifts.png');
+                htmlContent = htmlContent.replace(/\[\[MANUAL_IMAGE_URL\]\]/g, './assets/manual.png');
+
+                filesMap[`convites/${slug}/index.html`] = btoa(htmlContent); // HTML base64
+
+                // Open in new tab
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const blobUrl = URL.createObjectURL(blob);
+                window.open(blobUrl, '_blank');
+
+            } catch (err) {
+                console.error('Preview error:', err);
+                alert('Erro na prévia: ' + err.message);
+            } finally {
+                previewBtn.innerHTML = originalText;
+                previewBtn.disabled = false;
             }
-
-            // 2. Add Brain to ZIP
-            zip.file("data.json", JSON.stringify(appState, null, 2));
-
-            // 3. Add final_template.html (Hydrated)
-            const templateResp = await fetch('final_template.html');
-            if (templateResp.ok) {
-                let htmlContent = await templateResp.text();
-                // (Inject same vars as preview for standalone usage)
-                // For simplicity, we assume the ZIP user might also use data.json or just the raw html
-                // We will perform a basic injection for the index.html so it works out of box
-                zip.file("index.html", htmlContent); // Simplified for "Export" logic, robust logic in Publish
-            }
-
-            // Generate
-            const content = await zip.generateAsync({ type: "blob" });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(content);
-            link.download = `${slug}.zip`;
-            link.click();
-
-            console.log('📦 ZIP Exported with data.json');
-
-        } catch (err) {
-            console.error('ZIP Error:', err);
-            alert('Erro ao gerar ZIP: ' + err.message);
-        } finally {
-            downloadBtn.innerHTML = originalText;
-            downloadBtn.disabled = false;
-        }
-    });
-}
-
-// ----------------------------------------
-// 3. IMPORT ZIP (Restore State)
-// ----------------------------------------
-const zipDropzone = document.getElementById('zip-upload-dropzone');
-const zipInput = document.getElementById('zip-upload-input');
-const restoreMsg = document.getElementById('restore-status-message'); // Optional UI element
-
-if (zipInput) {
-    zipInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (!confirm('Isso irá substituir todo o conteúdo atual pelo conteúdo do arquivo ZIP. Deseja continuar?')) {
-            zipInput.value = '';
-            return;
-        }
-
-        try {
-            // 1. Clean Slate (Silent because we already confirmed above)
-            window.resetBuilderState(true);
-
-            if (!window.JSZip) throw new Error('JSZip missing');
-            const zip = new JSZip();
-            const zipContent = await zip.loadAsync(file);
-
-            // 2. Find data.json
-            let appState = null;
-            if (zipContent.file("data.json")) {
-                const jsonStr = await zipContent.file("data.json").async("string");
-                appState = JSON.parse(jsonStr);
-
-                // Use Shared Restorer
-                await window.restoreBuilderState(appState, zipContent);
-
-            } else {
-                // Legacy/External ZIP
-                // For now throw error or we could implement a manual hydration loop here
-                // But we want to encourage using data.json
-                throw new Error('Arquivo data.json não encontrado no ZIP. Este backup pode ser antigo ou inválido para restauração completa.');
-            }
-
-
-            alert('Projeto restaurado com sucesso!');
-
-        } catch (err) {
-            console.error('Restore Error:', err);
-            alert('Erro ao restaurar ZIP: ' + err.message);
-        } finally {
-            zipInput.value = '';
-        }
-    });
-}
+        });
     }
+
+
+    // ----------------------------------------
+    // 2. DOWNLOAD ZIP (Export with Brain)
+    // ----------------------------------------
+    const downloadBtn = document.getElementById('btn-download-zip');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', async () => {
+            const slug = document.getElementById('slug-input')?.value || 'meu-convite';
+            const originalText = downloadBtn.innerHTML;
+
+            try {
+                downloadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Empacotando...';
+                downloadBtn.disabled = true;
+
+                if (!window.JSZip) throw new Error('Biblioteca JSZip não carregada.');
+
+                const zip = new JSZip();
+                const assetsFolder = zip.folder("assets");
+
+                // 1. Prepare Data Brain (State)
+                const appState = window.generateBuilderState();
+                // Asset Map
+                const assetMap = {
+                    music: { filename: 'musica.mp3', source: window.builderState?.assets?.music, context: 'musica' },
+                    cover: { filename: 'capa.png', selector: '#cover-dropzone', type: 'bg', context: 'capa' },
+                    leaf: { filename: 'folha.png', selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia' },
+                    intro: { filename: 'intro.mp4', selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura' },
+                    fundo: { filename: 'fundo', selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela' },  // Unified - extension determined dynamically
+                    manual: { filename: 'manual.png', selector: '#manual-image-dropzone', type: 'bg', context: 'manual' },
+                    gifts: { filename: 'gifts.png', selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes' }
+                };
+
+                // Helper: Fetch Blob
+                async function fetchBlob(url) {
+                    if (!url) return null;
+                    try {
+                        const resp = await fetch(url);
+                        return await resp.blob();
+                    } catch (e) { console.warn('Failed to fetch:', url); return null; }
+                }
+
+                // Collect and Zip Assets
+                for (const [key, config] of Object.entries(assetMap)) {
+                    let blob = null;
+                    if (config.source) {
+                        blob = config.source;
+                    } else if (config.selector) {
+                        const el = document.querySelector(config.selector);
+                        if (el) {
+                            let url = null;
+                            if (config.type === 'bg') {
+                                const style = el.style.backgroundImage;
+                                if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
+                            } else if (config.type === 'src') url = el.src;
+
+                            if (url) blob = await fetchBlob(url);
+                        }
+                    }
+
+                    if (blob) {
+                        assetsFolder.file(config.filename, blob);
+                        appState.assetsMap[config.context] = `assets/${config.filename}`;
+                    }
+                }
+
+                // 2. Add Brain to ZIP
+                zip.file("data.json", JSON.stringify(appState, null, 2));
+
+                // 3. Add final_template.html (Hydrated)
+                const templateResp = await fetch('final_template.html');
+                if (templateResp.ok) {
+                    let htmlContent = await templateResp.text();
+                    // (Inject same vars as preview for standalone usage)
+                    // For simplicity, we assume the ZIP user might also use data.json or just the raw html
+                    // We will perform a basic injection for the index.html so it works out of box
+                    zip.file("index.html", htmlContent); // Simplified for "Export" logic, robust logic in Publish
+                }
+
+                // Generate
+                const content = await zip.generateAsync({ type: "blob" });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = `${slug}.zip`;
+                link.click();
+
+                console.log('📦 ZIP Exported with data.json');
+
+            } catch (err) {
+                console.error('ZIP Error:', err);
+                alert('Erro ao gerar ZIP: ' + err.message);
+            } finally {
+                downloadBtn.innerHTML = originalText;
+                downloadBtn.disabled = false;
+            }
+        });
+    }
+
+    // ----------------------------------------
+    // 3. IMPORT ZIP (Restore State)
+    // ----------------------------------------
+    const zipDropzone = document.getElementById('zip-upload-dropzone');
+    const zipInput = document.getElementById('zip-upload-input');
+    const restoreMsg = document.getElementById('restore-status-message'); // Optional UI element
+
+    if (zipInput) {
+        zipInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!confirm('Isso irá substituir todo o conteúdo atual pelo conteúdo do arquivo ZIP. Deseja continuar?')) {
+                zipInput.value = '';
+                return;
+            }
+
+            try {
+                // 1. Clean Slate (Silent because we already confirmed above)
+                window.resetBuilderState(true);
+
+                if (!window.JSZip) throw new Error('JSZip missing');
+                const zip = new JSZip();
+                const zipContent = await zip.loadAsync(file);
+
+                // 2. Find data.json
+                let appState = null;
+                if (zipContent.file("data.json")) {
+                    const jsonStr = await zipContent.file("data.json").async("string");
+                    appState = JSON.parse(jsonStr);
+
+                    // Use Shared Restorer
+                    await window.restoreBuilderState(appState, zipContent);
+
+                } else {
+                    // Legacy/External ZIP
+                    // For now throw error or we could implement a manual hydration loop here
+                    // But we want to encourage using data.json
+                    throw new Error('Arquivo data.json não encontrado no ZIP. Este backup pode ser antigo ou inválido para restauração completa.');
+                }
+
+
+                alert('Projeto restaurado com sucesso!');
+
+            } catch (err) {
+                console.error('Restore Error:', err);
+                alert('Erro ao restaurar ZIP: ' + err.message);
+            } finally {
+                zipInput.value = '';
+            }
+        });
+    }
+}
 
 // ----------------------------------------
 // 4. PUBLISH (Deploy to GitHub with timestamps)
