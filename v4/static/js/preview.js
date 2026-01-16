@@ -171,7 +171,17 @@
                 // Logic: Visible if Link exists OR Image exists
                 // Image check: Check 'presentes' (direct URL from state) OR 'media_presentes' (event object)
                 const hasLink = !!currentState.link_presentes;
+
+                // FAILSAFE: If media_presentes exists but presentes is empty, sync them
+                if (!currentState.presentes && currentState.media_presentes && currentState.media_presentes.url) {
+                    currentState.presentes = currentState.media_presentes.url;
+                    console.warn('[Preview] Failsafe: Synced presentes from media_presentes');
+                }
+
                 const hasMedia = !!currentState.presentes || (currentState.media_presentes && !!currentState.media_presentes.url);
+
+                console.log(`[Preview Debug] Button 'gifts': hasLink=${hasLink} (${currentState.link_presentes}), hasMedia=${hasMedia} (State: ${currentState.presentes?.substr(0, 20)}...)`);
+
                 return hasLink || hasMedia;
             case 'manual':
                 // Logic: Visible if Text exists OR Image exists
@@ -478,11 +488,11 @@
             // CRITICAL SYNC: Ensure 'presentes' triggers button visibility
             else if (type === 'presentes') {
                 currentState.media_presentes = data;
-                currentState.presentes = data.url;
+                currentState.presentes = data ? data.url : null;
             }
             else if (type === 'manual') {
                 currentState.media_manual = data;
-                currentState.manual = data.url;
+                currentState.manual = data ? data.url : null;
             }
 
             updateBackground();
