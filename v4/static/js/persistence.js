@@ -438,6 +438,9 @@
 
         // Listen for media changes
         document.addEventListener('mediaUpdated', async (e) => {
+            // CRITICAL FIX: Ignore events marked as 'preview-only' or 'skipPersistence'
+            if (e.detail && e.detail.skipPersistence) return;
+
             if (e.detail && e.detail.type && e.detail.data) {
                 const { type, data } = e.detail;
 
