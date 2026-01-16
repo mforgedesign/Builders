@@ -375,7 +375,11 @@
                             }
 
                             document.dispatchEvent(new CustomEvent('mediaUpdated', {
-                                detail: { type: context, data: { url: dataUrl, type: type } }
+                                detail: {
+                                    type: context,
+                                    data: { url: dataUrl, type: type },
+                                    skipPersistence: true // Prevent re-saving restored assets
+                                }
                             }));
                         }
                     }
