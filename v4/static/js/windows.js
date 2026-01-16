@@ -1580,71 +1580,91 @@
                 const buttonSize = formData.button_size || '1.0';
                 const companionHideClass = formData.companion_hide_class || '';
 
-                // Re-generate menuConfig specifically for the static page
-                const generatedMenu = [];
+                // ============================================================
+                // Generate menuConfig using Preview's button order
+                // This ensures published invite matches the preview exactly
+                // ============================================================
 
-                // 1. Custom Links (Links Extras)
-                const extraLinks = window.builderState.linksExtras || [];
-                extraLinks.forEach(link => {
-                    generatedMenu.push({
-                        id: `extra-${Date.now()}-${Math.random()}`,
-                        titulo: link.label,
-                        icone: 'fa-solid fa-link',
-                        link: link.url
-                    });
-                });
+                // Get the button order from preview (or use default if not available)
+                const buttonOrder = (window.AutoBuilderPreview && window.AutoBuilderPreview.getButtonOrder)
+                    ? window.AutoBuilderPreview.getButtonOrder()
+                    : ['location', 'gifts', 'rsvp', 'manual'];
 
-                // 2. Fixed Buttons (Map, Gifts, RSVP, Manual)
+                // Prepare button configs (same logic as before, but we'll sort them)
+                const buttonConfigs = {};
 
                 // LOCATION
-
+                if (formData.link_google_maps) {
+                    buttonConfigs['location'] = {
+                        id: 'location',
+                        titulo: 'Localização',
+                        icone: 'fa-solid fa-location-dot',
+                        link: formData.link_google_maps
+                    };
+                }
 
                 // GIFTS (Presentes)
-                // Fix: Check context 'presentes' which matches DROPZONE_CONTEXTS
                 const hasGiftsImage = !!appState.assetsMap['presentes'];
                 const giftsLink = formData.link_presentes;
                 const giftsModeDiv = document.getElementById('gifts-image-mode');
-                // Fallback: If has image and no link, force image mode
                 const isGiftsImageMode = (giftsModeDiv && !giftsModeDiv.classList.contains('hidden')) || (hasGiftsImage && !giftsLink);
 
                 if (isGiftsImageMode && hasGiftsImage) {
-                    generatedMenu.push({ id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: '#', isGiftImage: true });
+                    buttonConfigs['gifts'] = { id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: '#', isGiftImage: true };
                 } else if (!isGiftsImageMode && giftsLink) {
-                    generatedMenu.push({ id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: giftsLink });
+                    buttonConfigs['gifts'] = { id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: giftsLink };
                 }
 
-                // LOCALIZACAO (Map)
-                if (formData.link_google_maps) {
-                    generatedMenu.push({ id: 'location', titulo: 'Localização', icone: 'fa-solid fa-location-dot', link: formData.link_google_maps });
-                }
-
-                // CONFIRMATION (RSVP)
+                // RSVP (Confirmation)
                 if (formData.numero_whatsapp) {
-                    generatedMenu.push({ id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${formData.numero_whatsapp}` });
+                    buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${formData.numero_whatsapp}` };
                 } else if (formData.link_confirmacao) {
-                    generatedMenu.push({ id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao });
+                    buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao };
                 }
 
                 // MANUAL
-                // Fix: Check context 'manual' which matches DROPZONE_CONTEXTS
                 const hasManualImg = !!appState.assetsMap['manual'];
-                // Fix: Get value from the correct textarea (manual-html-editor) OR fallback to raw text
                 const manualHtml = document.getElementById('manual-html-editor')?.value || document.getElementById('manual-raw-text')?.value;
-                // Fix: Determine mode by checking visibility of image mode container (hidden = text mode)
                 const manualImageModeDiv = document.getElementById('manual-image-mode');
-                // Fallback: If has image and no text, force image mode
                 const isManualImageMode = (manualImageModeDiv && !manualImageModeDiv.classList.contains('hidden')) || (hasManualImg && (!manualHtml || manualHtml.trim() === ''));
 
                 if (isManualImageMode && hasManualImg) {
-                    generatedMenu.push({ id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', isManualImage: true });
+                    buttonConfigs['manual'] = { id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', isManualImage: true };
                 } else if (!isManualImageMode && manualHtml && manualHtml.trim() !== '') {
-                    generatedMenu.push({ id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', manualText: manualHtml });
+                    buttonConfigs['manual'] = { id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', manualText: manualHtml };
                 }
 
-                const menuConfig = generatedMenu; // Assign to the var expected by JSON.stringify
+                // EXTRAS LINKS
+                const extraLinks = window.builderState.linksExtras || [];
+                extraLinks.forEach((link, idx) => {
+                    const extraId = `extra-${link.id || idx}`;
+                    buttonConfigs[extraId] = {
+                        id: extraId,
+                        titulo: link.label,
+                        icone: link.icon || 'fa-solid fa-link',
+                        link: link.url
+                    };
+                });
 
-                console.log("DEBUG PUBLISH: AssetsMap", appState.assetsMap);
-                console.log("DEBUG PUBLISH: Generated Menu", generatedMenu);
+                // Build final menu in the order defined by buttonOrder
+                const generatedMenu = [];
+                buttonOrder.forEach(buttonId => {
+                    if (buttonConfigs[buttonId]) {
+                        generatedMenu.push(buttonConfigs[buttonId]);
+                    }
+                });
+
+                // Add any buttons that exist but aren't in buttonOrder (safety fallback)
+                Object.keys(buttonConfigs).forEach(buttonId => {
+                    if (!buttonOrder.includes(buttonId)) {
+                        generatedMenu.push(buttonConfigs[buttonId]);
+                    }
+                });
+
+                const menuConfig = generatedMenu;
+
+                console.log("DEBUG PUBLISH: Button Order from Preview:", buttonOrder);
+                console.log("DEBUG PUBLISH: Generated Menu (Ordered):", generatedMenu);
 
                 // -------------------------------------------------------------------
 
