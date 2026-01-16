@@ -3,21 +3,30 @@
  * ======================================
  * Updates the device preview in real-time based on form state.
  * Buttons only appear when their respective links are configured.
+ * V4.1: Added drag-and-drop reordering with SortableJS
  */
 
 (function () {
     'use strict';
-    console.log('[Preview] V4.0.4 - Force Reload ' + new Date().toLocaleTimeString());
+    console.log('[Preview] V4.1.0 - Draggable Buttons ' + new Date().toLocaleTimeString());
 
     // ========================================
-    // Native Button Definitions
+    // Button Definitions (Unified)
     // ========================================
-    const NATIVE_BUTTON_MAP = {
-        link_google_maps: { id: 'local', label: 'Local', icon: 'fa-solid fa-location-dot' },
-        numero_whatsapp: { id: 'confirmar', label: 'Confirmar', icon: 'fa-brands fa-whatsapp' },
-        link_presentes: { id: 'presentes', label: 'Presentes', icon: 'fa-solid fa-gift' },
-        manual: { id: 'manual', label: 'Manual', icon: 'fa-solid fa-book-open' }
+
+    // All possible buttons with their metadata
+    const BUTTON_DEFINITIONS = {
+        'location': { label: 'Local', icon: 'fa-solid fa-location-dot', stateKey: 'link_google_maps' },
+        'rsvp': { label: 'Confirmar', icon: 'fa-brands fa-whatsapp', stateKey: 'numero_whatsapp' },
+        'gifts': { label: 'Presentes', icon: 'fa-solid fa-gift', stateKey: 'link_presentes' },
+        'manual': { label: 'Manual', icon: 'fa-solid fa-book-open', stateKey: 'manual' }
     };
+
+    // Default button order (matches final_template.html order for consistency)
+    const DEFAULT_BUTTON_ORDER = ['location', 'gifts', 'rsvp', 'manual'];
+
+    // Current button order (will be modified by drag-and-drop)
+    let buttonOrder = [...DEFAULT_BUTTON_ORDER];
 
     const DEFAULT_GRADIENT = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)';
 
@@ -30,14 +39,18 @@
         link_google_maps: '',
         numero_whatsapp: '',
         link_presentes: '',
+        link_confirmacao: '',
         manual_content: '',
-        link_confirmacao: '', // Added for RSVP logic
         media_folha_animada: null,
         media_folha_preenchida: null,
         media_folha_vazia: null,
         media_presentes: null,
-        media_manual: null
+        media_manual: null,
+        fundo_tela: null
     };
+
+    // SortableJS instances
+    let sortableInstances = [];
 
     // ========================================
     // Helpers
@@ -64,13 +77,13 @@
         console.log('[Preview] Button clicked:', btn);
 
         // 1. Google Maps
-        if (btn.id === 'local' && currentState.link_google_maps) {
+        if (btn.id === 'location' && currentState.link_google_maps) {
             window.open(currentState.link_google_maps, '_blank');
             return;
         }
 
         // 2. RSVP (Confirmar) - Priority: Link Confirmacao > WhatsApp
-        if (btn.id === 'confirmar') {
+        if (btn.id === 'rsvp') {
             if (currentState.link_confirmacao) {
                 window.open(currentState.link_confirmacao, '_blank');
             } else if (currentState.numero_whatsapp) {
@@ -81,7 +94,7 @@
         }
 
         // 3. Presentes - Priority: Link > Image
-        if (btn.id === 'presentes') {
+        if (btn.id === 'gifts') {
             if (currentState.link_presentes) {
                 window.open(currentState.link_presentes, '_blank');
             } else if (currentState.media_presentes && currentState.media_presentes.url) {
@@ -109,6 +122,7 @@
     function createButtonElement(btn, color) {
         const wrapper = document.createElement('div');
         wrapper.className = 'flex flex-col items-center gap-1 cursor-pointer preview-btn group';
+        wrapper.setAttribute('data-button-id', btn.id);
 
         const circle = document.createElement('div');
         circle.className = 'w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-300 group-hover:scale-105';
@@ -135,6 +149,45 @@
     }
 
     // ========================================
+    // Button Visibility Logic
+    // ========================================
+
+    function isButtonVisible(buttonId) {
+        switch (buttonId) {
+            case 'location':
+                return !!currentState.link_google_maps;
+            case 'rsvp':
+                return !!currentState.numero_whatsapp || !!currentState.link_confirmacao;
+            case 'gifts':
+                return !!currentState.link_presentes || (currentState.media_presentes && currentState.media_presentes.url);
+            case 'manual':
+                return (currentState.media_manual && currentState.media_manual.url) ||
+                    (currentState.manual_content && currentState.manual_content.length > 0);
+            default:
+                // Extra links are always visible if they exist
+                return true;
+        }
+    }
+
+    function getButtonConfig(buttonId) {
+        if (BUTTON_DEFINITIONS[buttonId]) {
+            return { id: buttonId, ...BUTTON_DEFINITIONS[buttonId], type: 'native' };
+        }
+        // Extra link handling
+        const extraLink = (currentState.links_extras || []).find(l => `extra-${l.id}` === buttonId || l.id === buttonId);
+        if (extraLink) {
+            return {
+                id: buttonId,
+                label: extraLink.label,
+                icon: extraLink.icon || 'fa-solid fa-link',
+                type: 'extra',
+                url: extraLink.url
+            };
+        }
+        return null;
+    }
+
+    // ========================================
     // Render Functions
     // ========================================
 
@@ -148,41 +201,96 @@
 
         const color = currentState.cor_botoes || '#4f46e5';
 
-        // Check visibility
-        const shouldShow = (key) => {
-            if (key === 'link_google_maps') return !!currentState.link_google_maps;
-            if (key === 'numero_whatsapp') return !!currentState.numero_whatsapp || !!currentState.link_confirmacao;
-            if (key === 'link_presentes') return !!currentState.link_presentes || (currentState.media_presentes && currentState.media_presentes.url);
-            if (key === 'manual') return (currentState.media_manual && currentState.media_manual.url) || (currentState.manual_content && currentState.manual_content.length > 0);
-            return false;
-        };
+        // Build ordered list of visible buttons
+        const visibleButtons = [];
 
-        containers.forEach(container => {
+        // 1. Add native buttons in order
+        buttonOrder.forEach(buttonId => {
+            if (BUTTON_DEFINITIONS[buttonId] && isButtonVisible(buttonId)) {
+                visibleButtons.push(getButtonConfig(buttonId));
+            }
+        });
+
+        // 2. Add extra links (at the end, but they can also be reordered)
+        const extraLinksInOrder = buttonOrder.filter(id => id.startsWith('extra-'));
+        extraLinksInOrder.forEach(extraId => {
+            const config = getButtonConfig(extraId);
+            if (config) visibleButtons.push(config);
+        });
+
+        // 3. Add any new extra links not yet in buttonOrder
+        (currentState.links_extras || []).forEach(link => {
+            const extraId = `extra-${link.id || Math.random().toString(36).substr(2, 9)}`;
+            if (link.label && !buttonOrder.includes(extraId)) {
+                buttonOrder.push(extraId);
+                visibleButtons.push({
+                    id: extraId,
+                    label: link.label,
+                    icon: link.icon || 'fa-solid fa-link',
+                    type: 'extra',
+                    url: link.url
+                });
+            }
+        });
+
+        // Render to each container
+        containers.forEach((container, index) => {
             container.innerHTML = ''; // Reset
 
-            // Native Buttons
-            for (const [key, config] of Object.entries(NATIVE_BUTTON_MAP)) {
-                if (shouldShow(key)) {
-                    container.appendChild(createButtonElement({ ...config, type: 'native' }, color));
-                }
-            }
-
-            // Extra Links
-            (currentState.links_extras || []).forEach(link => {
-                if (link.label) {
-                    container.appendChild(createButtonElement({
-                        id: 'extra-' + (link.id || Math.random()),
-                        label: link.label,
-                        icon: link.icon || 'fa-solid fa-link',
-                        type: 'extra',
-                        url: link.url
-                    }, color));
-                }
+            visibleButtons.forEach(btn => {
+                container.appendChild(createButtonElement(btn, color));
             });
+
+            // Initialize SortableJS (only on desktop preview, index 0)
+            if (index === 0 && typeof Sortable !== 'undefined') {
+                // Destroy previous instance if exists
+                if (sortableInstances[index]) {
+                    sortableInstances[index].destroy();
+                }
+
+                sortableInstances[index] = new Sortable(container, {
+                    animation: 150,
+                    ghostClass: 'opacity-50',
+                    chosenClass: 'scale-110',
+                    dragClass: 'cursor-grabbing',
+                    onEnd: function (evt) {
+                        // Update buttonOrder based on new DOM order
+                        const newOrder = [];
+                        container.querySelectorAll('[data-button-id]').forEach(el => {
+                            newOrder.push(el.getAttribute('data-button-id'));
+                        });
+
+                        // Update global buttonOrder
+                        buttonOrder = newOrder;
+
+                        // Sync to mobile preview (without SortableJS)
+                        const mobileContainer = document.querySelector('#mobile-preview-buttons > div');
+                        if (mobileContainer) {
+                            mobileContainer.innerHTML = '';
+                            newOrder.forEach(id => {
+                                const config = getButtonConfig(id);
+                                if (config && isButtonVisible(id)) {
+                                    mobileContainer.appendChild(createButtonElement(config, color));
+                                }
+                            });
+                        }
+
+                        // Dispatch event for persistence
+                        document.dispatchEvent(new CustomEvent('buttonOrderChanged', {
+                            detail: { order: buttonOrder }
+                        }));
+
+                        console.log('[Preview] Button order changed:', buttonOrder);
+
+                        // Save to localStorage immediately
+                        saveButtonOrder();
+                    }
+                });
+            }
         });
 
         // Toggle container visibility
-        const hasButtons = Object.keys(NATIVE_BUTTON_MAP).some(shouldShow) || (currentState.links_extras && currentState.links_extras.length > 0);
+        const hasButtons = visibleButtons.length > 0;
         ['preview-buttons', 'mobile-preview-buttons'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = hasButtons ? 'flex' : 'none';
@@ -291,6 +399,33 @@
     }
 
     // ========================================
+    // Persistence
+    // ========================================
+
+    function saveButtonOrder() {
+        try {
+            localStorage.setItem('autoBuilder_buttonOrder', JSON.stringify(buttonOrder));
+        } catch (e) {
+            console.warn('[Preview] Failed to save button order:', e);
+        }
+    }
+
+    function loadButtonOrder() {
+        try {
+            const saved = localStorage.getItem('autoBuilder_buttonOrder');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    buttonOrder = parsed;
+                    console.log('[Preview] Loaded button order:', buttonOrder);
+                }
+            }
+        } catch (e) {
+            console.warn('[Preview] Failed to load button order:', e);
+        }
+    }
+
+    // ========================================
     // Events
     // ========================================
 
@@ -339,6 +474,13 @@
             updateBackground();
             renderButtons();
         });
+
+        // Listen for reset
+        document.addEventListener('builderReset', () => {
+            buttonOrder = [...DEFAULT_BUTTON_ORDER];
+            saveButtonOrder();
+            renderButtons();
+        });
     }
 
     // ========================================
@@ -346,6 +488,7 @@
     // ========================================
 
     function init() {
+        loadButtonOrder();
         setupEventListeners();
         updateBackground(); // Defaults
         renderButtons();
@@ -356,8 +499,7 @@
             .then(data => {
                 if (data.data) {
                     Object.assign(currentState, data.data);
-                    // Conversion for boolean/numbers if needed?
-                    // Usually persistence handles it, but let's be safe
+                    // Conversion for boolean/numbers if needed
                     if (typeof currentState.timer_contagem === 'string') {
                         currentState.timer_contagem = currentState.timer_contagem === 'true';
                     }
@@ -379,7 +521,27 @@
         init();
     }
 
-    // Expose
-    window.AutoBuilderPreview = { renderButtons, updateBackground, updateTimerVisibility };
+    // ========================================
+    // Public API
+    // ========================================
+
+    window.AutoBuilderPreview = {
+        renderButtons,
+        updateBackground,
+        updateTimerVisibility,
+        getButtonOrder: () => [...buttonOrder],
+        setButtonOrder: (order) => {
+            if (Array.isArray(order)) {
+                buttonOrder = order;
+                saveButtonOrder();
+                renderButtons();
+            }
+        },
+        resetButtonOrder: () => {
+            buttonOrder = [...DEFAULT_BUTTON_ORDER];
+            saveButtonOrder();
+            renderButtons();
+        }
+    };
 
 })();
