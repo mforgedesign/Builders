@@ -24,6 +24,15 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 00:10] - v4.3.15 - Aggressive Fallback
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **Fallback Nativo Agressivo**: Se a I.A retornar um mapa vazio ou incompleto, o sistema agora ignora o erro e força a importação lendo os arquivos do ZIP localmente.
+        *   **Regra de Ouro**: Se houver qualquer imagem JPG/PNG no ZIP, ela será atribuída como Capa se nenhuma outra for encontrada.
+        *   **Prevenção de Falha Total**: Isso garante que "algo" sempre seja importado, mesmo que a I.A falhe 100%.
+
+---
+
 ## [16/01/2026 - 00:00] - v4.3.14 - Critical Persistence Fix
 ### Arquivos Modificados:
 *   `static/js/windows.js`:
