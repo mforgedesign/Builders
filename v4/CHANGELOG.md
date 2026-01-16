@@ -24,6 +24,13 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 23:40] - v4.3.11 - Full Trace Debug
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **Trace Mode**: Adicionados alertas de rastreamento (`Iniciando AI`, `Mapa de Assets Final`) para identificar exatamente onde o fluxo de importação está parando.
+
+---
+
 ## [15/01/2026 - 23:30] - v4.3.10 - Debug Mode
 ### Arquivos Modificados:
 *   `static/js/windows.js`:
