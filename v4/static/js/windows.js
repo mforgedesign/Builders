@@ -1326,8 +1326,10 @@
                         };
 
                         if (window.GeminiAdapter) {
+                            alert('[DEBUG] Iniciando AI... Aguarde.');
                             // Use GeminiAdapter (which will bridge to GPT via Edge Function)
                             const aiData = await window.GeminiAdapter.analyzeRepository(payload);
+                            // alert('[DEBUG] AI Retornou. Slug: ' + aiData.slug);
 
                             // Inject Slug
                             aiData.slug = filenameSlug;
@@ -1363,6 +1365,7 @@
                                 console.log('[Import] Inferred fundo_tela from available assets');
                             }
 
+                            alert('[DEBUG] Mapa de Assets Final: ' + JSON.stringify(aiData.assetsMap));
                             await window.restoreBuilderState(aiData, zipContent);
                             if (window.showToast) window.showToast('Convite legado convertido com I.A!', 'success');
                         } else {
