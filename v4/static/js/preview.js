@@ -159,7 +159,10 @@
             case 'rsvp':
                 return !!currentState.numero_whatsapp || !!currentState.link_confirmacao;
             case 'gifts':
-                return !!currentState.link_presentes || (currentState.media_presentes && currentState.media_presentes.url);
+                const hasLink = !!currentState.link_presentes;
+                const hasMedia = !!(currentState.media_presentes && currentState.media_presentes.url);
+                console.log(`[Preview Debug] Gifts Button: Link='${currentState.link_presentes}' (${hasLink}), Media=${JSON.stringify(currentState.media_presentes)} (${hasMedia})`);
+                return hasLink || hasMedia;
             case 'manual':
                 return (currentState.media_manual && currentState.media_manual.url) ||
                     (currentState.manual_content && currentState.manual_content.length > 0);
