@@ -4,6 +4,21 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 22:20] - v4.3.4 - Fix: Importação de Convites Legados
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **Fix (Linha 897)**: Adicionada verificação de `null/undefined` no `assetsMap` antes de chamar `.startsWith()`.
+    *   **Rationale**: Crashava ao tentar importar convites onde a I.A retornava `null` para assets.
+*   `static/js/history.js`:
+    *   **Melhorado (Linha 515-575)**: Detecção de assets agora verifica subpastas (`capa/`, `abertura/`, `loop/`, `musica/`).
+    *   **Novo**: Log de debug `Asset URL Map` para facilitar troubleshooting.
+
+### Comportamento Esperado:
+1. Importação de convites legados não crasha mais em assets nulos.
+2. Assets dentro de subpastas são detectados corretamente.
+
+---
+
 ## [15/01/2026 - 21:43] - v4.3.3 - Prompts Padrão com Auto-Preenchimento
 ### Arquivos Modificados:
 *   `static/js/ai-prompts.js`:
