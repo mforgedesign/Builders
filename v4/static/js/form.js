@@ -292,6 +292,42 @@
         // Setup color input syncing
         syncColorInputs();
 
+        // Listen for media updates (from windows.js dropzones) to enforce mutual exclusivity
+        document.addEventListener('mediaUpdated', (e) => {
+            const { type } = e.detail;
+
+            // If Presentes Image is uploaded, clear Link Presentes
+            if (type === 'presentes') {
+                const linkInput = document.querySelector('[data-field="link_presentes"]');
+                // Check if value is not empty to avoid loop/redundant updates
+                if (linkInput && linkInput.value) {
+                    console.log('[Form] Clearing link_presentes due to media update');
+                    linkInput.value = ''; // Update UI
+                    updateField('link_presentes', ''); // Update State (triggers stateUpdated)
+                }
+            }
+
+            // If Manual Image is uploaded, clear Manual Text
+            else if (type === 'manual') {
+                let cleared = false;
+                const contentInput = document.querySelector('[data-field="manual_content"]');
+                const rawInput = document.querySelector('[data-field="manual_raw_content"]');
+
+                if (contentInput && contentInput.value) {
+                    contentInput.value = '';
+                    updateField('manual_content', '');
+                    cleared = true;
+                }
+                if (rawInput && rawInput.value) {
+                    rawInput.value = '';
+                    updateField('manual_raw_content', '');
+                    cleared = true;
+                }
+
+                if (cleared) console.log('[Form] Clearing manual_content due to media update');
+            }
+        });
+
         // Fetch and populate initial state
         fetchState()
             .then(state => populateForm(state))
