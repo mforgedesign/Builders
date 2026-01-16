@@ -1059,6 +1059,13 @@
 
                 const loopEl = document.getElementById('loop-motion-prompt');
                 if (loopEl) loopEl.value = window.AIPrompts.getLoopVideoPrompt();
+
+                // 6b. Reset Cover and Fill Prompts to Default (with auto-fill)
+                const coverEl = document.getElementById('cover-prompt');
+                if (coverEl) coverEl.value = window.AIPrompts.getDefaultCoverPrompt();
+
+                const fillEl = document.getElementById('fill-prompt');
+                if (fillEl) fillEl.value = window.AIPrompts.getDefaultFillPrompt();
             }
 
             // 6. Clear persistence (localStorage + IndexedDB)
@@ -1094,6 +1101,29 @@
                 if (window.resetBuilderState(false)) {
                     // Optionally switch to 'form' tab
                     document.querySelector('[data-window="form"]')?.click();
+                }
+            });
+        }
+
+        // Bind "Preenchimento Padrão" buttons for Cover and Fill prompts
+        const defaultCoverBtn = document.getElementById('btn-default-cover-prompt');
+        if (defaultCoverBtn) {
+            defaultCoverBtn.addEventListener('click', () => {
+                const coverEl = document.getElementById('cover-prompt');
+                if (coverEl && window.AIPrompts) {
+                    coverEl.value = window.AIPrompts.getDefaultCoverPrompt();
+                    console.log('[Windows] Cover prompt reset to default');
+                }
+            });
+        }
+
+        const defaultFillBtn = document.getElementById('btn-default-fill-prompt');
+        if (defaultFillBtn) {
+            defaultFillBtn.addEventListener('click', () => {
+                const fillEl = document.getElementById('fill-prompt');
+                if (fillEl && window.AIPrompts) {
+                    fillEl.value = window.AIPrompts.getDefaultFillPrompt();
+                    console.log('[Windows] Fill prompt reset to default');
                 }
             });
         }
