@@ -508,33 +508,50 @@
                 }
             }
 
-            // Step 5: Asset Mapping (Robust)
+            // Step 5: Asset Mapping (Robust - including subdirectories)
             updateStatus('Mapeando arquivos...', 80);
 
             // Map file names to URLs
             const urlMap = {};
-            // Fetch 'assets' folder contents if needed
-            const assetsDir = files.find(f => f.name === 'assets' && f.type === 'dir');
-            if (assetsDir) {
-                const aRes = await fetch(assetsDir.url);
-                if (aRes.ok) {
-                    const aFiles = await aRes.json();
-                    aFiles.forEach(f => {
-                        urlMap[f.name] = f.download_url;
-                        urlMap[`assets/${f.name}`] = f.download_url;
-                    });
-                }
-            }
+
+            // Fetch contents of known subdirectories (legacy invitations store assets in folders)
+            const knownAssetDirs = ['assets', 'capa', 'cover', 'abertura', 'intro', 'loop', 'background', 'musica', 'music'];
+            const subDirPromises = files
+                .filter(f => f.type === 'dir' && knownAssetDirs.some(d => f.name.toLowerCase().includes(d)))
+                .map(async (dir) => {
+                    try {
+                        const dirRes = await fetch(dir.url);
+                        if (dirRes.ok) {
+                            const dirFiles = await dirRes.json();
+                            dirFiles.forEach(f => {
+                                if (f.type === 'file') {
+                                    urlMap[f.name] = f.download_url;
+                                    urlMap[`${dir.name}/${f.name}`] = f.download_url;
+                                    // Also map by directory context for easier lookup
+                                    urlMap[`__dir__${dir.name.toLowerCase()}`] = f.download_url;
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.warn(`[History] Failed to fetch subdirectory ${dir.name}:`, e);
+                    }
+                });
+
+            await Promise.all(subDirPromises);
+
+            // Add root-level files
             files.forEach(f => { if (f.type === 'file') urlMap[f.name] = f.download_url; });
+
+            console.log('[History] Asset URL Map:', Object.keys(urlMap));
 
             // Ensure assetsMap populated
             if (!appState.assetsMap) appState.assetsMap = {};
 
-            // Legacy Fallback for Assets (Regex)
+            // Legacy Fallback for Assets (Check both files and subdirectories)
             const assetContexts = {
                 'capa': ['capa', 'cover'],
-                'folha_vazia': ['folha', 'sheet', 'leaf'],
-                'fundo_tela': ['fundo', 'background', 'bg', 'loop', 'video'], // Unified
+                'folha_vazia': ['folha', 'sheet', 'leaf', 'background'],
+                'fundo_tela': ['fundo', 'background', 'bg', 'loop'], // Unified
                 'vid_abertura': ['intro', 'abertura', 'opening'],
                 'musica': ['musica', 'music'],
                 'manual': ['manual'],
@@ -543,13 +560,27 @@
 
             for (const [context, patterns] of Object.entries(assetContexts)) {
                 if (!appState.assetsMap[context]) {
-                    // Try to find matching file
-                    const bestMatch = files.find(f => {
-                        const lower = f.name.toLowerCase();
-                        return patterns.some(p => lower.includes(p));
-                    });
-                    if (bestMatch) {
-                        appState.assetsMap[context] = bestMatch.download_url;
+                    // Strategy 1: Check if a subdirectory matches (e.g., capa/)
+                    for (const pattern of patterns) {
+                        const dirKey = `__dir__${pattern}`;
+                        if (urlMap[dirKey]) {
+                            appState.assetsMap[context] = urlMap[dirKey];
+                            console.log(`[History] Mapped ${context} from subdirectory: ${pattern}/`);
+                            break;
+                        }
+                    }
+
+                    // Strategy 2: Check all urlMap keys for pattern match
+                    if (!appState.assetsMap[context]) {
+                        for (const [key, url] of Object.entries(urlMap)) {
+                            if (key.startsWith('__dir__')) continue; // Skip directory markers
+                            const lower = key.toLowerCase();
+                            if (patterns.some(p => lower.includes(p))) {
+                                appState.assetsMap[context] = url;
+                                console.log(`[History] Mapped ${context} from file: ${key}`);
+                                break;
+                            }
+                        }
                     }
                 }
             }
