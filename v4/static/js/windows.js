@@ -10,6 +10,7 @@
 
 (function () {
     'use strict';
+    alert('[DEBUG] Windows JS Started (v4.3.13)');
 
     // ========================================
     // Toast Notification Utility
@@ -3403,4 +3404,5 @@
         setupMusicPlayer
     };
 
+    alert('[DEBUG] Windows JS Init Complete. Import Button: ' + (document.getElementById('btn-local-import') ? 'FOUND' : 'MISSING'));
 })();
