@@ -4,6 +4,14 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 19:10] - v4.3.28 - Fix Definitive: Presentes (DOM Truth)
+### Arquivos Modificados:
+*   `static/js/preview.js`:
+    *   **DOM-Truth Strategy**: Alterado `isButtonVisible` para checar diretamente o background-image do elemento `#gifts-image-dropzone`. Se o usuário vê a imagem no builder, o botão APARECE.
+    *   **Fallback Click**: No click, se o state estiver vazio, o script "rouba" a URL direto do CSS do dropzone. Resolvido o problema de desincronia de estado.
+
+---
+
 ## [16/01/2026 - 18:45] - v4.3.27 - Fix Critical: Crash & Debug Presentes
 ### Arquivos Modificados:
 *   `static/js/preview.js`:
