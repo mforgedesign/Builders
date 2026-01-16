@@ -3412,5 +3412,5 @@
         setupMusicPlayer
     };
 
-    alert('[DEBUG] Windows JS Init Complete. Import Button: ' + (document.getElementById('btn-local-import') ? 'FOUND' : 'MISSING'));
+    console.log('[Windows] Init Complete.');
 })();
