@@ -19,7 +19,8 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 ### Comportamento Esperado:
 1. Usuário clica em "Importar Pasta/ZIP".
 2. Seleciona arquivo ZIP de um convite antigo.
-3. Sistema carrega estrutura, detecta se precisa de I.A e envia para análise (requer deploy da function).
+3. Sistema carrega estrutura, detecta se precisa de I.A e envia para análise.
+4. **Backend (Configurado)**: A Edge Function `analyze-invitation` já foi atualizada via MCP com GPT-4o e Token configurado.
 
 ---
 
