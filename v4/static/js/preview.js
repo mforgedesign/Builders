@@ -431,8 +431,8 @@
 
     function setupEventListeners() {
         document.addEventListener('stateUpdated', (e) => {
-            if (e.detail.source === 'persistence' && e.detail.data && e.detail.data.formData) {
-                console.log('[Preview] Bulk Update');
+            if ((e.detail.source === 'persistence' || e.detail.source === 'restore') && e.detail.data && e.detail.data.formData) {
+                console.log('[Preview] Bulk Update from', e.detail.source);
                 Object.assign(currentState, e.detail.data.formData);
                 updateBackground();
                 renderButtons();
