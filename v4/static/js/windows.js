@@ -10,7 +10,7 @@
 
 (function () {
     'use strict';
-    alert('[DEBUG] Windows JS Started (v4.3.13)');
+    // alert removed
 
     // ========================================
     // Toast Notification Utility
@@ -895,7 +895,14 @@
 
         // 4. Hydrate Assets
         if (appState.assetsMap) {
-            const promises = Object.entries(appState.assetsMap).map(async ([context, path]) => {
+            const promises = Object.entries(appState.assetsMap).map(async ([rawKey, path]) => {
+                // Key Normalization (Standardize legacy names)
+                let context = rawKey;
+                if (context === 'folha') context = 'folha_vazia';
+                if (context === 'folha_preenchida') context = 'fundo_tela';
+                if (context === 'background') context = 'fundo_tela';
+                if (context === 'vid_loop') context = 'fundo_tela';
+
                 try {
                     // Skip null/undefined paths (AI may return null for missing assets)
                     if (!path) {
