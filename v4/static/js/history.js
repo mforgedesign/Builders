@@ -620,7 +620,10 @@
             }
             setTimeout(() => {
                 if (loadingMsg && loadingMsg.parentNode) loadingMsg.parentNode.removeChild(loadingMsg);
-                alert('Erro na importação: ' + error.message);
+                setTimeout(() => {
+                    if (loadingMsg && loadingMsg.parentNode) loadingMsg.parentNode.removeChild(loadingMsg);
+                    if (window.showToast) window.showToast('Erro na importação: ' + error.message, 'error');
+                }, 2000);
             }, 2000);
         }
     }
