@@ -1006,7 +1006,8 @@
                         document.dispatchEvent(new CustomEvent('mediaUpdated', {
                             detail: {
                                 type: evtType,
-                                data: { url: url, type: path.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg' }
+                                data: { url: url, type: path.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg' },
+                                skipPersistence: true // Prevent overwriting DB with mapped preview
                             }
                         }));
 
