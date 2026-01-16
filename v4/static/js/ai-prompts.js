@@ -239,6 +239,62 @@
         };
     }
 
+    /**
+     * DEFAULT COVER PROMPT - Base template with auto-populated form data
+     * Used for the "Preenchimento Padrão" button
+     */
+    function getDefaultCoverPrompt() {
+        const state = window.builderState || {};
+        const formData = state.formData || {};
+
+        // Also try to get values directly from DOM (more reliable)
+        const getVal = (id, fallback = '') => {
+            const el = document.getElementById(id);
+            return el?.value || formData[id.replace('form-', '')] || fallback;
+        };
+
+        const tipoEvento = getVal('form-tipo_evento', formData.tipo_evento || '');
+        const selo = getVal('form-idade', formData.idade || ''); // Selo usually refers to age/initials on wax seal
+        const paletaCores = getVal('form-paleta_cores', formData.paleta_cores || '');
+        const tema = getVal('form-tema_evento', formData.tema_evento || '');
+
+        return `Tipo de evento: ${tipoEvento}
+Selo: ${selo}
+Paleta de Cores: ${paletaCores}
+Tema: ${tema}
+Task: Create a vertical image of a hyper-realistic 3D render of a premium invitation envelope. The envelope is sealed with an intricately detailed wax seal. The paper boasts a high-quality, textured finish, exuding elegance and sophistication. Background: A setting with elements that enhance the luxurious feel of the invitation without specific thematic details. The composition is centered, with dramatic lighting casting volumetric light and creating a soft focus and depth of field. Lighting: Dramatic, cinematic lighting with volumetric effects. Highlights on the envelope and wax seal accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, and elegant. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field`;
+    }
+
+    /**
+     * DEFAULT FILL PROMPT - Base template with auto-populated form data
+     * Used for the "Preenchimento Padrão" button on Folha Preenchida
+     */
+    function getDefaultFillPrompt() {
+        const state = window.builderState || {};
+        const formData = state.formData || {};
+
+        // Also try to get values directly from DOM (more reliable)
+        const getVal = (id, fallback = '') => {
+            const el = document.getElementById(id);
+            return el?.value || formData[id.replace('form-', '')] || fallback;
+        };
+
+        const nome = getVal('form-nome', formData.nome || '');
+        const idade = getVal('form-idade', formData.idade || '');
+        const tipoEvento = getVal('form-tipo_evento', formData.tipo_evento || '');
+        const tema = getVal('form-tema_evento', formData.tema_evento || '');
+
+        const idadeStr = idade ? idade : '(não informada)';
+
+        return `Nome: ${nome}
+Idade (se houver): ${idadeStr}
+Tipo de evento: ${tipoEvento}
+Tema: ${tema}
+Task: Preencha essa folha com os dados para convite de forma criativa e elegante.
+Coloque elementos de design de forma elegante no convite, divisórias modernas, hierarquia visual madura e profissional, linhas, e uma frase similar a "Você está convidado para o... (crie a frase conforme o contexto)" conforme sua criatividade.
+Coloque textura, camadas, adornos no texto do nome, letra cursiva (Great Vibes) e efeitos especiais elegantes.`;
+    }
+
     // ==================== PUBLIC API ====================
 
     window.AIPrompts = {
@@ -250,6 +306,10 @@
         getLoopVideoPrompt,
         getGiftListPrompt,
         getGuestManualPrompt,
+
+        // NEW: Default prompts with auto-fill from form
+        getDefaultCoverPrompt,
+        getDefaultFillPrompt,
 
         // Utilities
         getContextVariables,
