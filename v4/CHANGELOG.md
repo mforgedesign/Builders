@@ -4,6 +4,13 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 18:35] - v4.3.26 - Fix: Alinhamento Gerado
+### Arquivos Modificados:
+*   `final_template.html`:
+    *   **CSS Fix (Logic)**: Alterada a lógica JavaScript injetada (`gridClasses`) para usar `items-start` (flex) e `place-items-start` (grid). Isso corrige o desalinhamento vertical no convite *publicado/gerado*, onde botões com 2 linhas ficavam sobressalentes.
+
+---
+
 ## [16/01/2026 - 18:25] - v4.3.25 - Fix: Alinhamento de Botões
 ### Arquivos Modificados:
 *   `index.html`:
