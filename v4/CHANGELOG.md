@@ -24,6 +24,15 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 00:30] - v4.3.17 - History Import Fix
+### Arquivos Modificados:
+*   `static/js/history.js`:
+    *   **Correção de Importação de Histórico**: Corrigido bug onde a importação "Direta" (sem I.A, via `data.json`) não passava a URL base para o carregador de assets, resultando em convites sem imagens.
+*   `index.html`:
+    *   Links de cache atualizados.
+
+---
+
 ## [16/01/2026 - 00:10] - v4.3.15 - Aggressive Fallback
 ### Arquivos Modificados:
 *   `static/js/windows.js`:
