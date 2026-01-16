@@ -996,7 +996,7 @@
                         // Dispatch Media Update for Preview
                         // Map older context names to current preview types if needed
                         const previewTypes = {
-                            // 'capa': 'folha_animada', // REMOVED to fix Preview (image vs video)
+                            'capa': 'fundo_tela', // Map Capa to Background so it shows up
                             'folha_vazia': 'folha_vazia',
                             'fundo_tela': 'fundo_tela',
                             'presentes': 'presentes',
@@ -1007,6 +1007,8 @@
                         const evtType = previewTypes[context] || context;
 
                         console.log(`[Restore] Dispatching mediaUpdated for ${context} -> ${evtType}`, url);
+                        // DEBUG ALERT
+                        if (context === 'capa' || context === 'fundo_tela') alert(`[DEBUG] Encontrado: ${context} -> ${path}`);
 
                         document.dispatchEvent(new CustomEvent('mediaUpdated', {
                             detail: {
@@ -1018,6 +1020,7 @@
                     }
                 } catch (err) {
                     console.warn(`Failed to restore asset ${context}:`, err);
+                    alert(`[DEBUG] Erro ao carregar ${context}: ${err.message}`);
                 }
             });
             await Promise.all(promises);
