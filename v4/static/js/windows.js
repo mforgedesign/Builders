@@ -981,12 +981,50 @@
                                 updateDropzonePreview(dropzone, url, type);
                             }
                         }
+
+                        // Dispatch Media Update for Preview
+                        // Map older context names to current preview types if needed
+                        const previewTypes = {
+                            'capa': 'folha_animada', // Legacy mapping?
+                            'folha_vazia': 'folha_vazia',
+                            'fundo_tela': 'fundo_tela',
+                            'presentes': 'presentes',
+                            'manual': 'manual'
+                        };
+
+                        // Use direct context if not mapped
+                        const evtType = previewTypes[context] || context;
+
+                        document.dispatchEvent(new CustomEvent('mediaUpdated', {
+                            detail: {
+                                type: evtType,
+                                data: { url: url, type: path.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg' }
+                            }
+                        }));
+
                     }
                 } catch (err) {
                     console.warn(`Failed to restore asset ${context}:`, err);
                 }
             });
             await Promise.all(promises);
+        }
+
+        // 5. Slug Generation (if missing)
+        const slugInput = document.getElementById('form-slug'); // Assumes hidden input or handled via title
+        if (appState.formData && appState.formData.nome && !appState.slug) {
+            const generatedSlug = appState.formData.nome
+                .toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]/g, '-')
+                .replace(/-+/g, '-') + '-' + Math.floor(Math.random() * 1000);
+
+            console.log('[Restore] Generated Slug:', generatedSlug);
+            // Update slug in state/UI if applicable. For now, we update window.builderState
+            if (window.builderState) window.builderState.slug = generatedSlug;
+
+            // If there's a visible field for slug (usually not in v4), update it.
+            // Otherwise, ensure it's saved in persistence.
         }
 
         console.log('✅ State Restored Successfully');
