@@ -617,6 +617,8 @@
         const removeBtn = dropzone.querySelector('.btn-remove-media');
         if (removeBtn) removeBtn.classList.remove('hidden');
     }
+    // Expose for Persistence module
+    window.updateDropzonePreview = updateDropzonePreview;
 
     /**
      * Reads file as Base64
