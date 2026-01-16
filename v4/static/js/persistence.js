@@ -240,7 +240,7 @@
             if (base64) {
                 await saveAssetToDB(context, base64);
                 console.log(`[Persistence] Asset saved: ${context} (${(base64.length / 1024).toFixed(1)}KB)`);
-                alert(`[DEBUG PERSISTENCE] Salvo: ${context}`);
+                // alert removed
             }
         } catch (e) {
             console.error(`[Persistence] Failed to process asset ${context}:`, e);
