@@ -1212,6 +1212,14 @@
                     const dataFile = zipContent.file('data.json') || zipContent.file('form_data.json');
                     const indexFile = zipContent.file('index.html');
 
+                    // Slug detection from filename
+                    const filenameSlug = file.name.replace(/\.[^/.]+$/, "").toLowerCase()
+                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                        .replace(/[^a-z0-9]/g, '-')
+                        .replace(/-+/g, '-');
+
+                    console.log('[Import] Derived Slug from filename:', filenameSlug);
+
                     // Content extraction
                     let jsonContentStr = '';
                     let htmlContent = '';
@@ -1230,6 +1238,7 @@
 
                     // 2. If valid V4 data, direct load
                     if (isCompatible && appState) {
+                        if (!appState.slug) appState.slug = filenameSlug; // Inject slug
                         // Pass zip context for asset hydration
                         await window.restoreBuilderState(appState, zipContent);
                         if (window.showToast) window.showToast('Convite importado com sucesso!', 'success');
@@ -1240,27 +1249,56 @@
                         if (indexFile) htmlContent = await indexFile.async('string');
 
                         // Detect assets for Visual Context
-                        // Look for filled sheet images (folha*, background*, etc)
+                        // Priority: Folha > Fundo > Capa > Any Large Image
                         let visualContext = null;
                         const validExts = ['.jpg', '.jpeg', '.png', '.webp'];
+                        const files = Object.values(zipContent.files).filter(f => !f.dir);
 
-                        // Find first image that looks like a filled sheet
-                        const visualFile = Object.values(zipContent.files).find(f => {
-                            if (f.dir) return false;
-                            const lower = f.name.toLowerCase();
-                            return validExts.some(ext => lower.endsWith(ext)) &&
-                                (lower.includes('folha') || lower.includes('background') || lower.includes('fundo'));
+                        let visualFile = files.find(f => {
+                            const n = f.name.toLowerCase();
+                            return validExts.some(ext => n.endsWith(ext)) &&
+                                (n.includes('folha') || n.includes('convite') || n.includes('sheet'));
                         });
+
+                        if (!visualFile) {
+                            visualFile = files.find(f => {
+                                const n = f.name.toLowerCase();
+                                return validExts.some(ext => n.endsWith(ext)) &&
+                                    (n.includes('fundo') || n.includes('back'));
+                            });
+                        }
+
+                        if (!visualFile) {
+                            visualFile = files.find(f => {
+                                const n = f.name.toLowerCase();
+                                return validExts.some(ext => n.endsWith(ext)) &&
+                                    (n.includes('capa') || n.includes('cover'));
+                            });
+                        }
+
+                        // Fallback: Find largest image (likely the main art)
+                        if (!visualFile) {
+                            // This is async in JSZip so we can't easily sort by size without loading metadata?
+                            // JSZip file objects have ._data but internal. 
+                            // We'll just pick the first valid image as last resort.
+                            visualFile = files.find(f => {
+                                const n = f.name.toLowerCase();
+                                return validExts.some(ext => n.endsWith(ext));
+                            });
+                        }
 
                         if (visualFile) {
                             const blob = await visualFile.async('blob');
-                            const base64 = await new Promise((resolve) => {
-                                const reader = new FileReader();
-                                reader.onloadend = () => resolve(reader.result);
-                                reader.readAsDataURL(blob);
-                            });
-                            visualContext = { type: 'image', base64: base64 };
-                            console.log(`[Import] Found visual context: ${visualFile.name}`);
+                            // Sanity check size (ignore icons < 10KB)
+                            if (blob.size > 10000) {
+                                const base64 = await new Promise((resolve) => {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => resolve(reader.result);
+                                    reader.readAsDataURL(blob);
+                                });
+                                visualContext = { type: 'image', base64: base64 };
+                                console.log(`[Import] Found visual context: ${visualFile.name} (${(blob.size / 1024).toFixed(1)}KB)`);
+                            }
                         }
 
                         // Prepare Payload for AI
@@ -1275,10 +1313,15 @@
                             // Use GeminiAdapter (which will bridge to GPT via Edge Function)
                             const aiData = await window.GeminiAdapter.analyzeRepository(payload);
 
+                            // Inject Slug
+                            aiData.slug = filenameSlug;
+
+                            // Map assets from ZIP to appState
+
+
                             // Map assets from ZIP to appState
                             // Simple mapping strategy for ZIP
                             if (!aiData.assetsMap) aiData.assetsMap = {};
-
                             // Try to map basic assets from ZIP files
                             const contexts = {
                                 'capa': ['capa', 'cover'],
