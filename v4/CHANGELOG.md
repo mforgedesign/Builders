@@ -24,6 +24,13 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 23:00] - v4.3.8 - Ajuste de UI
+### Arquivos Modificados:
+*   `index.html` e `static/js/preview.js`:
+    *   **UI**: Reduzida a posição padrão dos botões (`bottom`) de 50px para 20px, para evitar sobreposição de textos em convites importados.
+
+---
+
 ## [15/01/2026 - 22:50] - v4.3.7 - Fix: Slug e Detecção de Imagem
 ### Arquivos Modificados:
 *   `static/js/windows.js`:
