@@ -24,6 +24,16 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 23:20] - v4.3.9 - Fix Crítico: Importação e Persistence
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **Fix Critical**: A busca de arquivos no ZIP agora é **Case-Insensitive**. (Corrigido o problema onde a I.A. retornava `capa.png` minúsculo e o ZIP tinha `Capa.png`, falhando no load de todos os arquivos).
+    *   **Fallback**: Se `fundo_tela` não for detectado pela I.A., o sistema tenta usar a `capa` ou `folha` automaticamente para garantir que o convite não fique sem fundo.
+    *   **Mapping**: Removido mapeamento incorreto que tratava a Capa como vídeo.
+    *   **Logs**: Adicionados logs detalhados no console para diagnóstico de falha na restauração.
+
+---
+
 ## [15/01/2026 - 23:00] - v4.3.8 - Ajuste de UI
 ### Arquivos Modificados:
 *   `index.html` e `static/js/preview.js`:
