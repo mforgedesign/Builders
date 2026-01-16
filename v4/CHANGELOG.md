@@ -24,6 +24,16 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 22:45] - v4.3.6 - Fix: Preview na Importação
+### Arquivos Modificados:
+*   `static/js/preview.js`:
+    *   **Fix**: Agora escuta eventos de atualização com source `restore` (importação).
+*   `static/js/windows.js`:
+    *   **Fix**: Força atualização visual dos assets (backgrounds/vídeos) no preview logo após restaurar.
+    *   **Feature**: Gera automaticamente um `slug` (URL amigável) se o convite importado não tiver um.
+
+---
+
 ## [15/01/2026 - 22:20] - v4.3.4 - Fix: Importação de Convites Legados
 ### Arquivos Modificados:
 *   `static/js/windows.js`:
