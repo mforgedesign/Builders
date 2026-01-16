@@ -4,6 +4,25 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 21:43] - v4.3.3 - Prompts Padrão com Auto-Preenchimento
+### Arquivos Modificados:
+*   `static/js/ai-prompts.js`:
+    *   **Novo**: `getDefaultCoverPrompt()` - Template base para capa com dados do formulário (Tipo evento, Selo, Paleta, Tema).
+    *   **Novo**: `getDefaultFillPrompt()` - Template base para folha preenchida com dados do formulário (Nome, Idade, Tipo evento, Tema).
+*   `index.html`:
+    *   **Novo**: Botões "Preenchimento Padrão" nos campos `cover-prompt` e `fill-prompt`.
+    *   **UI**: Campos de prompt ampliados de 4 para 6 linhas.
+*   `static/js/windows.js`:
+    *   **Fix (Linha 1059-1068)**: `resetBuilderState` agora aplica prompts padrão para capa e folha ao clicar em "Novo Convite".
+    *   **Novo**: Event handlers para botões "Preenchimento Padrão".
+
+### Comportamento Esperado:
+1. Clicar em "Preenchimento Padrão" preenche o prompt com template base + dados do formulário.
+2. Clicar em "Novo Convite" reseta os prompts para o padrão (campos vazios até preencher formulário).
+3. Os placeholders `[Preenche automático]` são substituídos pelos dados do formulário.
+
+---
+
 ## [15/01/2026 - 21:37] - v4.3.2 - Adicionado Link Dreamina nas Ferramentas
 ### Arquivos Modificados:
 *   `index.html`:
