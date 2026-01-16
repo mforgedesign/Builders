@@ -4,6 +4,23 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 17:00] - v4.3.20 - Deploy Manual
+### Ações Realizadas:
+*   **Deploy**: Execução do script `deploy_to_github.py` para atualizar a versão em produção no repositório `mforgedesign/Builders`.
+*   **URL**: https://builder.mforge.com.br/v4/
+
+---
+
+## [16/01/2026 - 16:55] - v4.3.20 - Fix: Preview de Vídeo e Título Manual
+### Arquivos Modificados:
+*   `static/js/preview.js`:
+    *   **Fix Video Preview**: A detecção de vídeo no `updateBackground` confiava na extensão da URL. Blobs locais não possuem extensão definida na URL. Adicionado fallback para verificar `data.blob.type` se disponível, ou assumir imagem se não for MP4 explícito.
+    *   **Fix Title**: Alterado título do modal de "Manual dos Padrinhos" para "Manual" em `handleButtonClick`.
+*   `final_template.html`:
+    *   **Fix Title**: Alterado título do modal de "Manual dos Padrinhos" para "Manual" para manter consistência no convite publicado.
+
+---
+
 ## [16/01/2026 - 16:45] - v4.3.19 - Deploy Manual
 ### Ações Realizadas:
 *   **Deploy**: Execução do script `deploy_to_github.py` para atualizar a versão em produção no repositório `mforgedesign/Builders`.
