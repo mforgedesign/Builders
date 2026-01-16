@@ -944,13 +944,20 @@
                         if (!window.builderState.assets) window.builderState.assets = {};
                         window.builderState.assets[context] = url;
 
+                        // ----------------------------------------------------
+                        // CRITICAL FIX: Save directly to Persistence (Original Key)
+                        // This ensures 'capa' is saved as 'capa', regardless of Preview mapping
+                        // ----------------------------------------------------
+                        if (window.Persistence && window.Persistence.processAsset) {
+                            // Don't await here to avoid blocking UI, or await if safety needed
+                            window.Persistence.processAsset(context, blob).catch(e => console.error('Direct Save Failed:', e));
+                        }
+
                         // Update Dropzone Visuals
-                        // We need a robust way to find dropzone ID.
-                        // We can use the dropzone map if we move it to scope or redefine it.
                         const dropzones = {
                             'capa': 'cover-dropzone',
                             'folha_vazia': 'leaf-dropzone',
-                            'fundo_tela': 'fill-image-dropzone',  // Unified fundo
+                            'fundo_tela': 'fill-image-dropzone',
                             'vid_abertura': 'intro-video-dropzone',
                             'presentes': 'gifts-image-dropzone',
                             'manual': 'manual-image-dropzone',
@@ -959,57 +966,41 @@
                         const dropzoneId = dropzones[context];
 
                         if (context === 'musica') {
-                            // Specialized Music Handling
                             const player = document.getElementById('music-preview-player');
                             const nameDisplay = document.getElementById('music-file-name');
                             const dropzone = document.getElementById('music-dropzone');
 
                             if (player) {
                                 player.src = url;
-                                player.load(); // Important to load resource
+                                player.load();
                             }
                             if (nameDisplay) {
-                                // Extract name from path if possible, or use generic
                                 const filename = path.split('/').pop() || 'Música Importada.mp3';
                                 nameDisplay.textContent = filename;
                                 nameDisplay.classList.remove('hidden');
                             }
                             if (dropzone) {
                                 dropzone.querySelectorAll('i, span').forEach(el => el.classList.add('hidden'));
-                                // Ensure remove button is visible
                                 const removeBtn = dropzone.querySelector('.btn-remove-media');
                                 if (removeBtn) removeBtn.classList.remove('hidden');
                             }
-
-                            // Also update the global player instance if available
-                            if (window._mainAudioPlayer) {
-                                window._mainAudioPlayer.src = url;
-                            }
+                            if (window._mainAudioPlayer) window._mainAudioPlayer.src = url;
 
                         } else if (dropzoneId) {
                             const dropzone = document.getElementById(dropzoneId);
                             if (dropzone) {
                                 const type = path.endsWith('.mp4') ? 'video' : 'image';
-                                updateDropzonePreview(dropzone, url, type);
+                                if (window.updateDropzonePreview) window.updateDropzonePreview(dropzone, url, type);
                             }
                         }
 
                         // Dispatch Media Update for Preview
-                        // Map older context names to current preview types if needed
                         const previewTypes = {
-                            'capa': 'fundo_tela', // Map Capa to Background so it shows up
-                            'folha_vazia': 'folha_vazia',
-                            'fundo_tela': 'fundo_tela',
-                            'presentes': 'presentes',
-                            'manual': 'manual'
+                            'capa': 'fundo_tela', // Visual Mapping only
                         };
 
-                        // Use direct context if not mapped
                         const evtType = previewTypes[context] || context;
-
-                        console.log(`[Restore] Dispatching mediaUpdated for ${context} -> ${evtType}`, url);
-                        // DEBUG ALERT
-                        if (context === 'capa' || context === 'fundo_tela') alert(`[DEBUG] Encontrado: ${context} -> ${path}`);
+                        console.log(`[Restore] Dispatching mediaUpdated for ${context} -> ${evtType}`);
 
                         document.dispatchEvent(new CustomEvent('mediaUpdated', {
                             detail: {
