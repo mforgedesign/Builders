@@ -24,6 +24,14 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 23:30] - v4.3.10 - Debug Mode
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **Debug**: Ativado modo de debug visual. Alertas (`window.alert`) aparecerão se a importação encontrar os arquivos ou falhar. (Removeremos isso após confirmação).
+    *   **Fix**: Mapeamento de `capa` forçado para `fundo_tela` para garantir que a imagem apareça.
+
+---
+
 ## [15/01/2026 - 23:20] - v4.3.9 - Fix Crítico: Importação e Persistence
 ### Arquivos Modificados:
 *   `static/js/windows.js`:
