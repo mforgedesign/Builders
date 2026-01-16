@@ -97,8 +97,12 @@
         if (btn.id === 'gifts') {
             if (currentState.link_presentes) {
                 window.open(currentState.link_presentes, '_blank');
-            } else if (currentState.media_presentes && currentState.media_presentes.url) {
-                showPreviewModal('Lista de Presentes', `<img src="${currentState.media_presentes.url}" class="max-w-full rounded mx-auto shadow-md">`);
+            } else {
+                // Try to get image URL from various possible state keys
+                const imgUrl = currentState.presentes || (currentState.media_presentes ? currentState.media_presentes.url : null);
+                if (imgUrl) {
+                    showPreviewModal('Lista de Presentes', `<img src="${imgUrl}" class="max-w-full rounded mx-auto shadow-md">`);
+                }
             }
             return;
         }
@@ -107,8 +111,13 @@
         if (btn.id === 'manual') {
             if (currentState.manual_content && currentState.manual_content.trim().length > 0) {
                 showPreviewModal('Manual', `<div class="text-left prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap">${currentState.manual_content}</div>`);
-            } else if (currentState.media_manual && currentState.media_manual.url) {
-                showPreviewModal('Manual', `<img src="${currentState.media_manual.url}" class="max-w-full rounded mx-auto shadow-md">`);
+            } else {
+                // Try to get image URL from various possible state keys (manual OR media_manual)
+                const imgUrl = (typeof currentState.manual === 'string' ? currentState.manual : null) ||
+                    (currentState.media_manual ? currentState.media_manual.url : null);
+                if (imgUrl) {
+                    showPreviewModal('Manual', `<img src="${imgUrl}" class="max-w-full rounded mx-auto shadow-md">`);
+                }
             }
             return;
         }
@@ -159,16 +168,17 @@
             case 'rsvp':
                 return !!currentState.numero_whatsapp || !!currentState.link_confirmacao;
             case 'gifts':
+                // Logic: Visible if Link exists OR Image exists
+                // Image check: Check 'presentes' (direct URL from state) OR 'media_presentes' (event object)
                 const hasLink = !!currentState.link_presentes;
-                // Robust Check: Check media_presentes (event) OR presentes (state)
-                const hasMedia = !!(currentState.media_presentes && currentState.media_presentes.url) ||
-                    !!(currentState.presentes && (currentState.presentes.url || typeof currentState.presentes === 'string'));
-
-                console.log(`[Preview Debug] Gifts Button: Link='${currentState.link_presentes}' (${hasLink}), Media=${JSON.stringify(currentState.media_presentes)}, StatePresentes=${JSON.stringify(currentState.presentes)} -> HasMedia=${hasMedia}`);
+                const hasMedia = !!currentState.presentes || (currentState.media_presentes && !!currentState.media_presentes.url);
                 return hasLink || hasMedia;
             case 'manual':
-                return (currentState.media_manual && currentState.media_manual.url) ||
-                    (currentState.manual_content && currentState.manual_content.length > 0);
+                // Logic: Visible if Text exists OR Image exists
+                const hasText = currentState.manual_content && currentState.manual_content.length > 0;
+                const hasManualMedia = (currentState.manual && typeof currentState.manual === 'string') ||
+                    (currentState.media_manual && !!currentState.media_manual.url);
+                return hasText || hasManualMedia;
             default:
                 // Extra links are always visible if they exist
                 return true;
@@ -260,26 +270,14 @@
                     chosenClass: 'scale-110',
                     dragClass: 'cursor-grabbing',
                     onEnd: function (evt) {
-                        // Update buttonOrder based on new DOM order
-                        const newOrder = [];
-                        container.querySelectorAll('[data-button-id]').forEach(el => {
-                            newOrder.push(el.getAttribute('data-button-id'));
-                        });
+                        // Extract new order from data-button-id
+                        const newOrder = Array.from(container.children).map(el => el.getAttribute('data-button-id'));
 
-                        // Update global buttonOrder
+                        // Update global order
                         buttonOrder = newOrder;
 
-                        // Sync to mobile preview (without SortableJS)
-                        const mobileContainer = document.querySelector('#mobile-preview-buttons > div');
-                        if (mobileContainer) {
-                            mobileContainer.innerHTML = '';
-                            newOrder.forEach(id => {
-                                const config = getButtonConfig(id);
-                                if (config && isButtonVisible(id)) {
-                                    mobileContainer.appendChild(createButtonElement(config, color));
-                                }
-                            });
-                        }
+                        // Update mobile view to match
+                        renderButtons();
 
                         // Dispatch event for persistence
                         document.dispatchEvent(new CustomEvent('buttonOrderChanged', {
@@ -477,8 +475,15 @@
             else if (type === 'folha_animada') currentState.media_folha_animada = data;
             else if (type === 'folha_preenchida') currentState.media_folha_preenchida = data;
             else if (type === 'folha_vazia') currentState.media_folha_vazia = data;
-            else if (type === 'presentes') currentState.media_presentes = data;
-            else if (type === 'manual') currentState.media_manual = data;
+            // CRITICAL SYNC: Ensure 'presentes' triggers button visibility
+            else if (type === 'presentes') {
+                currentState.media_presentes = data;
+                currentState.presentes = data.url;
+            }
+            else if (type === 'manual') {
+                currentState.media_manual = data;
+                currentState.manual = data.url;
+            }
 
             updateBackground();
             renderButtons();
