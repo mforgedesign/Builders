@@ -590,7 +590,10 @@
 
             // Pass true to suppress confirmation dialog during import
             if (window.resetBuilderState) window.resetBuilderState(true);
-            await window.restoreBuilderState(appState);
+
+            // CRITICAL FIX: Pass baseUrl so relative paths in data.json can be fetched
+            const baseUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${slug}`;
+            await window.restoreBuilderState(appState, null, baseUrl);
 
             // Step 7: Finish
             document.dispatchEvent(new CustomEvent('stateUpdated', {
