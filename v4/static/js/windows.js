@@ -959,7 +959,10 @@
                         const dropzones = {
                             'capa': 'cover-dropzone',
                             'folha_vazia': 'leaf-dropzone',
+                            'folha': 'leaf-dropzone', // Alias
                             'fundo_tela': 'fill-image-dropzone',
+                            'folha_preenchida': 'fill-image-dropzone', // Alias
+                            'background': 'fill-image-dropzone', // Alias
                             'vid_abertura': 'intro-video-dropzone',
                             'presentes': 'gifts-image-dropzone',
                             'manual': 'manual-image-dropzone',
