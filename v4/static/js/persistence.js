@@ -240,6 +240,7 @@
             if (base64) {
                 await saveAssetToDB(context, base64);
                 console.log(`[Persistence] Asset saved: ${context} (${(base64.length / 1024).toFixed(1)}KB)`);
+                alert(`[DEBUG PERSISTENCE] Salvo: ${context}`);
             }
         } catch (e) {
             console.error(`[Persistence] Failed to process asset ${context}:`, e);
@@ -299,6 +300,9 @@
 
             if (assetCount > 0) {
                 console.log(`[Persistence] Restoring ${assetCount} assets from IndexedDB...`);
+
+                // DEBUG TRACE
+                alert(`[PERSISTENCE] Restaurando ${assetCount} arquivos do banco.`);
 
                 const dropzoneMap = {
                     'capa': 'cover-dropzone',
