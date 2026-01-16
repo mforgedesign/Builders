@@ -33,6 +33,138 @@
     }
 
     // ========================================
+    // Elegant Modal Dialogs (replaces native confirm/alert)
+    // ========================================
+
+    /**
+     * Shows an elegant confirmation modal
+     * @param {string} title - Modal title
+     * @param {string} message - Modal message (supports HTML)
+     * @param {string} confirmText - Text for confirm button
+     * @param {string} cancelText - Text for cancel button
+     * @returns {Promise<boolean>} - Resolves to true if confirmed, false if cancelled
+     */
+    function showConfirmModal(title, message, confirmText = 'Confirmar', cancelText = 'Cancelar') {
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden transform transition-all">
+                    <div class="p-6">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-12 h-12 bg-brand-100 rounded-full flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-rocket text-brand-600 text-xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800">${title}</h3>
+                        </div>
+                        <p class="text-gray-600 mb-6 leading-relaxed">${message}</p>
+                        <div class="flex gap-3 justify-end">
+                            <button id="modal-cancel" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition-colors">
+                                ${cancelText}
+                            </button>
+                            <button id="modal-confirm" class="px-5 py-2.5 rounded-xl bg-brand-600 text-white font-medium hover:bg-brand-700 transition-colors shadow-lg shadow-brand-200">
+                                <i class="fa-solid fa-check mr-2"></i>${confirmText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            const confirmBtn = modal.querySelector('#modal-confirm');
+            const cancelBtn = modal.querySelector('#modal-cancel');
+
+            confirmBtn.addEventListener('click', () => {
+                modal.remove();
+                resolve(true);
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                modal.remove();
+                resolve(false);
+            });
+
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    resolve(false);
+                }
+            });
+
+            // Close on Escape key
+            const handleEsc = (e) => {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    resolve(false);
+                    document.removeEventListener('keydown', handleEsc);
+                }
+            };
+            document.addEventListener('keydown', handleEsc);
+
+            // Focus confirm button
+            confirmBtn.focus();
+        });
+    }
+
+    /**
+     * Shows an elegant alert modal (replaces native alert)
+     * @param {string} title - Modal title
+     * @param {string} message - Modal message
+     * @param {string} type - 'info', 'warning', 'error', or 'success'
+     */
+    function showAlertModal(title, message, type = 'info') {
+        return new Promise((resolve) => {
+            const icons = {
+                info: { icon: 'fa-circle-info', bg: 'bg-blue-100', text: 'text-blue-600' },
+                success: { icon: 'fa-circle-check', bg: 'bg-green-100', text: 'text-green-600' },
+                warning: { icon: 'fa-triangle-exclamation', bg: 'bg-yellow-100', text: 'text-yellow-600' },
+                error: { icon: 'fa-circle-xmark', bg: 'bg-red-100', text: 'text-red-600' }
+            };
+            const style = icons[type] || icons.info;
+
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-12 h-12 ${style.bg} rounded-full flex items-center justify-center shrink-0">
+                                <i class="fa-solid ${style.icon} ${style.text} text-xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800">${title}</h3>
+                        </div>
+                        <p class="text-gray-600 mb-6 leading-relaxed">${message}</p>
+                        <div class="flex justify-end">
+                            <button id="modal-ok" class="px-6 py-2.5 rounded-xl bg-gray-800 text-white font-medium hover:bg-gray-700 transition-colors">
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            const okBtn = modal.querySelector('#modal-ok');
+            okBtn.addEventListener('click', () => {
+                modal.remove();
+                resolve();
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    resolve();
+                }
+            });
+
+            okBtn.focus();
+        });
+    }
+
+    // ========================================
     // Mode Toggle Handlers
     // ========================================
 
@@ -1303,18 +1435,26 @@
             console.log('[Publish] Slug input:', slugInput, 'Value:', slug);
 
             if (!slug) {
-                alert('Por favor, preencha o Slug do convite.');
+                await showAlertModal('Slug Obrigatório', 'Por favor, preencha o Slug do convite antes de publicar.', 'warning');
                 slugInput?.focus();
                 return;
             }
 
-            if (!confirm(`Confirmar publicação em: mforgedesign.github.io/${slug}?`)) return;
+            const confirmed = await showConfirmModal(
+                'Publicar Convite',
+                `Seu convite será publicado em:<br><strong class="text-brand-600">convites.mforge.com.br/${slug}</strong><br><br>Deseja continuar?`,
+                'Publicar',
+                'Cancelar'
+            );
+
+            if (!confirmed) return;
 
             const originalText = publishBtn.innerHTML;
             try {
                 // UI: Start
                 publishBtn.disabled = true;
                 publishBtn.innerHTML = '<i class="fa-solid fa-rocket fa-bounce"></i> Iniciando...';
+
 
                 showDeployStatusArea(); // Show immediately
                 window.updateDeployStep('step-build', 'loading');
