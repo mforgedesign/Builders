@@ -99,7 +99,20 @@
                 window.open(currentState.link_presentes, '_blank');
             } else {
                 // Try to get image URL from various possible state keys
-                const imgUrl = currentState.presentes || (currentState.media_presentes ? currentState.media_presentes.url : null);
+                let imgUrl = currentState.presentes || (currentState.media_presentes ? currentState.media_presentes.url : null);
+
+                // Fallback: Try DOM extraction
+                if (!imgUrl) {
+                    const giftDropzone = document.getElementById('gifts-image-dropzone');
+                    if (giftDropzone) {
+                        const bgImage = window.getComputedStyle(giftDropzone).backgroundImage;
+                        if (bgImage && bgImage.includes('url(')) {
+                            // Extract URL from 'url("...")'
+                            imgUrl = bgImage.slice(4, -1).replace(/["']/g, ''); // Remove url( and ) and quotes
+                        }
+                    }
+                }
+
                 if (imgUrl) {
                     showPreviewModal('Lista de Presentes', `<img src="${imgUrl}" class="max-w-full rounded mx-auto shadow-md">`);
                 }
@@ -171,18 +184,21 @@
                 // Logic: Visible if Link exists OR Image exists
                 // Image check: Check 'presentes' (direct URL from state) OR 'media_presentes' (event object)
                 const hasLink = !!currentState.link_presentes;
+                const hasStateImage = !!currentState.presentes || (currentState.media_presentes && !!currentState.media_presentes.url);
 
-                // FAILSAFE: If media_presentes exists but presentes is empty, sync them
-                if (!currentState.presentes && currentState.media_presentes && currentState.media_presentes.url) {
-                    currentState.presentes = currentState.media_presentes.url;
-                    console.warn('[Preview] Failsafe: Synced presentes from media_presentes');
+                // DOM-TRUTH STRATEGY
+                const giftDropzone = document.getElementById('gifts-image-dropzone');
+                let hasDomImage = false;
+                if (giftDropzone) {
+                    const bgStyles = window.getComputedStyle(giftDropzone);
+                    const bgImage = bgStyles.backgroundImage;
+                    // Check for valid url(...) and not 'none'
+                    hasDomImage = bgImage && bgImage.includes('url(') && bgImage !== 'none';
                 }
 
-                const hasMedia = !!currentState.presentes || (currentState.media_presentes && !!currentState.media_presentes.url);
+                console.log(`[Preview Debug] Button 'gifts': DOM Image=${hasDomImage}, Link=${hasLink}, State Image=${hasStateImage}`);
 
-                console.log(`[Preview Debug] Button 'gifts': hasLink=${hasLink} (${currentState.link_presentes}), hasMedia=${hasMedia} (State: ${currentState.presentes?.substr(0, 20)}...)`);
-
-                return hasLink || hasMedia;
+                return hasLink || hasStateImage || hasDomImage;
             case 'manual':
                 // Logic: Visible if Text exists OR Image exists
                 const hasText = currentState.manual_content && currentState.manual_content.length > 0;
