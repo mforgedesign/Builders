@@ -990,7 +990,8 @@
                             const dropzone = document.getElementById(dropzoneId);
                             if (dropzone) {
                                 const type = path.endsWith('.mp4') ? 'video' : 'image';
-                                if (window.updateDropzonePreview) window.updateDropzonePreview(dropzone, url, type);
+                                // FIXED: Access local function directly (closure), not window.
+                                updateDropzonePreview(dropzone, url, type);
                             }
                         }
 
