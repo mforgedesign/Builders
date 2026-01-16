@@ -949,8 +949,8 @@
                         // This ensures 'capa' is saved as 'capa', regardless of Preview mapping
                         // ----------------------------------------------------
                         if (window.Persistence && window.Persistence.processAsset) {
-                            // Don't await here to avoid blocking UI, or await if safety needed
-                            window.Persistence.processAsset(context, blob).catch(e => console.error('Direct Save Failed:', e));
+                            // CRITICAL: Await saving to ensure data is persisted before function returns
+                            await window.Persistence.processAsset(context, blob).catch(e => console.error('Direct Save Failed:', e));
                         }
 
                         // Update Dropzone Visuals
