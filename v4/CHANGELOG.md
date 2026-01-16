@@ -24,6 +24,15 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 23:50] - v4.3.12 - Full System Trace
+### Arquivos Modificados:
+*   `static/js/persistence.js`:
+    *   **Trace Persistence**: Adicionados alertas para confirmar se o arquivo está sendo SALVO no banco (`[DEBUG PERSISTENCE] Salvo`) e se está sendo RESTAURADO (`[PERSISTENCE] Restaurando`).
+*   `static/js/windows.js`:
+    *   Mantido trace de importação.
+
+---
+
 ## [15/01/2026 - 23:40] - v4.3.11 - Full Trace Debug
 ### Arquivos Modificados:
 *   `static/js/windows.js`:
