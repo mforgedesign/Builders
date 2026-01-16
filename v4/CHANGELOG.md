@@ -4,6 +4,25 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 22:35] - v4.3.5 - Importação Local e I.A (OpenAI)
+### Arquivos Modificados:
+*   `index.html`:
+    *   **UI**: Substituído painel "Logado como" por botão "Importar Local (Pasta/ZIP)".
+*   `static/js/windows.js`:
+    *   **Feature**: Implementado suporte a upload de ZIP contendo estruturas de convites.
+    *   **Lógica**: Se encontrar `data.json` v4+, carrega direto. Se for legado, aciona lógica de I.A.
+*   `static/js/gemini-adapter.js`:
+    *   Mantido como ponte para Edge Function (agora preparada para OpenAI).
+*   **Backend (Edge Function)**:
+    *   Criado artefato `analyze-invitation-edge-function.ts` com código para migrar para GPT-4o.
+
+### Comportamento Esperado:
+1. Usuário clica em "Importar Pasta/ZIP".
+2. Seleciona arquivo ZIP de um convite antigo.
+3. Sistema carrega estrutura, detecta se precisa de I.A e envia para análise (requer deploy da function).
+
+---
+
 ## [15/01/2026 - 22:20] - v4.3.4 - Fix: Importação de Convites Legados
 ### Arquivos Modificados:
 *   `static/js/windows.js`:
