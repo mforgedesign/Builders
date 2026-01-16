@@ -1013,7 +1013,8 @@
                     }
                 } catch (err) {
                     console.warn(`Failed to restore asset ${context}:`, err);
-                    alert(`[DEBUG] Erro ao carregar ${context}: ${err.message}`);
+                    console.warn(`Failed to restore asset ${context}:`, err);
+                    if (window.showToast) window.showToast(`Erro ao carregar ${context}`, 'error');
                 }
             });
             await Promise.all(promises);
@@ -1370,9 +1371,9 @@
                                 else if (aiData.assetsMap['folha_vazia']) aiData.assetsMap['fundo_tela'] = aiData.assetsMap['folha_vazia'];
                             }
 
-                            alert('[DEBUG] Mapa de Assets Final: ' + JSON.stringify(aiData.assetsMap));
+                            // Debug removed
                             await window.restoreBuilderState(aiData, zipContent);
-                            if (window.showToast) window.showToast('Convite legado convertido (Native Fallback)!', 'success');
+                            // Toast preserved, Alert removed
                         } else {
                             throw new Error('Módulo de I.A não disponível');
                         }
