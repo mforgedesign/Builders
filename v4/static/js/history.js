@@ -589,7 +589,7 @@
             updateStatus('Restaurando builder...', 90);
 
             // Pass true to suppress confirmation dialog during import
-            if (window.resetBuilderState) window.resetBuilderState(true);
+            if (window.resetBuilderState) await window.resetBuilderState(true);
 
             // CRITICAL FIX: Pass baseUrl so relative paths in data.json can be fetched
             const baseUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${slug}`;
