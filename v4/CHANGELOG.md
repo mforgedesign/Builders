@@ -24,6 +24,15 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 00:00] - v4.3.14 - Critical Persistence Fix
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **Desacoplamento de Eventos**: Agora a função `restoreBuilderState` salva explicitamente o asset no IndexedDB (`Persistence.processAsset`) com o nome original (ex: `capa`) ANTES de disparar o evento visual mapeado (ex: `fundo_tela`).
+    *   **Correção de Regressão**: Isso corrige o bug onde a Capa desaparecia após o reload porque era salva com a chave errada.
+    *   Mantido Alertas de Debug.
+
+---
+
 ## [15/01/2026 - 23:55] - v4.3.13 - Global Debug
 ### Arquivos Modificados:
 *   `static/js/windows.js`:
