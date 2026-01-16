@@ -304,208 +304,210 @@
                 // DEBUG TRACE
                 alert(`[PERSISTENCE] Restaurando ${assetCount} arquivos do banco.`);
 
-                const dropzoneMap = {
-                    'capa': 'cover-dropzone',
+                'capa': 'cover-dropzone',
                     'folha_vazia': 'leaf-dropzone',
-                    'fundo_tela': 'fill-image-dropzone',  // Unified fundo (replaces vid_loop)
-                    'vid_abertura': 'intro-video-dropzone',
-                    'musica': 'music-dropzone',
-                    'presentes': 'gifts-image-dropzone',
-                    'manual': 'manual-image-dropzone'
-                };
+                        'folha': 'leaf-dropzone', // Alias
+                            'fundo_tela': 'fill-image-dropzone',
+                                'folha_preenchida': 'fill-image-dropzone', // Alias
+                                    'background': 'fill-image-dropzone', // Alias
+                                        'vid_abertura': 'intro-video-dropzone',
+                                            'musica': 'music-dropzone',
+                                                'presentes': 'gifts-image-dropzone',
+                                                    'manual': 'manual-image-dropzone'
+            };
 
-                const base64ToBlob = (dataUrl) => {
-                    if (!dataUrl || !dataUrl.startsWith('data:')) return null;
-                    try {
-                        const [header, base64] = dataUrl.split(',');
-                        const mimeMatch = header.match(/data:([^;]+)/);
-                        const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
-                        const binary = atob(base64);
-                        const array = new Uint8Array(binary.length);
-                        for (let i = 0; i < binary.length; i++) {
-                            array[i] = binary.charCodeAt(i);
-                        }
-                        return new Blob([array], { type: mime });
-                    } catch (e) {
-                        return null;
+            const base64ToBlob = (dataUrl) => {
+                if (!dataUrl || !dataUrl.startsWith('data:')) return null;
+                try {
+                    const [header, base64] = dataUrl.split(',');
+                    const mimeMatch = header.match(/data:([^;]+)/);
+                    const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+                    const binary = atob(base64);
+                    const array = new Uint8Array(binary.length);
+                    for (let i = 0; i < binary.length; i++) {
+                        array[i] = binary.charCodeAt(i);
                     }
-                };
+                    return new Blob([array], { type: mime });
+                } catch (e) {
+                    return null;
+                }
+            };
 
+            if (window.builderState) {
+                window.builderState.assets = {};
+            }
+
+            for (const [context, dataUrl] of Object.entries(assets)) {
+                if (!dataUrl) continue;
+
+                const dropzoneId = dropzoneMap[context];
+                let type = 'image';
+
+                if (context.includes('video') || context === 'vid_abertura' ||
+                    context === 'vid_loop' || context === 'folha_animada') {
+                    type = 'video';
+                } else if (context === 'musica') {
+                    type = 'audio';
+                }
+
+                // Save dataUrl directly to builderState (APIs need URLs, not Blobs)
                 if (window.builderState) {
-                    window.builderState.assets = {};
+                    window.builderState.assets[context] = dataUrl;
                 }
 
-                for (const [context, dataUrl] of Object.entries(assets)) {
-                    if (!dataUrl) continue;
+                // Update UI
+                if (dropzoneId) {
+                    const dropzone = document.getElementById(dropzoneId);
+                    if (dropzone) {
+                        if (type === 'audio') {
+                            const audioPlayer = document.getElementById('music-audio-player');
+                            const trackName = document.getElementById('music-track-name');
+                            const removeBtn = document.getElementById('music-remove-btn');
+                            const playBtn = document.getElementById('music-play-btn');
 
-                    const dropzoneId = dropzoneMap[context];
-                    let type = 'image';
-
-                    if (context.includes('video') || context === 'vid_abertura' ||
-                        context === 'vid_loop' || context === 'folha_animada') {
-                        type = 'video';
-                    } else if (context === 'musica') {
-                        type = 'audio';
-                    }
-
-                    // Save dataUrl directly to builderState (APIs need URLs, not Blobs)
-                    if (window.builderState) {
-                        window.builderState.assets[context] = dataUrl;
-                    }
-
-                    // Update UI
-                    if (dropzoneId) {
-                        const dropzone = document.getElementById(dropzoneId);
-                        if (dropzone) {
-                            if (type === 'audio') {
-                                const audioPlayer = document.getElementById('music-audio-player');
-                                const trackName = document.getElementById('music-track-name');
-                                const removeBtn = document.getElementById('music-remove-btn');
-                                const playBtn = document.getElementById('music-play-btn');
-
-                                if (audioPlayer) {
-                                    audioPlayer.src = dataUrl;
-                                    audioPlayer.load();
-                                }
-                                if (trackName) trackName.textContent = 'Música Restaurada';
-                                if (removeBtn) removeBtn.classList.remove('hidden');
-                                if (playBtn) playBtn.disabled = false;
-                            } else if (window.updateDropzonePreview) {
-                                window.updateDropzonePreview(dropzone, dataUrl, type);
+                            if (audioPlayer) {
+                                audioPlayer.src = dataUrl;
+                                audioPlayer.load();
                             }
-
-                            document.dispatchEvent(new CustomEvent('mediaUpdated', {
-                                detail: {
-                                    type: context,
-                                    data: { url: dataUrl, type: type },
-                                    skipPersistence: true // Prevent re-saving restored assets
-                                }
-                            }));
+                            if (trackName) trackName.textContent = 'Música Restaurada';
+                            if (removeBtn) removeBtn.classList.remove('hidden');
+                            if (playBtn) playBtn.disabled = false;
+                        } else if (window.updateDropzonePreview) {
+                            window.updateDropzonePreview(dropzone, dataUrl, type);
                         }
+
+                        document.dispatchEvent(new CustomEvent('mediaUpdated', {
+                            detail: {
+                                type: context,
+                                data: { url: dataUrl, type: type },
+                                skipPersistence: true // Prevent re-saving restored assets
+                            }
+                        }));
                     }
                 }
-
-                console.log(`[Persistence] Assets restored: ${assetCount}`);
-            } else {
-                console.log('[Persistence] No assets found in IndexedDB');
             }
 
-            // Final state update
-            if (savedState) {
-                document.dispatchEvent(new CustomEvent('stateUpdated', {
-                    detail: { source: 'persistence', data: savedState }
-                }));
-            }
-
-            // Notify user
-            if (savedState || assetCount > 0) {
-                showRestoreToast();
-            }
-
-        } catch (e) {
-            console.error('[Persistence] Error restoring state:', e);
+            console.log(`[Persistence] Assets restored: ${assetCount}`);
+        } else {
+            console.log('[Persistence] No assets found in IndexedDB');
         }
+
+        // Final state update
+        if (savedState) {
+            document.dispatchEvent(new CustomEvent('stateUpdated', {
+                detail: { source: 'persistence', data: savedState }
+            }));
+        }
+
+        // Notify user
+        if (savedState || assetCount > 0) {
+            showRestoreToast();
+        }
+
+    } catch (e) {
+        console.error('[Persistence] Error restoring state:', e);
     }
+}
 
     function showRestoreToast() {
-        const toast = document.createElement('div');
-        toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50 flex items-center gap-2 animate-fade-in-up';
-        toast.innerHTML = '<i class="fa-solid fa-rotate-left text-green-400"></i> Trabalho anterior restaurado';
-        document.body.appendChild(toast);
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50 flex items-center gap-2 animate-fade-in-up';
+    toast.innerHTML = '<i class="fa-solid fa-rotate-left text-green-400"></i> Trabalho anterior restaurado';
+    document.body.appendChild(toast);
 
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.5s';
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.5s';
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
+}
+
+// ========================================
+// Event Listeners
+// ========================================
+
+async function init() {
+    // Initialize IndexedDB
+    try {
+        await openDatabase();
+    } catch (e) {
+        console.error('[Persistence] Failed to open IndexedDB:', e);
     }
 
-    // ========================================
-    // Event Listeners
-    // ========================================
-
-    async function init() {
-        // Initialize IndexedDB
-        try {
-            await openDatabase();
-        } catch (e) {
-            console.error('[Persistence] Failed to open IndexedDB:', e);
-        }
-
-        // Listen for form state changes
-        document.addEventListener('stateUpdated', (e) => {
-            if (e.detail && e.detail.source === 'persistence') return;
-            scheduleSave();
-        });
-
-        document.addEventListener('linksExtrasUpdated', scheduleSave);
-
-        // Listen for media changes
-        document.addEventListener('mediaUpdated', async (e) => {
-            // CRITICAL FIX: Ignore events marked as 'preview-only' or 'skipPersistence'
-            if (e.detail && e.detail.skipPersistence) return;
-
-            if (e.detail && e.detail.type && e.detail.data) {
-                const { type, data } = e.detail;
-
-                if (data.blob || data.file) {
-                    await processAndSaveAsset(type, data.blob || data.file);
-                } else if (data.url && data.url.startsWith('data:')) {
-                    await saveAssetToDB(type, data.url);
-                    console.log(`[Persistence] Asset saved: ${type} (base64 direct)`);
-                } else if (data.url && data.url.startsWith('blob:')) {
-                    try {
-                        const response = await fetch(data.url);
-                        const blob = await response.blob();
-                        await processAndSaveAsset(type, blob);
-                    } catch (err) {
-                        console.error(`[Persistence] Failed to fetch blob URL for ${type}:`, err);
-                    }
-                }
-            }
-        });
-
-        document.addEventListener('input', (e) => {
-            if (e.target.matches('input, textarea, select')) {
-                scheduleSave();
-            }
-        });
-
-        // Restore after modules are ready
-        setTimeout(restoreState, 500);
-
-        console.log('[Persistence] Initialized with IndexedDB storage');
-    }
-
-    // ========================================
-    // Cleanup on close
-    // ========================================
-
-    window.addEventListener('beforeunload', () => {
-        saveFormState();
+    // Listen for form state changes
+    document.addEventListener('stateUpdated', (e) => {
+        if (e.detail && e.detail.source === 'persistence') return;
+        scheduleSave();
     });
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+    document.addEventListener('linksExtrasUpdated', scheduleSave);
 
-    // ========================================
-    // Public API
-    // ========================================
+    // Listen for media changes
+    document.addEventListener('mediaUpdated', async (e) => {
+        // CRITICAL FIX: Ignore events marked as 'preview-only' or 'skipPersistence'
+        if (e.detail && e.detail.skipPersistence) return;
 
-    window.Persistence = {
-        clear: async () => {
-            localStorage.removeItem(STORAGE_KEY);
-            await clearAllAssetsFromDB();
-            console.log('[Persistence] All data cleared');
-            location.reload();
-        },
-        forceSave: saveFormState,
-        forceRestore: restoreState,
-        removeAsset: deleteAssetFromDB,
-        processAsset: processAndSaveAsset
-    };
+        if (e.detail && e.detail.type && e.detail.data) {
+            const { type, data } = e.detail;
 
-})();
+            if (data.blob || data.file) {
+                await processAndSaveAsset(type, data.blob || data.file);
+            } else if (data.url && data.url.startsWith('data:')) {
+                await saveAssetToDB(type, data.url);
+                console.log(`[Persistence] Asset saved: ${type} (base64 direct)`);
+            } else if (data.url && data.url.startsWith('blob:')) {
+                try {
+                    const response = await fetch(data.url);
+                    const blob = await response.blob();
+                    await processAndSaveAsset(type, blob);
+                } catch (err) {
+                    console.error(`[Persistence] Failed to fetch blob URL for ${type}:`, err);
+                }
+            }
+        }
+    });
+
+    document.addEventListener('input', (e) => {
+        if (e.target.matches('input, textarea, select')) {
+            scheduleSave();
+        }
+    });
+
+    // Restore after modules are ready
+    setTimeout(restoreState, 500);
+
+    console.log('[Persistence] Initialized with IndexedDB storage');
+}
+
+// ========================================
+// Cleanup on close
+// ========================================
+
+window.addEventListener('beforeunload', () => {
+    saveFormState();
+});
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+
+// ========================================
+// Public API
+// ========================================
+
+window.Persistence = {
+    clear: async () => {
+        localStorage.removeItem(STORAGE_KEY);
+        await clearAllAssetsFromDB();
+        console.log('[Persistence] All data cleared');
+        location.reload();
+    },
+    forceSave: saveFormState,
+    forceRestore: restoreState,
+    removeAsset: deleteAssetFromDB,
+    processAsset: processAndSaveAsset
+};
+
+}) ();
