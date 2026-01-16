@@ -905,7 +905,18 @@
 
                     // Source A: ZIP
                     if (zipContext) {
-                        const file = zipContext.file(path);
+                        let file = zipContext.file(path);
+
+                        // Case-insensitive fallback
+                        if (!file) {
+                            const lowerPath = path.toLowerCase();
+                            const matchedPath = Object.keys(zipContext.files).find(k => k.toLowerCase() === lowerPath || k.toLowerCase().endsWith('/' + lowerPath));
+                            if (matchedPath) {
+                                file = zipContext.file(matchedPath);
+                                console.log(`[Restore] Case-insensitive match found: ${path} -> ${matchedPath}`);
+                            }
+                        }
+
                         if (file) blob = await file.async("blob");
                     }
                     // Source B: Absolute URL
@@ -985,7 +996,7 @@
                         // Dispatch Media Update for Preview
                         // Map older context names to current preview types if needed
                         const previewTypes = {
-                            'capa': 'folha_animada', // Legacy mapping?
+                            // 'capa': 'folha_animada', // REMOVED to fix Preview (image vs video)
                             'folha_vazia': 'folha_vazia',
                             'fundo_tela': 'fundo_tela',
                             'presentes': 'presentes',
@@ -994,6 +1005,8 @@
 
                         // Use direct context if not mapped
                         const evtType = previewTypes[context] || context;
+
+                        console.log(`[Restore] Dispatching mediaUpdated for ${context} -> ${evtType}`, url);
 
                         document.dispatchEvent(new CustomEvent('mediaUpdated', {
                             detail: {
@@ -1339,6 +1352,13 @@
                                     }
                                 }
                             });
+
+                            // Fallback for fundo_tela (Unified Background)
+                            if (!aiData.assetsMap['fundo_tela']) {
+                                if (aiData.assetsMap['capa']) aiData.assetsMap['fundo_tela'] = aiData.assetsMap['capa'];
+                                else if (aiData.assetsMap['folha_vazia']) aiData.assetsMap['fundo_tela'] = aiData.assetsMap['folha_vazia'];
+                                console.log('[Import] Inferred fundo_tela from available assets');
+                            }
 
                             await window.restoreBuilderState(aiData, zipContent);
                             if (window.showToast) window.showToast('Convite legado convertido com I.A!', 'success');
