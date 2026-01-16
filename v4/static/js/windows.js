@@ -1056,17 +1056,11 @@
     function setupFinalizeButtons() {
         console.log('[Windows] Setting up Finalize buttons...');
 
-        // ----------------------------------------
-        // Helper: Reset Builder State (Clean Slate)
-        // ----------------------------------------
-        // ----------------------------------------
-        // Helper: Reset Builder State (Clean Slate)
-        // ----------------------------------------
         /**
          * Resets the builder state (Clean Slate)
          * @param {boolean} silent - If true, skips confirmation dialog and alerts
          */
-        window.resetBuilderState = function (silent = false) {
+        window.resetBuilderState = async function (silent = false) {
             if (!silent && !confirm('Deseja criar um novo convite? Isso limpará todas as configurações atuais e não salvas.')) {
                 return false;
             }
@@ -1078,14 +1072,12 @@
                 window.builderState.assets = {};
                 window.builderState.formData = {};
                 window.builderState.linksExtras = [];
-                // conversationHistory persists unless explicitly cleared or new session
             }
 
             // 2. Reset Form Fields
             if (window.AutoBuilderForm && window.AutoBuilderForm.reset) {
                 window.AutoBuilderForm.reset();
             } else {
-                // Manual fallback if reset method missing
                 document.querySelectorAll('.form-input').forEach(input => {
                     if (input.type === 'checkbox') input.checked = false;
                     else if (input.type === 'color') input.value = '#000000';
@@ -1093,33 +1085,28 @@
                 });
             }
 
-            // 3. Reset Dropzones (SILENTLY)
+            // 3. Reset Dropzones
             Object.keys(DROPZONE_CONTEXTS).forEach(baseId => {
                 const dropzone = document.getElementById(baseId);
                 const context = DROPZONE_CONTEXTS[baseId];
                 if (dropzone) {
-                    // Call clearDropzone directly to bypass button click confirmation
                     clearDropzone(dropzone, context);
-
-                    // Specific cleanup for reference dropzone
                     if (baseId === 'cover-reference-dropzone') {
                         delete dropzone.dataset.base64;
                     }
                 }
             });
 
-            // 4. Reset Dynamic Links Container
+            // 4. Reset Dynamic Links
             const linksContainer = document.getElementById('links-extras-container');
             if (linksContainer) linksContainer.innerHTML = '';
             document.getElementById('no-links-message')?.classList.remove('hidden');
 
-            // 5. Reset Toggles/Modes to Default
-            // (Simulate clicks on default buttons)
+            // 5. Reset Toggles
             document.getElementById('manual-mode-text')?.click();
             document.getElementById('gifts-mode-link')?.click();
-            // fill-mode toggle removed - unified approach
 
-            // 6. Reset Animation Prompts to Default (Base Prompt)
+            // 6. Reset AI Prompts
             if (window.AIPrompts) {
                 const introEl = document.getElementById('intro-motion-prompt');
                 if (introEl) introEl.value = window.AIPrompts.getOpeningVideoPrompt();
@@ -1127,7 +1114,6 @@
                 const loopEl = document.getElementById('loop-motion-prompt');
                 if (loopEl) loopEl.value = window.AIPrompts.getLoopVideoPrompt();
 
-                // 6b. Reset Cover and Fill Prompts to Default (with auto-fill)
                 const coverEl = document.getElementById('cover-prompt');
                 if (coverEl) coverEl.value = window.AIPrompts.getDefaultCoverPrompt();
 
@@ -1135,1900 +1121,2082 @@
                 if (fillEl) fillEl.value = window.AIPrompts.getDefaultFillPrompt();
             }
 
-            // 6. Clear persistence (localStorage + IndexedDB)
+            // 7. Clear persistence safely
             try {
                 localStorage.removeItem('autobuilder_v4_state');
-                // Also clear IndexedDB if available
-                if (window.Persistence && window.Persistence.clear) {
-                    // Don't call clear() directly as it reloads page
-                    // Instead, just clear the IndexedDB database
-                    const request = indexedDB.deleteDatabase('AutoBuilderDB');
-                    request.onsuccess = () => console.log('[Reset] IndexedDB cleared');
-                    request.onerror = () => console.warn('[Reset] Failed to clear IndexedDB');
+                if (window.Persistence && window.Persistence.wipeAssets) {
+                    console.log('[Reset] Wiping IndexedDB assets safely...');
+                    await window.Persistence.wipeAssets();
                 }
                 console.log('[Reset] Persistence cleared');
             } catch (e) {
-                console.warn('[Reset] Failed to clear persistence:', e);
+                console.warn('[Reset] Error during persistence clear:', e);
             }
-
-            console.log('✨ Clean Slate Complete');
-
-            if (!silent) {
-                // Optional internal feedback if needed, but keeping it minimal as requested
-            }
-
-            return true;
         };
+        console.warn('[Reset] Failed to clear persistence:', e);
+    }
 
-        // Bind "Novo Convite" Button
-        const newInvitationBtn = document.getElementById('btn-new-invitation');
-        if (newInvitationBtn) {
-            newInvitationBtn.addEventListener('click', () => {
-                // We let resetBuilderState handle the confirmation (silent=false default)
-                if (window.resetBuilderState(false)) {
-                    // Optionally switch to 'form' tab
-                    document.querySelector('[data-window="form"]')?.click();
-                }
-            });
+    console.log('✨ Clean Slate Complete');
+
+    if (!silent) {
+        // Optional internal feedback if needed, but keeping it minimal as requested
+    }
+
+    return true;
+};
+
+// Bind "Novo Convite" Button
+const newInvitationBtn = document.getElementById('btn-new-invitation');
+if (newInvitationBtn) {
+    newInvitationBtn.addEventListener('click', async () => {
+        // We let resetBuilderState handle the confirmation (silent=false default)
+        if (await window.resetBuilderState(false)) {
+            // Optionally switch to 'form' tab
+            document.querySelector('[data-window="form"]')?.click();
         }
+    });
+}
 
-        // Bind "Preenchimento Padrão" buttons for Cover and Fill prompts
-        const defaultCoverBtn = document.getElementById('btn-default-cover-prompt');
-        if (defaultCoverBtn) {
-            defaultCoverBtn.addEventListener('click', () => {
-                const coverEl = document.getElementById('cover-prompt');
-                if (coverEl && window.AIPrompts) {
-                    coverEl.value = window.AIPrompts.getDefaultCoverPrompt();
-                    console.log('[Windows] Cover prompt reset to default');
-                }
-            });
+// Bind "Preenchimento Padrão" buttons for Cover and Fill prompts
+const defaultCoverBtn = document.getElementById('btn-default-cover-prompt');
+if (defaultCoverBtn) {
+    defaultCoverBtn.addEventListener('click', () => {
+        const coverEl = document.getElementById('cover-prompt');
+        if (coverEl && window.AIPrompts) {
+            coverEl.value = window.AIPrompts.getDefaultCoverPrompt();
+            console.log('[Windows] Cover prompt reset to default');
         }
+    });
+}
 
-        const defaultFillBtn = document.getElementById('btn-default-fill-prompt');
-        if (defaultFillBtn) {
-            defaultFillBtn.addEventListener('click', () => {
-                const fillEl = document.getElementById('fill-prompt');
-                if (fillEl && window.AIPrompts) {
-                    fillEl.value = window.AIPrompts.getDefaultFillPrompt();
-                    console.log('[Windows] Fill prompt reset to default');
-                }
-            });
+const defaultFillBtn = document.getElementById('btn-default-fill-prompt');
+if (defaultFillBtn) {
+    defaultFillBtn.addEventListener('click', () => {
+        const fillEl = document.getElementById('fill-prompt');
+        if (fillEl && window.AIPrompts) {
+            fillEl.value = window.AIPrompts.getDefaultFillPrompt();
+            console.log('[Windows] Fill prompt reset to default');
         }
+    });
+}
 
-        // Bind "Local Import" (Folder/ZIP)
-        const localImportBtn = document.getElementById('btn-local-import');
-        const localImportInput = document.getElementById('local-import-input');
+// Bind "Local Import" (Folder/ZIP)
+const localImportBtn = document.getElementById('btn-local-import');
+const localImportInput = document.getElementById('local-import-input');
 
-        if (localImportBtn && localImportInput) {
-            localImportBtn.addEventListener('click', () => {
-                localImportInput.click();
-            });
+if (localImportBtn && localImportInput) {
+    localImportBtn.addEventListener('click', () => {
+        localImportInput.click();
+    });
 
-            localImportInput.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
+    localImportInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-                // Reset input
-                localImportInput.value = '';
+        // Reset input
+        localImportInput.value = '';
 
-                console.log(`[Import] Selected file: ${file.name}`);
+        console.log(`[Import] Selected file: ${file.name}`);
 
-                // Show loading
-                document.body.style.cursor = 'wait';
-                const originalText = localImportBtn.innerHTML;
-                localImportBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Importando...';
+        // Show loading
+        document.body.style.cursor = 'wait';
+        const originalText = localImportBtn.innerHTML;
+        localImportBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Importando...';
 
+        try {
+            // Check for JSZip
+            if (!window.JSZip) {
+                throw new Error('JSZip library not loaded');
+            }
+
+            const zip = new JSZip();
+            const zipContent = await zip.loadAsync(file);
+
+            console.log('[Import] ZIP loaded, analyzing contents...');
+
+            // 1. Look for Data
+            let appState = null;
+            let isCompatible = false;
+            const dataFile = zipContent.file('data.json') || zipContent.file('form_data.json');
+            const indexFile = zipContent.file('index.html');
+
+            // Slug detection from filename
+            const filenameSlug = file.name.replace(/\.[^/.]+$/, "").toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]/g, '-')
+                .replace(/-+/g, '-');
+
+            console.log('[Import] Derived Slug from filename:', filenameSlug);
+
+            // Content extraction
+            let jsonContentStr = '';
+            let htmlContent = '';
+
+            if (dataFile) {
+                jsonContentStr = await dataFile.async('string');
                 try {
-                    // Check for JSZip
-                    if (!window.JSZip) {
-                        throw new Error('JSZip library not loaded');
+                    const parsed = JSON.parse(jsonContentStr);
+                    if ((parsed.version && parseFloat(parsed.version) >= 4.0) || (parsed.assetsMap && parsed.assetsMap.fundo_tela)) {
+                        appState = parsed;
+                        isCompatible = true;
+                        console.log('[Import] Compatible V4+ JSON found');
                     }
+                } catch (e) { console.warn('JSON Parse Error', e); }
+            }
 
-                    const zip = new JSZip();
-                    const zipContent = await zip.loadAsync(file);
+            // 2. If valid V4 data, direct load
+            if (isCompatible && appState) {
+                if (!appState.slug) appState.slug = filenameSlug; // Inject slug
+                // Pass zip context for asset hydration
+                await window.restoreBuilderState(appState, zipContent);
+                if (window.showToast) window.showToast('Convite importado com sucesso!', 'success');
+            } else {
+                // 3. AI Import Strategy (Legacy)
+                console.log('[Import] Legacy format detected. Initiating AI Analysis...');
 
-                    console.log('[Import] ZIP loaded, analyzing contents...');
+                if (indexFile) htmlContent = await indexFile.async('string');
 
-                    // 1. Look for Data
-                    let appState = null;
-                    let isCompatible = false;
-                    const dataFile = zipContent.file('data.json') || zipContent.file('form_data.json');
-                    const indexFile = zipContent.file('index.html');
+                // Detect assets for Visual Context
+                // Priority: Folha > Fundo > Capa > Any Large Image
+                let visualContext = null;
+                const validExts = ['.jpg', '.jpeg', '.png', '.webp'];
+                const files = Object.values(zipContent.files).filter(f => !f.dir);
 
-                    // Slug detection from filename
-                    const filenameSlug = file.name.replace(/\.[^/.]+$/, "").toLowerCase()
-                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                        .replace(/[^a-z0-9]/g, '-')
-                        .replace(/-+/g, '-');
+                let visualFile = files.find(f => {
+                    const n = f.name.toLowerCase();
+                    return validExts.some(ext => n.endsWith(ext)) &&
+                        (n.includes('folha') || n.includes('convite') || n.includes('sheet'));
+                });
 
-                    console.log('[Import] Derived Slug from filename:', filenameSlug);
-
-                    // Content extraction
-                    let jsonContentStr = '';
-                    let htmlContent = '';
-
-                    if (dataFile) {
-                        jsonContentStr = await dataFile.async('string');
-                        try {
-                            const parsed = JSON.parse(jsonContentStr);
-                            if ((parsed.version && parseFloat(parsed.version) >= 4.0) || (parsed.assetsMap && parsed.assetsMap.fundo_tela)) {
-                                appState = parsed;
-                                isCompatible = true;
-                                console.log('[Import] Compatible V4+ JSON found');
-                            }
-                        } catch (e) { console.warn('JSON Parse Error', e); }
-                    }
-
-                    // 2. If valid V4 data, direct load
-                    if (isCompatible && appState) {
-                        if (!appState.slug) appState.slug = filenameSlug; // Inject slug
-                        // Pass zip context for asset hydration
-                        await window.restoreBuilderState(appState, zipContent);
-                        if (window.showToast) window.showToast('Convite importado com sucesso!', 'success');
-                    } else {
-                        // 3. AI Import Strategy (Legacy)
-                        console.log('[Import] Legacy format detected. Initiating AI Analysis...');
-
-                        if (indexFile) htmlContent = await indexFile.async('string');
-
-                        // Detect assets for Visual Context
-                        // Priority: Folha > Fundo > Capa > Any Large Image
-                        let visualContext = null;
-                        const validExts = ['.jpg', '.jpeg', '.png', '.webp'];
-                        const files = Object.values(zipContent.files).filter(f => !f.dir);
-
-                        let visualFile = files.find(f => {
-                            const n = f.name.toLowerCase();
-                            return validExts.some(ext => n.endsWith(ext)) &&
-                                (n.includes('folha') || n.includes('convite') || n.includes('sheet'));
-                        });
-
-                        if (!visualFile) {
-                            visualFile = files.find(f => {
-                                const n = f.name.toLowerCase();
-                                return validExts.some(ext => n.endsWith(ext)) &&
-                                    (n.includes('fundo') || n.includes('back'));
-                            });
-                        }
-
-                        if (!visualFile) {
-                            visualFile = files.find(f => {
-                                const n = f.name.toLowerCase();
-                                return validExts.some(ext => n.endsWith(ext)) &&
-                                    (n.includes('capa') || n.includes('cover'));
-                            });
-                        }
-
-                        // Fallback: Find largest image (likely the main art)
-                        if (!visualFile) {
-                            // This is async in JSZip so we can't easily sort by size without loading metadata?
-                            // JSZip file objects have ._data but internal. 
-                            // We'll just pick the first valid image as last resort.
-                            visualFile = files.find(f => {
-                                const n = f.name.toLowerCase();
-                                return validExts.some(ext => n.endsWith(ext));
-                            });
-                        }
-
-                        if (visualFile) {
-                            const blob = await visualFile.async('blob');
-                            // Sanity check size (ignore icons < 10KB)
-                            if (blob.size > 10000) {
-                                const base64 = await new Promise((resolve) => {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => resolve(reader.result);
-                                    reader.readAsDataURL(blob);
-                                });
-                                visualContext = { type: 'image', base64: base64 };
-                                console.log(`[Import] Found visual context: ${visualFile.name} (${(blob.size / 1024).toFixed(1)}KB)`);
-                            }
-                        }
-
-                        // Prepare Payload for AI
-                        const payload = {
-                            htmlContent,
-                            jsonContent: jsonContentStr,
-                            fileList: Object.keys(zipContent.files),
-                            visualContext
-                        };
-
-                        if (window.GeminiAdapter) {
-                            alert('[DEBUG] Iniciando AI... Aguarde.');
-                            // Use GeminiAdapter (which will bridge to GPT via Edge Function)
-                            const aiData = await window.GeminiAdapter.analyzeRepository(payload);
-                            // alert('[DEBUG] AI Retornou. Slug: ' + aiData.slug);
-
-                            // Inject Slug
-                            aiData.slug = filenameSlug;
-
-                            // Map assets from ZIP to appState
-
-
-                            // ----------------------------------------------------------------
-                            // NATIVE FALLBACK (Aggressive)
-                            // ----------------------------------------------------------------
-                            if (!aiData.assetsMap) aiData.assetsMap = {};
-
-                            // 1. Keyword Matching
-                            const contexts = {
-                                'capa': ['capa', 'cover', 'thumb'],
-                                'folha_vazia': ['folha', 'sheet', 'leaf', 'base'],
-                                'fundo_tela': ['fundo', 'background', 'bg', 'loop'],
-                                'vid_abertura': ['intro', 'abertura', 'video'],
-                                'musica': ['musica', 'music', 'audio']
-                            };
-
-                            const zipFiles = Object.keys(zipContent.files).filter(f => !zipContent.files[f].dir && !f.startsWith('__MACOSX'));
-
-                            zipFiles.forEach(path => {
-                                const lower = path.toLowerCase();
-                                for (const [ctx, keywords] of Object.entries(contexts)) {
-                                    if (!aiData.assetsMap[ctx] && keywords.some(k => lower.includes(k))) {
-                                        aiData.assetsMap[ctx] = path;
-                                    }
-                                }
-                            });
-
-                            // 2. Last Resort: Assign ANY image to Capa if missing
-                            if (!aiData.assetsMap['capa']) {
-                                const anyImage = zipFiles.find(f => f.match(/\.(jpg|jpeg|png|webp)$/i));
-                                if (anyImage) {
-                                    aiData.assetsMap['capa'] = anyImage;
-                                    console.log('[Import] Fallback: Assigned random image to Capa:', anyImage);
-                                }
-                            }
-
-                            // 3. Fallback for fundo_tela (Unified Background)
-                            if (!aiData.assetsMap['fundo_tela']) {
-                                if (aiData.assetsMap['capa']) aiData.assetsMap['fundo_tela'] = aiData.assetsMap['capa'];
-                                else if (aiData.assetsMap['folha_vazia']) aiData.assetsMap['fundo_tela'] = aiData.assetsMap['folha_vazia'];
-                            }
-
-                            // Debug removed
-                            await window.restoreBuilderState(aiData, zipContent);
-                            // Toast preserved, Alert removed
-                        } else {
-                            throw new Error('Módulo de I.A não disponível');
-                        }
-                    }
-
-                    // Go to Form
-                    document.querySelector('[data-window="form"]')?.click();
-
-                } catch (error) {
-                    console.error('[Import] Error:', error);
-                    alert('Erro na importação: ' + error.message);
-                } finally {
-                    localImportBtn.innerHTML = originalText;
-                    document.body.style.cursor = 'default';
+                if (!visualFile) {
+                    visualFile = files.find(f => {
+                        const n = f.name.toLowerCase();
+                        return validExts.some(ext => n.endsWith(ext)) &&
+                            (n.includes('fundo') || n.includes('back'));
+                    });
                 }
-            });
-        }
 
+                if (!visualFile) {
+                    visualFile = files.find(f => {
+                        const n = f.name.toLowerCase();
+                        return validExts.some(ext => n.endsWith(ext)) &&
+                            (n.includes('capa') || n.includes('cover'));
+                    });
+                }
 
-        // ----------------------------------------
-        // 1. PREVIEW LOCAL (Client-Side)
-        // ----------------------------------------
-        const previewBtn = document.getElementById('btn-preview-local');
-        if (previewBtn) {
-            previewBtn.addEventListener('click', async () => {
-                const originalText = previewBtn.innerHTML;
-                try {
-                    // 1. Collect Assets (Base64)
-                    const filesMap = {};
+                // Fallback: Find largest image (likely the main art)
+                if (!visualFile) {
+                    // This is async in JSZip so we can't easily sort by size without loading metadata?
+                    // JSZip file objects have ._data but internal. 
+                    // We'll just pick the first valid image as last resort.
+                    visualFile = files.find(f => {
+                        const n = f.name.toLowerCase();
+                        return validExts.some(ext => n.endsWith(ext));
+                    });
+                }
 
-                    // Generate Brain
-                    const appState = window.generateBuilderState();
-
-                    // Template
-                    const templateResp = await fetch('final_template.html');
-                    if (!templateResp.ok) throw new Error('Template não encontrado.');
-                    let htmlContent = await templateResp.text();
-
-                    // Helper: Blob to Base64
-                    const blobToBase64 = (blob) => {
-                        return new Promise((resolve) => {
+                if (visualFile) {
+                    const blob = await visualFile.async('blob');
+                    // Sanity check size (ignore icons < 10KB)
+                    if (blob.size > 10000) {
+                        const base64 = await new Promise((resolve) => {
                             const reader = new FileReader();
-                            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                            reader.onloadend = () => resolve(reader.result);
                             reader.readAsDataURL(blob);
                         });
+                        visualContext = { type: 'image', base64: base64 };
+                        console.log(`[Import] Found visual context: ${visualFile.name} (${(blob.size / 1024).toFixed(1)}KB)`);
+                    }
+                }
+
+                // Prepare Payload for AI
+                const payload = {
+                    htmlContent,
+                    jsonContent: jsonContentStr,
+                    fileList: Object.keys(zipContent.files),
+                    visualContext
+                };
+
+                if (window.GeminiAdapter) {
+                    alert('[DEBUG] Iniciando AI... Aguarde.');
+                    // Use GeminiAdapter (which will bridge to GPT via Edge Function)
+                    const aiData = await window.GeminiAdapter.analyzeRepository(payload);
+                    // alert('[DEBUG] AI Retornou. Slug: ' + aiData.slug);
+
+                    // Inject Slug
+                    aiData.slug = filenameSlug;
+
+                    // Map assets from ZIP to appState
+
+
+                    // ----------------------------------------------------------------
+                    // NATIVE FALLBACK (Aggressive)
+                    // ----------------------------------------------------------------
+                    if (!aiData.assetsMap) aiData.assetsMap = {};
+
+                    // 1. Keyword Matching
+                    const contexts = {
+                        'capa': ['capa', 'cover', 'thumb'],
+                        'folha_vazia': ['folha', 'sheet', 'leaf', 'base'],
+                        'fundo_tela': ['fundo', 'background', 'bg', 'loop'],
+                        'vid_abertura': ['intro', 'abertura', 'video'],
+                        'musica': ['musica', 'music', 'audio']
                     };
 
-                    // Collect Assets
-                    const assetMap = {
-                        'assets/musica.mp3': { source: window.builderState?.assets?.musica, context: 'musica' },
-                        'assets/capa.png': { selector: '#cover-dropzone', type: 'bg', context: 'capa' },
-                        'assets/folha.png': { selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia' },
-                        'assets/intro.mp4': { selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura' },
-                        // Unified fundo - can be image or video from fill-image-dropzone
-                        'assets/fundo': { selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela' },
-                        'assets/manual.png': { selector: '#manual-image-dropzone', type: 'bg', context: 'manual' },
-                        'assets/gifts.png': { selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes' }
-                    };
+                    const zipFiles = Object.keys(zipContent.files).filter(f => !zipContent.files[f].dir && !f.startsWith('__MACOSX'));
 
-                    async function fetchBlobFromSelector(selector, type) {
-                        const el = document.querySelector(selector);
-                        if (!el) return null;
+                    zipFiles.forEach(path => {
+                        const lower = path.toLowerCase();
+                        for (const [ctx, keywords] of Object.entries(contexts)) {
+                            if (!aiData.assetsMap[ctx] && keywords.some(k => lower.includes(k))) {
+                                aiData.assetsMap[ctx] = path;
+                            }
+                        }
+                    });
+
+                    // 2. Last Resort: Assign ANY image to Capa if missing
+                    if (!aiData.assetsMap['capa']) {
+                        const anyImage = zipFiles.find(f => f.match(/\.(jpg|jpeg|png|webp)$/i));
+                        if (anyImage) {
+                            aiData.assetsMap['capa'] = anyImage;
+                            console.log('[Import] Fallback: Assigned random image to Capa:', anyImage);
+                        }
+                    }
+
+                    // 3. Fallback for fundo_tela (Unified Background)
+                    if (!aiData.assetsMap['fundo_tela']) {
+                        if (aiData.assetsMap['capa']) aiData.assetsMap['fundo_tela'] = aiData.assetsMap['capa'];
+                        else if (aiData.assetsMap['folha_vazia']) aiData.assetsMap['fundo_tela'] = aiData.assetsMap['folha_vazia'];
+                    }
+
+                    // Debug removed
+                    await window.restoreBuilderState(aiData, zipContent);
+                    // Toast preserved, Alert removed
+                } else {
+                    throw new Error('Módulo de I.A não disponível');
+                }
+            }
+
+            // Go to Form
+            document.querySelector('[data-window="form"]')?.click();
+
+        } catch (error) {
+            console.error('[Import] Error:', error);
+            alert('Erro na importação: ' + error.message);
+        } finally {
+            localImportBtn.innerHTML = originalText;
+            document.body.style.cursor = 'default';
+        }
+    });
+}
+
+
+// ----------------------------------------
+// 1. PREVIEW LOCAL (Client-Side)
+// ----------------------------------------
+const previewBtn = document.getElementById('btn-preview-local');
+if (previewBtn) {
+    previewBtn.addEventListener('click', async () => {
+        const originalText = previewBtn.innerHTML;
+        try {
+            // 1. Collect Assets (Base64)
+            const filesMap = {};
+
+            // Generate Brain
+            const appState = window.generateBuilderState();
+
+            // Template
+            const templateResp = await fetch('final_template.html');
+            if (!templateResp.ok) throw new Error('Template não encontrado.');
+            let htmlContent = await templateResp.text();
+
+            // Helper: Blob to Base64
+            const blobToBase64 = (blob) => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                    reader.readAsDataURL(blob);
+                });
+            };
+
+            // Collect Assets
+            const assetMap = {
+                'assets/musica.mp3': { source: window.builderState?.assets?.musica, context: 'musica' },
+                'assets/capa.png': { selector: '#cover-dropzone', type: 'bg', context: 'capa' },
+                'assets/folha.png': { selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia' },
+                'assets/intro.mp4': { selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura' },
+                // Unified fundo - can be image or video from fill-image-dropzone
+                'assets/fundo': { selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela' },
+                'assets/manual.png': { selector: '#manual-image-dropzone', type: 'bg', context: 'manual' },
+                'assets/gifts.png': { selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes' }
+            };
+
+            async function fetchBlobFromSelector(selector, type) {
+                const el = document.querySelector(selector);
+                if (!el) return null;
+                let url = null;
+                if (type === 'bg') {
+                    const style = el.style.backgroundImage;
+                    if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
+                } else if (type === 'src') url = el.src;
+                else if (type === 'auto') {
+                    // Unified fundo: check for video first, then image background
+                    const video = el.querySelector('video');
+                    if (video && video.src) {
+                        url = video.src;
+                    } else {
+                        const style = el.style.backgroundImage;
+                        if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
+                    }
+                }
+                if (url) {
+                    const resp = await fetch(url);
+                    return await resp.blob();
+                }
+                return null;
+            }
+
+            const slug = document.getElementById('slug-input')?.value || 'preview-local';
+            let fundoExt = 'png'; // Default extension for fundo
+
+            for (const [path, config] of Object.entries(assetMap)) {
+                let blob = null;
+                if (config.source) blob = config.source;
+                else if (config.selector) blob = await fetchBlobFromSelector(config.selector, config.type);
+
+                if (blob) {
+                    // Determine actual path with extension for fundo
+                    let actualPath = path;
+                    if (path === 'assets/fundo') {
+                        // Detect type from blob MIME
+                        if (blob.type.startsWith('video/')) {
+                            fundoExt = 'mp4';
+                        } else if (blob.type === 'image/jpeg' || blob.type === 'image/jpg') {
+                            fundoExt = 'jpg';
+                        } else {
+                            fundoExt = 'png';
+                        }
+                        actualPath = `assets/fundo.${fundoExt}`;
+                    }
+                    filesMap[`convites/${slug}/${actualPath}`] = await blobToBase64(blob);
+                    appState.assetsMap[config.context] = actualPath; // Keep relative path in brain
+                }
+            }
+
+            // Add Brain (Base64)
+            filesMap[`convites/${slug}/data.json`] = btoa(JSON.stringify(appState, null, 2));
+
+            // Inject Variables and Add HTML
+            // Basic replacements for the published HTML
+            htmlContent = htmlContent.replace(/\[\[MUSICA_URL\]\]/g, './assets/musica.mp3');
+            htmlContent = htmlContent.replace(/\[\[CAPA_URL\]\]/g, './assets/capa.png');
+            htmlContent = htmlContent.replace(/\[\[FOLHA_URL\]\]/g, './assets/folha.png');
+            htmlContent = htmlContent.replace(/\[\[VIDEO_ABERTURA_URL\]\]/g, './assets/intro.mp4');
+            htmlContent = htmlContent.replace(/\[\[FUNDO_TELA_URL\]\]/g, `./assets/fundo.${fundoExt}`);
+            htmlContent = htmlContent.replace(/\[\[SLUG\]\]/g, slug);
+
+            // Generate menuConfig for buttons (Presentes, Manual, etc.)
+            const formData = window.AutoBuilderForm ? window.AutoBuilderForm.data : {};
+            const menuConfig = [];
+
+            // Google Maps
+            if (formData.link_google_maps || formData.google_maps_link) {
+                menuConfig.push({ titulo: 'Como Chegar', icone: 'fa-solid fa-map-marker-alt', link: formData.link_google_maps || formData.google_maps_link, id: 'maps' });
+            }
+
+            // Gifts
+            const giftsDropzone = document.querySelector('#gifts-image-dropzone');
+            const hasGiftImage = giftsDropzone && giftsDropzone.style.backgroundImage && giftsDropzone.style.backgroundImage !== 'none';
+            if (formData.link_presentes || formData.gifts_link) {
+                menuConfig.push({ titulo: 'Lista de Presentes', icone: 'fa-solid fa-gift', link: formData.link_presentes || formData.gifts_link, id: 'gifts' });
+            } else if (hasGiftImage) {
+                menuConfig.push({ titulo: 'Sugestões de Presentes', icone: 'fa-solid fa-gift', link: '#', id: 'gifts', isGiftImage: true });
+            }
+
+            // Manual
+            const manualDropzone = document.querySelector('#manual-image-dropzone');
+            const hasManualImage = manualDropzone && manualDropzone.style.backgroundImage && manualDropzone.style.backgroundImage !== 'none';
+            if (formData.manual_html || formData.manual_text) {
+                menuConfig.push({ titulo: 'Manual do Convidado', icone: 'fa-solid fa-book-open', link: '#', id: 'manual', manualText: formData.manual_html || formData.manual_text });
+            } else if (hasManualImage) {
+                menuConfig.push({ titulo: 'Manual do Convidado', icone: 'fa-solid fa-book-open', link: '#', id: 'manual', isManualImage: true });
+            }
+
+            // RSVP (WhatsApp/Link)
+            if (formData.numero_whatsapp || formData.whatsapp_number) {
+                const cleanNum = (formData.numero_whatsapp || formData.whatsapp_number).replace(/\D/g, '');
+                menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: `https://wa.me/${cleanNum}`, id: 'rsvp' });
+            } else if (formData.link_confirmacao || formData.confirmation_link) {
+                menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao || formData.confirmation_link, id: 'rsvp' });
+            }
+
+            // Inject menuConfig
+            htmlContent = htmlContent.replace(/\[\[MENU_CONFIG\]\]/g, JSON.stringify(menuConfig));
+
+            // Inject Text (form fields)
+            for (const [key, value] of Object.entries(formData)) {
+                const regex = new RegExp(`\\[\\[${key.toUpperCase()}\\]\\]`, 'g');
+                htmlContent = htmlContent.replace(regex, value || '');
+            }
+
+            // Inject default values for remaining placeholders
+            htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, formData.button_size || '1.0');
+            htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, '');
+            htmlContent = htmlContent.replace(/\[\[MANUAL_CONTENT\]\]/g, formData.manual_html || '');
+            htmlContent = htmlContent.replace(/\[\[GIFTS_IMAGE_URL\]\]/g, './assets/gifts.png');
+            htmlContent = htmlContent.replace(/\[\[MANUAL_IMAGE_URL\]\]/g, './assets/manual.png');
+
+            filesMap[`convites/${slug}/index.html`] = btoa(htmlContent); // HTML base64
+
+            // Open in new tab
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const blobUrl = URL.createObjectURL(blob);
+            window.open(blobUrl, '_blank');
+
+        } catch (err) {
+            console.error('Preview error:', err);
+            alert('Erro na prévia: ' + err.message);
+        } finally {
+            previewBtn.innerHTML = originalText;
+            previewBtn.disabled = false;
+        }
+    });
+}
+
+
+// ----------------------------------------
+// 2. DOWNLOAD ZIP (Export with Brain)
+// ----------------------------------------
+const downloadBtn = document.getElementById('btn-download-zip');
+if (downloadBtn) {
+    downloadBtn.addEventListener('click', async () => {
+        const slug = document.getElementById('slug-input')?.value || 'meu-convite';
+        const originalText = downloadBtn.innerHTML;
+
+        try {
+            downloadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Empacotando...';
+            downloadBtn.disabled = true;
+
+            if (!window.JSZip) throw new Error('Biblioteca JSZip não carregada.');
+
+            const zip = new JSZip();
+            const assetsFolder = zip.folder("assets");
+
+            // 1. Prepare Data Brain (State)
+            const appState = window.generateBuilderState();
+            // Asset Map
+            const assetMap = {
+                music: { filename: 'musica.mp3', source: window.builderState?.assets?.music, context: 'musica' },
+                cover: { filename: 'capa.png', selector: '#cover-dropzone', type: 'bg', context: 'capa' },
+                leaf: { filename: 'folha.png', selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia' },
+                intro: { filename: 'intro.mp4', selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura' },
+                fundo: { filename: 'fundo', selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela' },  // Unified - extension determined dynamically
+                manual: { filename: 'manual.png', selector: '#manual-image-dropzone', type: 'bg', context: 'manual' },
+                gifts: { filename: 'gifts.png', selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes' }
+            };
+
+            // Helper: Fetch Blob
+            async function fetchBlob(url) {
+                if (!url) return null;
+                try {
+                    const resp = await fetch(url);
+                    return await resp.blob();
+                } catch (e) { console.warn('Failed to fetch:', url); return null; }
+            }
+
+            // Collect and Zip Assets
+            for (const [key, config] of Object.entries(assetMap)) {
+                let blob = null;
+                if (config.source) {
+                    blob = config.source;
+                } else if (config.selector) {
+                    const el = document.querySelector(config.selector);
+                    if (el) {
                         let url = null;
-                        if (type === 'bg') {
+                        if (config.type === 'bg') {
                             const style = el.style.backgroundImage;
                             if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
-                        } else if (type === 'src') url = el.src;
-                        else if (type === 'auto') {
-                            // Unified fundo: check for video first, then image background
-                            const video = el.querySelector('video');
-                            if (video && video.src) {
-                                url = video.src;
-                            } else {
-                                const style = el.style.backgroundImage;
-                                if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
-                            }
-                        }
-                        if (url) {
-                            const resp = await fetch(url);
-                            return await resp.blob();
-                        }
-                        return null;
+                        } else if (config.type === 'src') url = el.src;
+
+                        if (url) blob = await fetchBlob(url);
                     }
-
-                    const slug = document.getElementById('slug-input')?.value || 'preview-local';
-                    let fundoExt = 'png'; // Default extension for fundo
-
-                    for (const [path, config] of Object.entries(assetMap)) {
-                        let blob = null;
-                        if (config.source) blob = config.source;
-                        else if (config.selector) blob = await fetchBlobFromSelector(config.selector, config.type);
-
-                        if (blob) {
-                            // Determine actual path with extension for fundo
-                            let actualPath = path;
-                            if (path === 'assets/fundo') {
-                                // Detect type from blob MIME
-                                if (blob.type.startsWith('video/')) {
-                                    fundoExt = 'mp4';
-                                } else if (blob.type === 'image/jpeg' || blob.type === 'image/jpg') {
-                                    fundoExt = 'jpg';
-                                } else {
-                                    fundoExt = 'png';
-                                }
-                                actualPath = `assets/fundo.${fundoExt}`;
-                            }
-                            filesMap[`convites/${slug}/${actualPath}`] = await blobToBase64(blob);
-                            appState.assetsMap[config.context] = actualPath; // Keep relative path in brain
-                        }
-                    }
-
-                    // Add Brain (Base64)
-                    filesMap[`convites/${slug}/data.json`] = btoa(JSON.stringify(appState, null, 2));
-
-                    // Inject Variables and Add HTML
-                    // Basic replacements for the published HTML
-                    htmlContent = htmlContent.replace(/\[\[MUSICA_URL\]\]/g, './assets/musica.mp3');
-                    htmlContent = htmlContent.replace(/\[\[CAPA_URL\]\]/g, './assets/capa.png');
-                    htmlContent = htmlContent.replace(/\[\[FOLHA_URL\]\]/g, './assets/folha.png');
-                    htmlContent = htmlContent.replace(/\[\[VIDEO_ABERTURA_URL\]\]/g, './assets/intro.mp4');
-                    htmlContent = htmlContent.replace(/\[\[FUNDO_TELA_URL\]\]/g, `./assets/fundo.${fundoExt}`);
-                    htmlContent = htmlContent.replace(/\[\[SLUG\]\]/g, slug);
-
-                    // Generate menuConfig for buttons (Presentes, Manual, etc.)
-                    const formData = window.AutoBuilderForm ? window.AutoBuilderForm.data : {};
-                    const menuConfig = [];
-
-                    // Google Maps
-                    if (formData.link_google_maps || formData.google_maps_link) {
-                        menuConfig.push({ titulo: 'Como Chegar', icone: 'fa-solid fa-map-marker-alt', link: formData.link_google_maps || formData.google_maps_link, id: 'maps' });
-                    }
-
-                    // Gifts
-                    const giftsDropzone = document.querySelector('#gifts-image-dropzone');
-                    const hasGiftImage = giftsDropzone && giftsDropzone.style.backgroundImage && giftsDropzone.style.backgroundImage !== 'none';
-                    if (formData.link_presentes || formData.gifts_link) {
-                        menuConfig.push({ titulo: 'Lista de Presentes', icone: 'fa-solid fa-gift', link: formData.link_presentes || formData.gifts_link, id: 'gifts' });
-                    } else if (hasGiftImage) {
-                        menuConfig.push({ titulo: 'Sugestões de Presentes', icone: 'fa-solid fa-gift', link: '#', id: 'gifts', isGiftImage: true });
-                    }
-
-                    // Manual
-                    const manualDropzone = document.querySelector('#manual-image-dropzone');
-                    const hasManualImage = manualDropzone && manualDropzone.style.backgroundImage && manualDropzone.style.backgroundImage !== 'none';
-                    if (formData.manual_html || formData.manual_text) {
-                        menuConfig.push({ titulo: 'Manual do Convidado', icone: 'fa-solid fa-book-open', link: '#', id: 'manual', manualText: formData.manual_html || formData.manual_text });
-                    } else if (hasManualImage) {
-                        menuConfig.push({ titulo: 'Manual do Convidado', icone: 'fa-solid fa-book-open', link: '#', id: 'manual', isManualImage: true });
-                    }
-
-                    // RSVP (WhatsApp/Link)
-                    if (formData.numero_whatsapp || formData.whatsapp_number) {
-                        const cleanNum = (formData.numero_whatsapp || formData.whatsapp_number).replace(/\D/g, '');
-                        menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: `https://wa.me/${cleanNum}`, id: 'rsvp' });
-                    } else if (formData.link_confirmacao || formData.confirmation_link) {
-                        menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao || formData.confirmation_link, id: 'rsvp' });
-                    }
-
-                    // Inject menuConfig
-                    htmlContent = htmlContent.replace(/\[\[MENU_CONFIG\]\]/g, JSON.stringify(menuConfig));
-
-                    // Inject Text (form fields)
-                    for (const [key, value] of Object.entries(formData)) {
-                        const regex = new RegExp(`\\[\\[${key.toUpperCase()}\\]\\]`, 'g');
-                        htmlContent = htmlContent.replace(regex, value || '');
-                    }
-
-                    // Inject default values for remaining placeholders
-                    htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, formData.button_size || '1.0');
-                    htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, '');
-                    htmlContent = htmlContent.replace(/\[\[MANUAL_CONTENT\]\]/g, formData.manual_html || '');
-                    htmlContent = htmlContent.replace(/\[\[GIFTS_IMAGE_URL\]\]/g, './assets/gifts.png');
-                    htmlContent = htmlContent.replace(/\[\[MANUAL_IMAGE_URL\]\]/g, './assets/manual.png');
-
-                    filesMap[`convites/${slug}/index.html`] = btoa(htmlContent); // HTML base64
-
-                    // Open in new tab
-                    const blob = new Blob([htmlContent], { type: 'text/html' });
-                    const blobUrl = URL.createObjectURL(blob);
-                    window.open(blobUrl, '_blank');
-
-                } catch (err) {
-                    console.error('Preview error:', err);
-                    alert('Erro na prévia: ' + err.message);
-                } finally {
-                    previewBtn.innerHTML = originalText;
-                    previewBtn.disabled = false;
-                }
-            });
-        }
-
-
-        // ----------------------------------------
-        // 2. DOWNLOAD ZIP (Export with Brain)
-        // ----------------------------------------
-        const downloadBtn = document.getElementById('btn-download-zip');
-        if (downloadBtn) {
-            downloadBtn.addEventListener('click', async () => {
-                const slug = document.getElementById('slug-input')?.value || 'meu-convite';
-                const originalText = downloadBtn.innerHTML;
-
-                try {
-                    downloadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Empacotando...';
-                    downloadBtn.disabled = true;
-
-                    if (!window.JSZip) throw new Error('Biblioteca JSZip não carregada.');
-
-                    const zip = new JSZip();
-                    const assetsFolder = zip.folder("assets");
-
-                    // 1. Prepare Data Brain (State)
-                    const appState = window.generateBuilderState();
-                    // Asset Map
-                    const assetMap = {
-                        music: { filename: 'musica.mp3', source: window.builderState?.assets?.music, context: 'musica' },
-                        cover: { filename: 'capa.png', selector: '#cover-dropzone', type: 'bg', context: 'capa' },
-                        leaf: { filename: 'folha.png', selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia' },
-                        intro: { filename: 'intro.mp4', selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura' },
-                        fundo: { filename: 'fundo', selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela' },  // Unified - extension determined dynamically
-                        manual: { filename: 'manual.png', selector: '#manual-image-dropzone', type: 'bg', context: 'manual' },
-                        gifts: { filename: 'gifts.png', selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes' }
-                    };
-
-                    // Helper: Fetch Blob
-                    async function fetchBlob(url) {
-                        if (!url) return null;
-                        try {
-                            const resp = await fetch(url);
-                            return await resp.blob();
-                        } catch (e) { console.warn('Failed to fetch:', url); return null; }
-                    }
-
-                    // Collect and Zip Assets
-                    for (const [key, config] of Object.entries(assetMap)) {
-                        let blob = null;
-                        if (config.source) {
-                            blob = config.source;
-                        } else if (config.selector) {
-                            const el = document.querySelector(config.selector);
-                            if (el) {
-                                let url = null;
-                                if (config.type === 'bg') {
-                                    const style = el.style.backgroundImage;
-                                    if (style && style !== 'none') url = style.slice(4, -1).replace(/"/g, "");
-                                } else if (config.type === 'src') url = el.src;
-
-                                if (url) blob = await fetchBlob(url);
-                            }
-                        }
-
-                        if (blob) {
-                            assetsFolder.file(config.filename, blob);
-                            appState.assetsMap[config.context] = `assets/${config.filename}`;
-                        }
-                    }
-
-                    // 2. Add Brain to ZIP
-                    zip.file("data.json", JSON.stringify(appState, null, 2));
-
-                    // 3. Add final_template.html (Hydrated)
-                    const templateResp = await fetch('final_template.html');
-                    if (templateResp.ok) {
-                        let htmlContent = await templateResp.text();
-                        // (Inject same vars as preview for standalone usage)
-                        // For simplicity, we assume the ZIP user might also use data.json or just the raw html
-                        // We will perform a basic injection for the index.html so it works out of box
-                        zip.file("index.html", htmlContent); // Simplified for "Export" logic, robust logic in Publish
-                    }
-
-                    // Generate
-                    const content = await zip.generateAsync({ type: "blob" });
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(content);
-                    link.download = `${slug}.zip`;
-                    link.click();
-
-                    console.log('📦 ZIP Exported with data.json');
-
-                } catch (err) {
-                    console.error('ZIP Error:', err);
-                    alert('Erro ao gerar ZIP: ' + err.message);
-                } finally {
-                    downloadBtn.innerHTML = originalText;
-                    downloadBtn.disabled = false;
-                }
-            });
-        }
-
-        // ----------------------------------------
-        // 3. IMPORT ZIP (Restore State)
-        // ----------------------------------------
-        const zipDropzone = document.getElementById('zip-upload-dropzone');
-        const zipInput = document.getElementById('zip-upload-input');
-        const restoreMsg = document.getElementById('restore-status-message'); // Optional UI element
-
-        if (zipInput) {
-            zipInput.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                if (!confirm('Isso irá substituir todo o conteúdo atual pelo conteúdo do arquivo ZIP. Deseja continuar?')) {
-                    zipInput.value = '';
-                    return;
                 }
 
-                try {
-                    // 1. Clean Slate (Silent because we already confirmed above)
-                    window.resetBuilderState(true);
-
-                    if (!window.JSZip) throw new Error('JSZip missing');
-                    const zip = new JSZip();
-                    const zipContent = await zip.loadAsync(file);
-
-                    // 2. Find data.json
-                    let appState = null;
-                    if (zipContent.file("data.json")) {
-                        const jsonStr = await zipContent.file("data.json").async("string");
-                        appState = JSON.parse(jsonStr);
-
-                        // Use Shared Restorer
-                        await window.restoreBuilderState(appState, zipContent);
-
-                    } else {
-                        // Legacy/External ZIP
-                        // For now throw error or we could implement a manual hydration loop here
-                        // But we want to encourage using data.json
-                        throw new Error('Arquivo data.json não encontrado no ZIP. Este backup pode ser antigo ou inválido para restauração completa.');
-                    }
-
-
-                    alert('Projeto restaurado com sucesso!');
-
-                } catch (err) {
-                    console.error('Restore Error:', err);
-                    alert('Erro ao restaurar ZIP: ' + err.message);
-                } finally {
-                    zipInput.value = '';
+                if (blob) {
+                    assetsFolder.file(config.filename, blob);
+                    appState.assetsMap[config.context] = `assets/${config.filename}`;
                 }
-            });
-        }
-    }
-
-    // ----------------------------------------
-    // 4. PUBLISH (Deploy to GitHub with timestamps)
-    // The GitHub Token is stored securely in Supabase Edge Function
-    // ----------------------------------------
-    const publishBtn = document.getElementById('btn-publish');
-
-    if (publishBtn) {
-        publishBtn.addEventListener('click', async () => {
-            const slugInput = document.getElementById('slug-input');
-            const slug = slugInput?.value?.trim();
-
-            console.log('[Publish] Slug input:', slugInput, 'Value:', slug);
-
-            if (!slug) {
-                await showAlertModal('Slug Obrigatório', 'Por favor, preencha o Slug do convite antes de publicar.', 'warning');
-                slugInput?.focus();
-                return;
             }
 
-            const confirmed = await showConfirmModal(
-                'Publicar Convite',
-                `Seu convite será publicado em:<br><strong class="text-brand-600">convites.mforge.com.br/${slug}</strong><br><br>Deseja continuar?`,
-                'Publicar',
-                'Cancelar'
-            );
+            // 2. Add Brain to ZIP
+            zip.file("data.json", JSON.stringify(appState, null, 2));
 
-            if (!confirmed) return;
-
-            const originalText = publishBtn.innerHTML;
-            try {
-                // UI: Start
-                publishBtn.disabled = true;
-                publishBtn.innerHTML = '<i class="fa-solid fa-rocket fa-bounce"></i> Iniciando...';
-
-
-                showDeployStatusArea(); // Show immediately
-                window.updateDeployStep('step-build', 'loading');
-                window.updateDeployStep('step-upload', 'pending');
-                window.updateDeployStep('step-live', 'pending');
-
-                // 1. Prepare Brain & Timestamp
-                const appState = window.generateBuilderState();
-                const formData = (window.AutoBuilderForm && window.AutoBuilderForm.data) || {}; // Moved up
-                const timestamp = Date.now();
-                const assetsMap = {
-                    // We use specific keys to identify context, but values will be timestamped paths
-                    'music': { source: window.builderState?.assets?.musica, context: 'musica', ext: 'mp3' },
-                    'cover': { selector: '#cover-dropzone', type: 'bg', context: 'capa', ext: 'png' },
-                    'leaf': { selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia', ext: 'png' },
-                    'fundo': { selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela', ext: 'auto' },  // Unified fundo
-                    'intro': { selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura', ext: 'mp4' },
-                    'manual': { selector: '#manual-image-dropzone', type: 'bg', context: 'manual', ext: 'png' },
-                    'gifts': { selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes', ext: 'png' }
-                };
-
-                const filesMap = {};
-
-                // Helper: Blob to Base64
-                const blobToBase64 = (blob) => {
-                    return new Promise((resolve, reject) => {
-                        if (!(blob instanceof Blob)) {
-                            console.warn('[Publish] Invalid blob passed to blobToBase64:', blob);
-                            resolve(''); // Return empty string to avoid crash
-                            return;
-                        }
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                            if (reader.result) {
-                                resolve(reader.result.split(',')[1]);
-                            }
-                        };
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
-                    });
-                };
-
-                // Helper: Fetch Blob
-                async function fetchBlobFromSelector(selector, type) {
-                    const el = document.querySelector(selector);
-                    if (!el) return null;
-                    let url = null;
-
-                    try {
-                        // Unified 'auto' mode for fondo_tela
-                        if (type === 'auto') {
-                            // Check for video first
-                            const video = el.querySelector('video');
-                            if (video && video.src) {
-                                url = video.src;
-                            } else {
-                                // Fallback to background image
-                                const style = el.style.backgroundImage;
-                                if (style && style !== 'none') {
-                                    // Remove 'url(' prefix, ')' suffix, and ANY quotes
-                                    url = style.slice(4, -1).replace(/['"]/g, "");
-                                }
-                            }
-                        } else if (type === 'bg') {
-                            const style = el.style.backgroundImage;
-                            if (style && style !== 'none') {
-                                url = style.slice(4, -1).replace(/['"]/g, "");
-                            }
-                        } else if (type === 'src') {
-                            url = el.src;
-                        }
-
-                        if (url) {
-                            // Handle Data URIs directly (fetch handles them but explicit check is safer?)
-                            // Fetch handles data: fine.
-                            const resp = await fetch(url);
-                            if (!resp.ok) throw new Error(`Network error: ${resp.status}`);
-                            return await resp.blob();
-                        }
-                    } catch (e) {
-                        console.warn('[Publish] Failed to catch asset from selector:', selector, url, e);
-                        // Fallback: If fetch fails but we have a URL, MAYBE return null so we keep the original URL?
-                        // If we return null, the loop continues and source is skipped?
-                        // Actually, if we return null here, loop logic needs to handle it.
-                        return null;
-                    }
-                    return null;
-                }
-
-                // 2. Collect Assets with Timestamped Names
-                // Format: assets/name_TIMESTAMP.ext
-                for (const [key, config] of Object.entries(assetsMap)) {
-                    let blob = null;
-
-                    if (config.source) {
-                        // If source is string (URL), fetch it
-                        if (typeof config.source === 'string') {
-                            try {
-                                console.log(`[Publish] Fetching remote asset for ${config.context}:`, config.source);
-                                const r = await fetch(config.source);
-                                if (r.ok) blob = await r.blob();
-                            } catch (e) { console.warn('Failed to fetch source:', config.source); }
-                        } else if (config.source instanceof Blob) {
-                            blob = config.source;
-                        }
-                    }
-                    else if (config.selector) {
-                        blob = await fetchBlobFromSelector(config.selector, config.type);
-                    }
-
-                    if (blob && blob instanceof Blob) {
-                        // Determine extension for 'auto' type
-                        if (config.ext === 'auto') {
-                            if (blob.type.includes('video')) config.ext = 'mp4';
-                            else if (blob.type.includes('image')) config.ext = 'png';
-                            else config.ext = 'dat';
-                        }
-
-                        // Define standardized name with timestamp
-                        const filename = `${config.context}_${timestamp}.${config.ext}`;
-                        const path = `assets/${filename}`;
-
-                        filesMap[path] = await blobToBase64(blob);
-
-                        // Update Brain Map (so restore knows exact file)
-                        appState.assetsMap[config.context] = path;
-
-                        // Special case for Unified Background: update videoLoop logic if it's a video
-                        if (config.context === 'fundo_tela' && config.ext === 'mp4') {
-                            // Ensure loop context is consistent if needed
-                        }
-                    }
-                }
-
-                // Helper: UTF-8 safe Base64 encoding
-                function utf8_to_b64(str) {
-                    return window.btoa(unescape(encodeURIComponent(str)));
-                }
-
-                // 3. Add Brain to Payload
-
-                // FORCE COMPLETE SYNC from DOM elements (Bulletproof against stale state)
-                try {
-                    console.log("DEBUG PUBLISH: Scraping Fresh Data from DOM Inputs...");
-                    const domData = {};
-                    document.querySelectorAll('.form-input[data-field]').forEach(input => {
-                        const field = input.getAttribute('data-field');
-                        if (!field) return;
-
-                        if (input.type === 'checkbox') {
-                            domData[field] = input.checked;
-                        } else if (input.type === 'radio') {
-                            if (input.checked) domData[field] = input.value;
-                        } else {
-                            domData[field] = input.value;
-                        }
-                    });
-
-                    console.log("DEBUG PUBLISH: DOM Data Scraped:", domData);
-                    Object.assign(formData, domData);
-
-                    // Sync to appState to ensure data.json is correct
-                    if (!appState.formData) appState.formData = {};
-                    Object.assign(appState.formData, domData);
-
-                    // Also sync back to global state for consistency
-                    if (window.AutoBuilderForm) {
-                        Object.assign(window.AutoBuilderForm.data, domData);
-                    }
-                } catch (err) {
-                    console.error("DEBUG PUBLISH: Error scraping DOM data", err);
-                }
-
-                filesMap['data.json'] = utf8_to_b64(JSON.stringify(appState, null, 2));
-
-                // 4. Prepare HTML with Correct Asset Links
-                // FORCE CACHE BUSTING on template fetch to ensure latest version
-                const templateResp = await fetch(`final_template.html?v=${Date.now()}`);
-                if (!templateResp.ok) throw new Error('Template não encontrado');
+            // 3. Add final_template.html (Hydrated)
+            const templateResp = await fetch('final_template.html');
+            if (templateResp.ok) {
                 let htmlContent = await templateResp.text();
-
-                // 3.5. Computed Replacements (Date/Time, Offset, Color, Title)
-                const eventDate = formData.data_evento || formData.data;
-                const eventTime = formData.hora_evento || formData.hora || '00:00';
-                const eventDateTime = eventDate ? `${eventDate}T${eventTime}:00` : '';
-                htmlContent = htmlContent.replace(/\[\[EVENT_DATETIME\]\]/g, eventDateTime);
-
-                const buttonsOffset = formData.botoes_offset || formData.posicao_botoes || formData.buttons_offset || '0';
-                htmlContent = htmlContent.replace(/\[\[BUTTONS_OFFSET\]\]/g, buttonsOffset);
-
-                // Title Generation: Name | Event Type [Age]
-                const hostName = formData.nome_anfitriao || formData.nome || 'Convite';
-                const eventType = formData.tipo_evento || formData.event_type || 'Evento';
-                let pageTitle = `${hostName} | ${eventType}`;
-
-                // Add age if it exists and event type is related to birthday
-                if ((formData.idade_aniversariante || formData.idade) &&
-                    eventType.toLowerCase().includes('aniversário')) {
-                    pageTitle += ` ${formData.idade_aniversariante || formData.idade} Anos`;
-                }
-
-                htmlContent = htmlContent.replace(/\[\[OG_TITLE\]\]/g, pageTitle);
-
-                // Timer Logic: Safe Boolean Conversion
-                const isTimerEnabled = String(formData.timer_contagem).toLowerCase().trim() === 'true';
-                const timerHideClass = isTimerEnabled ? '' : 'hidden';
-                htmlContent = htmlContent.replace(/\[\[TIMER_HIDE_CLASS\]\]/g, timerHideClass);
-
-                // Watermark Logic
-                const isWatermarkEnabled = String(formData.watermark_enabled).toLowerCase().trim() === 'true';
-                const watermarkHideClass = isWatermarkEnabled ? '' : 'hidden';
-                htmlContent = htmlContent.replace(/\[\[WATERMARK_HIDE_CLASS\]\]/g, watermarkHideClass);
-
-                // Prioritize 'cor_botoes', then 'shadow_color', then default
-                const btnColor = formData.cor_botoes || formData.shadow_color || '#292524';
-                htmlContent = htmlContent.replace(/\[\[BUTTON_COLOR\]\]/g, btnColor);
-
-                for (const [key, value] of Object.entries(formData)) {
-                    const regex = new RegExp(`\\[\\[${key.toUpperCase()}\\]\\]`, 'g');
-                    // FIX: Handle 0 correctly (don't treat as falsey)
-                    const safeValue = (value !== undefined && value !== null) ? value : '';
-                    htmlContent = htmlContent.replace(regex, safeValue);
-                }
-
-                // 3.6. Asset Replacements (Critical for Published View)
-                // appState.assetsMap contains paths like: { 'capa': 'assets/capa_123.png' }
-                if (appState.assetsMap) {
-                    for (const [context, assetPath] of Object.entries(appState.assetsMap)) {
-                        if (!assetPath || typeof assetPath !== 'string') continue;
-
-                        // assetPath is already the relative path like 'assets/capa_123.png'
-                        const relativePath = assetPath;
-                        const filename = assetPath.split('/').pop(); // Get just the filename
-
-                        // Standard Replacement: [[CONTEXT_URL]]
-                        let tokenKey = context.toUpperCase();
-
-                        // Handle Aliases for tokens in final_template.html
-                        if (tokenKey === 'PRESENTES') tokenKey = 'PRESENTS';
-                        if (tokenKey === 'FOLHA_VAZIA') tokenKey = 'FOLHA';
-                        if (tokenKey === 'VID_ABERTURA') tokenKey = 'VIDEO_ABERTURA';
-
-                        // Replace URL
-                        const urlToken = `[[${tokenKey}_URL]]`;
-                        htmlContent = htmlContent.split(urlToken).join(relativePath);
-
-                        // Replace Filename (for OG tags etc)
-                        const filenameToken = `[[${tokenKey}_FILENAME]]`;
-                        htmlContent = htmlContent.split(filenameToken).join(filename);
-
-                        console.log(`[Publish] Replaced ${urlToken} -> ${relativePath}`);
-                    }
-                }
-
-                // Inject CSS Variable for Button Color (if template uses it)
-                const customStyle = `<style>:root { --button-color: ${btnColor}; } .custom-button-bg { background-color: var(--button-color) !important; }</style>`;
-                htmlContent = htmlContent.replace('</head>', `${customStyle}</head>`);
-
-
-
-
-                // 4.1. Reconstruct Menu Config & Variables (moved UP before payload generation)
-                const buttonSize = formData.button_size || '1.0';
-                const companionHideClass = formData.companion_hide_class || '';
-
-                // ============================================================
-                // Generate menuConfig using Preview's button order
-                // This ensures published invite matches the preview exactly
-                // ============================================================
-
-                // Get the button order from preview (or use default if not available)
-                const buttonOrder = (window.AutoBuilderPreview && window.AutoBuilderPreview.getButtonOrder)
-                    ? window.AutoBuilderPreview.getButtonOrder()
-                    : ['location', 'gifts', 'rsvp', 'manual'];
-
-                // Prepare button configs (same logic as before, but we'll sort them)
-                const buttonConfigs = {};
-
-                // LOCATION
-                if (formData.link_google_maps) {
-                    buttonConfigs['location'] = {
-                        id: 'location',
-                        titulo: 'Localização',
-                        icone: 'fa-solid fa-location-dot',
-                        link: formData.link_google_maps
-                    };
-                }
-
-                // GIFTS (Presentes)
-                const hasGiftsImage = !!appState.assetsMap['presentes'];
-                const giftsLink = formData.link_presentes;
-                const giftsModeDiv = document.getElementById('gifts-image-mode');
-                const isGiftsImageMode = (giftsModeDiv && !giftsModeDiv.classList.contains('hidden')) || (hasGiftsImage && !giftsLink);
-
-                if (isGiftsImageMode && hasGiftsImage) {
-                    buttonConfigs['gifts'] = { id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: '#', isGiftImage: true };
-                } else if (!isGiftsImageMode && giftsLink) {
-                    buttonConfigs['gifts'] = { id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: giftsLink };
-                }
-
-                // RSVP (Confirmation)
-                if (formData.numero_whatsapp) {
-                    buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${formData.numero_whatsapp}` };
-                } else if (formData.link_confirmacao) {
-                    buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao };
-                }
-
-                // MANUAL
-                const hasManualImg = !!appState.assetsMap['manual'];
-                const manualHtml = document.getElementById('manual-html-editor')?.value || document.getElementById('manual-raw-text')?.value;
-                const manualImageModeDiv = document.getElementById('manual-image-mode');
-                const isManualImageMode = (manualImageModeDiv && !manualImageModeDiv.classList.contains('hidden')) || (hasManualImg && (!manualHtml || manualHtml.trim() === ''));
-
-                if (isManualImageMode && hasManualImg) {
-                    buttonConfigs['manual'] = { id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', isManualImage: true };
-                } else if (!isManualImageMode && manualHtml && manualHtml.trim() !== '') {
-                    buttonConfigs['manual'] = { id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', manualText: manualHtml };
-                }
-
-                // EXTRAS LINKS
-                const extraLinks = window.builderState.linksExtras || [];
-                extraLinks.forEach((link, idx) => {
-                    const extraId = `extra-${link.id || idx}`;
-                    buttonConfigs[extraId] = {
-                        id: extraId,
-                        titulo: link.label,
-                        icone: link.icon || 'fa-solid fa-link',
-                        link: link.url
-                    };
-                });
-
-                // Build final menu in the order defined by buttonOrder
-                const generatedMenu = [];
-                buttonOrder.forEach(buttonId => {
-                    if (buttonConfigs[buttonId]) {
-                        generatedMenu.push(buttonConfigs[buttonId]);
-                    }
-                });
-
-                // Add any buttons that exist but aren't in buttonOrder (safety fallback)
-                Object.keys(buttonConfigs).forEach(buttonId => {
-                    if (!buttonOrder.includes(buttonId)) {
-                        generatedMenu.push(buttonConfigs[buttonId]);
-                    }
-                });
-
-                const menuConfig = generatedMenu;
-
-                console.log("DEBUG PUBLISH: Button Order from Preview:", buttonOrder);
-                console.log("DEBUG PUBLISH: Generated Menu (Ordered):", generatedMenu);
-
-                // -------------------------------------------------------------------
-
-                htmlContent = htmlContent.replace(/\[\[MENU_CONFIG\]\]/g, JSON.stringify(menuConfig));
-                htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, buttonSize || '1.0');
-                htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, companionHideClass || '');
-
-                filesMap['index.html'] = utf8_to_b64(htmlContent);
-
-                // DIAGNOSTICS: Generate Debug Log for User (Optional)
-                const isDebugEnabled = document.getElementById('debug-log-toggle')?.checked;
-                if (window.DebugLogger && isDebugEnabled) {
-                    console.log("Generating Debug Report...");
-                    window.DebugLogger.generateReport(formData, menuConfig, htmlContent);
-                }
-
-                // 5. Send to API
-                // showDeployStatusArea(); // REMOVED: Do not reset steps
-
-                // STEP 1 COMPLETE: Build Done
-                window.updateDeployStep('step-build', 'done');
-
-                // STEP 2 START: Upload Loading
-                window.updateDeployStep('step-upload', 'loading');
-
-                // We use /api/publish which is intercepted by supabase-adapter
-                // Edge Function has the GitHub token stored securely
-                // 4.1. Reconstruct Menu Config & Variables
-
-
-                const payload = {
-                    slug: slug,
-                    files: filesMap
-                };
-
-                const response = await fetch('/api/publish', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.error || 'Falha na publicação');
-
-                // STEP 2 COMPLETE: Upload Done
-                window.updateDeployStep('step-upload', 'done');
-
-                // STEP 3 START: Verifying (Live)
-                window.updateDeployStep('step-live', 'loading');
-
-                publishBtn.innerHTML = '<i class="fa-solid fa-check"></i> Enviado!';
-                publishBtn.classList.remove('bg-brand-600');
-                publishBtn.classList.add('bg-blue-600'); // Blue = Sent, Green = Live
-
-                const liveUrl = `https://convites.mforge.com.br/${slug}/`;
-
-                // 6. Poll for Deployment Status (GitHub Actions)
-                // Pass SHA from deployBatch result to track specific build
-                logDebug(`Resultado do Deploy: ${JSON.stringify(result)}`);
-
-                // Save timestamp for History Sorting (Recency)
-                try {
-                    const timestamps = JSON.parse(localStorage.getItem('autoBuilder_historyTimestamps') || '{}');
-                    timestamps[slug] = Date.now();
-                    localStorage.setItem('autoBuilder_historyTimestamps', JSON.stringify(timestamps));
-                    console.log(`[History] Timestamp updated for ${slug}`);
-                } catch (e) {
-                    console.warn('Failed to update history timestamp', e);
-                }
-
-                await pollDeployStatus(slug, liveUrl, result.sha);
-
-            } catch (err) {
-                console.error('Publish Error:', err);
-                showDeployError(err.message);
-                window.updateDeployStep('step-upload', 'reset'); // or error state
-
-                const publishStatusArea = document.getElementById('publish-status-area');
-                if (publishStatusArea) publishStatusArea.classList.add('hidden'); // Hide on error for retry
-
-            } finally {
-                if (publishBtn.innerHTML.includes('Iniciando') || publishBtn.innerHTML.includes('Aguardando')) {
-                    publishBtn.innerHTML = originalText;
-                }
-                publishBtn.disabled = false;
+                // (Inject same vars as preview for standalone usage)
+                // For simplicity, we assume the ZIP user might also use data.json or just the raw html
+                // We will perform a basic injection for the index.html so it works out of box
+                zip.file("index.html", htmlContent); // Simplified for "Export" logic, robust logic in Publish
             }
-        });
-    }
 
-    // ==========================================
-    // DEPLOYMENT UI HELPERS
-    // ==========================================
+            // Generate
+            const content = await zip.generateAsync({ type: "blob" });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = `${slug}.zip`;
+            link.click();
 
-    function showDeployStatusArea() {
-        const area = document.getElementById('publish-status-area');
-        const successActions = document.getElementById('publish-success-actions');
-        const statusText = document.getElementById('deploy-status-text');
+            console.log('📦 ZIP Exported with data.json');
 
-        if (area) area.classList.remove('hidden');
-        if (successActions) successActions.classList.add('hidden');
-        if (statusText) {
-            statusText.innerText = 'Iniciando...';
-            statusText.className = 'text-xs font-mono text-gray-500 bg-gray-200 px-2 py-1 rounded';
+        } catch (err) {
+            console.error('ZIP Error:', err);
+            alert('Erro ao gerar ZIP: ' + err.message);
+        } finally {
+            downloadBtn.innerHTML = originalText;
+            downloadBtn.disabled = false;
         }
+    });
+}
 
-        // Reset Steps to Pending
-        [1, 2, 3].forEach(id => window.updateDeployStep(id, 'pending'));
-    }
+// ----------------------------------------
+// 3. IMPORT ZIP (Restore State)
+// ----------------------------------------
+const zipDropzone = document.getElementById('zip-upload-dropzone');
+const zipInput = document.getElementById('zip-upload-input');
+const restoreMsg = document.getElementById('restore-status-message'); // Optional UI element
 
-    // Helper to update individual steps in the inline UI
-    window.updateDeployStep = function (stepId, status) {
-        // Map legacy string IDs to new numeric IDs if necessary
-        const map = { 'step-build': 1, 'step-upload': 2, 'step-live': 3 };
-        const id = map[stepId] || stepId;
+if (zipInput) {
+    zipInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-        const container = document.getElementById(`deploy-step-${id}`);
-        if (!container) {
-            console.warn(`[DeployUI] Step container #deploy-step-${id} not found`);
+        if (!confirm('Isso irá substituir todo o conteúdo atual pelo conteúdo do arquivo ZIP. Deseja continuar?')) {
+            zipInput.value = '';
             return;
         }
 
-        const iconEl = container.querySelector('.step-icon');
-        const textEl = container.querySelector('span');
+        try {
+            // 1. Clean Slate (Silent because we already confirmed above)
+            window.resetBuilderState(true);
 
-        // Reset Base Classes
-        container.className = 'flex items-center gap-3 transition-colors duration-300';
-        if (iconEl) iconEl.className = 'step-icon text-lg transition-all duration-300 w-6 text-center';
+            if (!window.JSZip) throw new Error('JSZip missing');
+            const zip = new JSZip();
+            const zipContent = await zip.loadAsync(file);
 
-        if (status === 'loading') {
-            container.classList.add('text-amber-600', 'font-bold');
-            if (iconEl) iconEl.className = 'step-icon fa-solid fa-spinner fa-spin text-lg text-amber-500';
+            // 2. Find data.json
+            let appState = null;
+            if (zipContent.file("data.json")) {
+                const jsonStr = await zipContent.file("data.json").async("string");
+                appState = JSON.parse(jsonStr);
 
-        } else if (status === 'done') {
-            container.classList.add('text-green-600', 'font-medium');
-            if (iconEl) iconEl.className = 'step-icon fa-solid fa-check-circle text-lg text-green-500';
+                // Use Shared Restorer
+                await window.restoreBuilderState(appState, zipContent);
 
-        } else if (status === 'pending') {
-            container.classList.add('text-gray-400');
-            if (iconEl) iconEl.className = 'step-icon fa-regular fa-circle text-lg text-gray-300';
-
-        } else if (status === 'error') {
-            container.classList.add('text-red-600', 'font-bold');
-            if (iconEl) iconEl.className = 'step-icon fa-solid fa-circle-xmark text-lg text-red-500';
-        }
-    };
-
-    function showDeployError(msg) {
-        alert('Erro ao publicar: ' + msg);
-        const statusText = document.getElementById('deploy-status-text');
-        if (statusText) {
-            statusText.innerText = 'Erro: ' + msg;
-            statusText.className = 'text-xs font-mono text-red-500';
-        }
-    }
-
-    // Debug Helper
-    function logDebug(msg) {
-        console.log(`[DeployDebug] ${msg}`);
-        let debugEl = document.getElementById('deploy-debug-log');
-        if (!debugEl) {
-            // Lazy create debug container if missing
-            const container = document.getElementById('publish-status-area');
-            if (container) {
-                debugEl = document.createElement('div');
-                debugEl.id = 'deploy-debug-log';
-                debugEl.className = 'mt-4 p-2 bg-black text-xs font-mono text-green-400 overflow-y-auto max-h-48 rounded border border-gray-700 shadow-inner block';
-                debugEl.style.display = 'block'; // Force block
-                container.appendChild(debugEl);
             } else {
-                console.warn("Could not find #publish-status-area to inject debug log");
+                // Legacy/External ZIP
+                // For now throw error or we could implement a manual hydration loop here
+                // But we want to encourage using data.json
+                throw new Error('Arquivo data.json não encontrado no ZIP. Este backup pode ser antigo ou inválido para restauração completa.');
             }
+
+
+            alert('Projeto restaurado com sucesso!');
+
+        } catch (err) {
+            console.error('Restore Error:', err);
+            alert('Erro ao restaurar ZIP: ' + err.message);
+        } finally {
+            zipInput.value = '';
         }
-        if (debugEl) {
-            const line = document.createElement('div');
-            line.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            line.style.borderBottom = '1px solid #333';
-            line.style.padding = '2px 0';
-            debugEl.appendChild(line);
-            debugEl.scrollTop = debugEl.scrollHeight;
-        }
+    });
+}
     }
 
-    /**
-     * Poll GitHub Actions status until success or timeout
-     */
-    async function pollDeployStatus(slug, liveUrl, commitSha = null) {
-        const checkBtn = document.getElementById('btn-publish');
-        let attempts = 0;
-        const maxAttempts = 60; // 5 minutes (5s interval)
+// ----------------------------------------
+// 4. PUBLISH (Deploy to GitHub with timestamps)
+// The GitHub Token is stored securely in Supabase Edge Function
+// ----------------------------------------
+const publishBtn = document.getElementById('btn-publish');
 
-        logDebug(`Iniciando Polling. Slug: ${slug}, SHA: ${commitSha?.substring(0, 7)}...`);
+if (publishBtn) {
+    publishBtn.addEventListener('click', async () => {
+        const slugInput = document.getElementById('slug-input');
+        const slug = slugInput?.value?.trim();
 
-        // Ensure UI is visible FIRST (resets steps to pending)
-        // showDeployStatusArea(); // REMOVED: Resets UI steps incorrectly
+        console.log('[Publish] Slug input:', slugInput, 'Value:', slug);
 
-        // THEN set status to loading
-        window.updateDeployStep('step-live', 'loading');
-        checkBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Construindo...';
+        if (!slug) {
+            await showAlertModal('Slug Obrigatório', 'Por favor, preencha o Slug do convite antes de publicar.', 'warning');
+            slugInput?.focus();
+            return;
+        }
 
-        // Update Status Text
-        const statusText = document.getElementById('deploy-status-text');
+        const confirmed = await showConfirmModal(
+            'Publicar Convite',
+            `Seu convite será publicado em:<br><strong class="text-brand-600">convites.mforge.com.br/${slug}</strong><br><br>Deseja continuar?`,
+            'Publicar',
+            'Cancelar'
+        );
 
-        // Asset Fallback Check
-        const assetPath = window.builderState?.assetsMap?.capa;
-        let checkUrl = liveUrl;
-        if (assetPath) checkUrl = liveUrl + assetPath;
+        if (!confirmed) return;
 
-        return new Promise((resolve, reject) => {
-            const interval = setInterval(async () => {
-                attempts++;
+        const originalText = publishBtn.innerHTML;
+        try {
+            // UI: Start
+            publishBtn.disabled = true;
+            publishBtn.innerHTML = '<i class="fa-solid fa-rocket fa-bounce"></i> Iniciando...';
 
-                // 1. GitHub Workflow Check (Primary)
-                if (commitSha && window.githubAdapter) {
-                    try {
-                        const workflow = await window.githubAdapter.getLatestWorkflowStatus(commitSha);
-                        if (workflow) {
-                            const status = workflow.status; // queued, in_progress, completed
-                            const conclusion = workflow.conclusion; // success, failure, neutral, cancelled
 
-                            logDebug(`Workflow: ${status} [${conclusion || '...'}]`);
+            showDeployStatusArea(); // Show immediately
+            window.updateDeployStep('step-build', 'loading');
+            window.updateDeployStep('step-upload', 'pending');
+            window.updateDeployStep('step-live', 'pending');
 
-                            if (statusText) {
-                                // Translate status for user
-                                let msg = 'Processando...';
-                                if (status === 'queued') msg = 'Na fila...';
-                                else if (status === 'in_progress') msg = 'Construindo site...';
-                                else if (conclusion === 'success') msg = 'Concluído!';
-                                statusText.innerText = `${msg} (${Math.round(attempts * 2)}s)`;
-                            }
+            // 1. Prepare Brain & Timestamp
+            const appState = window.generateBuilderState();
+            const formData = (window.AutoBuilderForm && window.AutoBuilderForm.data) || {}; // Moved up
+            const timestamp = Date.now();
+            const assetsMap = {
+                // We use specific keys to identify context, but values will be timestamped paths
+                'music': { source: window.builderState?.assets?.musica, context: 'musica', ext: 'mp3' },
+                'cover': { selector: '#cover-dropzone', type: 'bg', context: 'capa', ext: 'png' },
+                'leaf': { selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia', ext: 'png' },
+                'fundo': { selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela', ext: 'auto' },  // Unified fundo
+                'intro': { selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura', ext: 'mp4' },
+                'manual': { selector: '#manual-image-dropzone', type: 'bg', context: 'manual', ext: 'png' },
+                'gifts': { selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes', ext: 'png' }
+            };
 
-                            if (status === 'completed') {
-                                if (conclusion === 'success') {
-                                    logDebug('Workflow Success!');
-                                    finishPolling(true);
-                                    return;
-                                } else {
-                                    logDebug(`Workflow Failed: ${conclusion}`);
-                                    finishPolling(false, `Erro no Build: ${conclusion}`);
-                                    return;
-                                }
-                            }
-                        } else {
-                            logDebug(`Aguardando Workflow... (Tentativa ${attempts})`);
-                            if (statusText) statusText.innerText = 'Inicializando workflow...';
-                        }
-                    } catch (e) {
-                        logDebug(`Erro no check: ${e.message}`);
-                        console.warn("Workflow check failed", e);
+            const filesMap = {};
+
+            // Helper: Blob to Base64
+            const blobToBase64 = (blob) => {
+                return new Promise((resolve, reject) => {
+                    if (!(blob instanceof Blob)) {
+                        console.warn('[Publish] Invalid blob passed to blobToBase64:', blob);
+                        resolve(''); // Return empty string to avoid crash
+                        return;
                     }
-                } else if (statusText) {
-                    logDebug('Sem SHA ou Adapter. Usando Fallback.');
-                    // Fallback messaging
-                    if (attempts % 4 === 0) statusText.innerText = 'Verificando disponibilidade...';
-                }
-
-                // 2. Timeout Check
-                if (attempts >= maxAttempts) {
-                    logDebug('Timeout. Assumindo sucesso (Otimista).');
-                    finishPolling(true); // Optimistic success
-                    return;
-                }
-
-                // 3. Asset Availability Check (Secondary)
-                // If we don't have SHA, or as backup if workflow API fails but site is live
-                if (!commitSha && assetPath) {
-                    const img = new Image();
-                    img.onload = () => {
-                        logDebug('Imagem carregou. Site Online.');
-                        finishPolling(true);
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        if (reader.result) {
+                            resolve(reader.result.split(',')[1]);
+                        }
                     };
-                    img.src = `${checkUrl}?t=${Date.now()}`;
-                }
-
-            }, 2000);
-
-            function finishPolling(success, errorMsg) {
-                clearInterval(interval);
-                if (success) {
-                    // STEP 3 COMPLETE: Live Done
-                    window.updateDeployStep('step-live', 'done');
-                    checkBtn.innerHTML = '<i class="fa-solid fa-check"></i> Publicado!';
-                    checkBtn.classList.remove('bg-brand-600', 'bg-blue-600', 'bg-yellow-600', 'bg-red-600'); // Ensure all removed
-                    checkBtn.classList.add('bg-green-600');
-
-                    if (statusText) statusText.innerText = 'Disponível Online!';
-                    finalizeSuccessUI(liveUrl, slug);
-                    resolve();
-                } else {
-                    window.updateDeployStep('step-live', 'error');
-                    checkBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Erro';
-                    checkBtn.classList.remove('bg-brand-600', 'bg-blue-600');
-                    checkBtn.classList.add('bg-red-600');
-                    if (statusText && errorMsg) statusText.innerText = errorMsg;
-                    console.error(errorMsg);
-                    resolve(); // Resolve anyway to stop spinner
-                }
-            }
-        });
-    }
-
-
-    function finalizeSuccessUI(liveUrl, slug) {
-        const successActions = document.getElementById('publish-success-actions');
-        const btnOpenLive = document.getElementById('btn-open-live');
-        const btnOpenRepo = document.getElementById('btn-open-repo');
-        const btnCopyLink = document.getElementById('btn-copy-link');
-        const statusText = document.getElementById('deploy-status-text');
-
-        if (successActions) successActions.classList.remove('hidden');
-        if (statusText) statusText.innerText = 'Disponível Online';
-
-        if (btnOpenLive) btnOpenLive.href = liveUrl;
-
-        // Repo URL construction
-        // Structure: https://github.com/mforgedesign/Convites/tree/recuperaçãohoje/convites/${slug}
-        // Updated to point to the correct invites repo
-        const repoUrl = `https://github.com/mforgedesign/Convites/tree/recuperaçãohoje/convites/${slug}`;
-        if (btnOpenRepo) btnOpenRepo.href = repoUrl;
-
-        if (btnCopyLink) {
-            btnCopyLink.onclick = () => {
-                navigator.clipboard.writeText(liveUrl).then(() => {
-                    const originalIcon = btnCopyLink.innerHTML;
-                    btnCopyLink.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
-                    setTimeout(() => btnCopyLink.innerHTML = originalIcon, 2000);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
                 });
             };
-        }
-    }
 
-    // ----------------------------------------
-    // 5. CUSTOM ZIP UPLOAD (Bypass Build)
-    // ----------------------------------------
-    const customZipDropzone = document.getElementById('custom-zip-dropzone');
-    if (customZipDropzone) {
-        const zipInput = customZipDropzone.querySelector('input[type="file"]');
+            // Helper: Fetch Blob
+            async function fetchBlobFromSelector(selector, type) {
+                const el = document.querySelector(selector);
+                if (!el) return null;
+                let url = null;
 
-        // Click handler
-        customZipDropzone.addEventListener('click', (e) => {
-            if (e.target !== zipInput) {
-                zipInput?.click();
+                try {
+                    // Unified 'auto' mode for fondo_tela
+                    if (type === 'auto') {
+                        // Check for video first
+                        const video = el.querySelector('video');
+                        if (video && video.src) {
+                            url = video.src;
+                        } else {
+                            // Fallback to background image
+                            const style = el.style.backgroundImage;
+                            if (style && style !== 'none') {
+                                // Remove 'url(' prefix, ')' suffix, and ANY quotes
+                                url = style.slice(4, -1).replace(/['"]/g, "");
+                            }
+                        }
+                    } else if (type === 'bg') {
+                        const style = el.style.backgroundImage;
+                        if (style && style !== 'none') {
+                            url = style.slice(4, -1).replace(/['"]/g, "");
+                        }
+                    } else if (type === 'src') {
+                        url = el.src;
+                    }
+
+                    if (url) {
+                        // Handle Data URIs directly (fetch handles them but explicit check is safer?)
+                        // Fetch handles data: fine.
+                        const resp = await fetch(url);
+                        if (!resp.ok) throw new Error(`Network error: ${resp.status}`);
+                        return await resp.blob();
+                    }
+                } catch (e) {
+                    console.warn('[Publish] Failed to catch asset from selector:', selector, url, e);
+                    // Fallback: If fetch fails but we have a URL, MAYBE return null so we keep the original URL?
+                    // If we return null, the loop continues and source is skipped?
+                    // Actually, if we return null here, loop logic needs to handle it.
+                    return null;
+                }
+                return null;
             }
-        });
 
-        // Drag and Drop
-        customZipDropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            customZipDropzone.classList.add('border-brand-500', 'bg-brand-50');
-        });
+            // 2. Collect Assets with Timestamped Names
+            // Format: assets/name_TIMESTAMP.ext
+            for (const [key, config] of Object.entries(assetsMap)) {
+                let blob = null;
 
-        customZipDropzone.addEventListener('dragleave', () => {
-            customZipDropzone.classList.remove('border-brand-500', 'bg-brand-50');
-        });
+                if (config.source) {
+                    // If source is string (URL), fetch it
+                    if (typeof config.source === 'string') {
+                        try {
+                            console.log(`[Publish] Fetching remote asset for ${config.context}:`, config.source);
+                            const r = await fetch(config.source);
+                            if (r.ok) blob = await r.blob();
+                        } catch (e) { console.warn('Failed to fetch source:', config.source); }
+                    } else if (config.source instanceof Blob) {
+                        blob = config.source;
+                    }
+                }
+                else if (config.selector) {
+                    blob = await fetchBlobFromSelector(config.selector, config.type);
+                }
 
-        customZipDropzone.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            customZipDropzone.classList.remove('border-brand-500', 'bg-brand-50');
-            const file = e.dataTransfer.files[0];
-            if (file && file.name.endsWith('.zip')) {
-                await handleCustomZipUpload(file);
-            } else {
-                alert('Por favor, envie um arquivo .zip');
+                if (blob && blob instanceof Blob) {
+                    // Determine extension for 'auto' type
+                    if (config.ext === 'auto') {
+                        if (blob.type.includes('video')) config.ext = 'mp4';
+                        else if (blob.type.includes('image')) config.ext = 'png';
+                        else config.ext = 'dat';
+                    }
+
+                    // Define standardized name with timestamp
+                    const filename = `${config.context}_${timestamp}.${config.ext}`;
+                    const path = `assets/${filename}`;
+
+                    filesMap[path] = await blobToBase64(blob);
+
+                    // Update Brain Map (so restore knows exact file)
+                    appState.assetsMap[config.context] = path;
+
+                    // Special case for Unified Background: update videoLoop logic if it's a video
+                    if (config.context === 'fundo_tela' && config.ext === 'mp4') {
+                        // Ensure loop context is consistent if needed
+                    }
+                }
             }
-        });
 
-        // File input change
-        if (zipInput) {
-            zipInput.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    await handleCustomZipUpload(file);
-                    zipInput.value = ''; // Reset for future uploads
+            // Helper: UTF-8 safe Base64 encoding
+            function utf8_to_b64(str) {
+                return window.btoa(unescape(encodeURIComponent(str)));
+            }
+
+            // 3. Add Brain to Payload
+
+            // FORCE COMPLETE SYNC from DOM elements (Bulletproof against stale state)
+            try {
+                console.log("DEBUG PUBLISH: Scraping Fresh Data from DOM Inputs...");
+                const domData = {};
+                document.querySelectorAll('.form-input[data-field]').forEach(input => {
+                    const field = input.getAttribute('data-field');
+                    if (!field) return;
+
+                    if (input.type === 'checkbox') {
+                        domData[field] = input.checked;
+                    } else if (input.type === 'radio') {
+                        if (input.checked) domData[field] = input.value;
+                    } else {
+                        domData[field] = input.value;
+                    }
+                });
+
+                console.log("DEBUG PUBLISH: DOM Data Scraped:", domData);
+                Object.assign(formData, domData);
+
+                // Sync to appState to ensure data.json is correct
+                if (!appState.formData) appState.formData = {};
+                Object.assign(appState.formData, domData);
+
+                // Also sync back to global state for consistency
+                if (window.AutoBuilderForm) {
+                    Object.assign(window.AutoBuilderForm.data, domData);
+                }
+            } catch (err) {
+                console.error("DEBUG PUBLISH: Error scraping DOM data", err);
+            }
+
+            filesMap['data.json'] = utf8_to_b64(JSON.stringify(appState, null, 2));
+
+            // 4. Prepare HTML with Correct Asset Links
+            // FORCE CACHE BUSTING on template fetch to ensure latest version
+            const templateResp = await fetch(`final_template.html?v=${Date.now()}`);
+            if (!templateResp.ok) throw new Error('Template não encontrado');
+            let htmlContent = await templateResp.text();
+
+            // 3.5. Computed Replacements (Date/Time, Offset, Color, Title)
+            const eventDate = formData.data_evento || formData.data;
+            const eventTime = formData.hora_evento || formData.hora || '00:00';
+            const eventDateTime = eventDate ? `${eventDate}T${eventTime}:00` : '';
+            htmlContent = htmlContent.replace(/\[\[EVENT_DATETIME\]\]/g, eventDateTime);
+
+            const buttonsOffset = formData.botoes_offset || formData.posicao_botoes || formData.buttons_offset || '0';
+            htmlContent = htmlContent.replace(/\[\[BUTTONS_OFFSET\]\]/g, buttonsOffset);
+
+            // Title Generation: Name | Event Type [Age]
+            const hostName = formData.nome_anfitriao || formData.nome || 'Convite';
+            const eventType = formData.tipo_evento || formData.event_type || 'Evento';
+            let pageTitle = `${hostName} | ${eventType}`;
+
+            // Add age if it exists and event type is related to birthday
+            if ((formData.idade_aniversariante || formData.idade) &&
+                eventType.toLowerCase().includes('aniversário')) {
+                pageTitle += ` ${formData.idade_aniversariante || formData.idade} Anos`;
+            }
+
+            htmlContent = htmlContent.replace(/\[\[OG_TITLE\]\]/g, pageTitle);
+
+            // Timer Logic: Safe Boolean Conversion
+            const isTimerEnabled = String(formData.timer_contagem).toLowerCase().trim() === 'true';
+            const timerHideClass = isTimerEnabled ? '' : 'hidden';
+            htmlContent = htmlContent.replace(/\[\[TIMER_HIDE_CLASS\]\]/g, timerHideClass);
+
+            // Watermark Logic
+            const isWatermarkEnabled = String(formData.watermark_enabled).toLowerCase().trim() === 'true';
+            const watermarkHideClass = isWatermarkEnabled ? '' : 'hidden';
+            htmlContent = htmlContent.replace(/\[\[WATERMARK_HIDE_CLASS\]\]/g, watermarkHideClass);
+
+            // Prioritize 'cor_botoes', then 'shadow_color', then default
+            const btnColor = formData.cor_botoes || formData.shadow_color || '#292524';
+            htmlContent = htmlContent.replace(/\[\[BUTTON_COLOR\]\]/g, btnColor);
+
+            for (const [key, value] of Object.entries(formData)) {
+                const regex = new RegExp(`\\[\\[${key.toUpperCase()}\\]\\]`, 'g');
+                // FIX: Handle 0 correctly (don't treat as falsey)
+                const safeValue = (value !== undefined && value !== null) ? value : '';
+                htmlContent = htmlContent.replace(regex, safeValue);
+            }
+
+            // 3.6. Asset Replacements (Critical for Published View)
+            // appState.assetsMap contains paths like: { 'capa': 'assets/capa_123.png' }
+            if (appState.assetsMap) {
+                for (const [context, assetPath] of Object.entries(appState.assetsMap)) {
+                    if (!assetPath || typeof assetPath !== 'string') continue;
+
+                    // assetPath is already the relative path like 'assets/capa_123.png'
+                    const relativePath = assetPath;
+                    const filename = assetPath.split('/').pop(); // Get just the filename
+
+                    // Standard Replacement: [[CONTEXT_URL]]
+                    let tokenKey = context.toUpperCase();
+
+                    // Handle Aliases for tokens in final_template.html
+                    if (tokenKey === 'PRESENTES') tokenKey = 'PRESENTS';
+                    if (tokenKey === 'FOLHA_VAZIA') tokenKey = 'FOLHA';
+                    if (tokenKey === 'VID_ABERTURA') tokenKey = 'VIDEO_ABERTURA';
+
+                    // Replace URL
+                    const urlToken = `[[${tokenKey}_URL]]`;
+                    htmlContent = htmlContent.split(urlToken).join(relativePath);
+
+                    // Replace Filename (for OG tags etc)
+                    const filenameToken = `[[${tokenKey}_FILENAME]]`;
+                    htmlContent = htmlContent.split(filenameToken).join(filename);
+
+                    console.log(`[Publish] Replaced ${urlToken} -> ${relativePath}`);
+                }
+            }
+
+            // Inject CSS Variable for Button Color (if template uses it)
+            const customStyle = `<style>:root { --button-color: ${btnColor}; } .custom-button-bg { background-color: var(--button-color) !important; }</style>`;
+            htmlContent = htmlContent.replace('</head>', `${customStyle}</head>`);
+
+
+
+
+            // 4.1. Reconstruct Menu Config & Variables (moved UP before payload generation)
+            const buttonSize = formData.button_size || '1.0';
+            const companionHideClass = formData.companion_hide_class || '';
+
+            // ============================================================
+            // Generate menuConfig using Preview's button order
+            // This ensures published invite matches the preview exactly
+            // ============================================================
+
+            // Get the button order from preview (or use default if not available)
+            const buttonOrder = (window.AutoBuilderPreview && window.AutoBuilderPreview.getButtonOrder)
+                ? window.AutoBuilderPreview.getButtonOrder()
+                : ['location', 'gifts', 'rsvp', 'manual'];
+
+            // Prepare button configs (same logic as before, but we'll sort them)
+            const buttonConfigs = {};
+
+            // LOCATION
+            if (formData.link_google_maps) {
+                buttonConfigs['location'] = {
+                    id: 'location',
+                    titulo: 'Localização',
+                    icone: 'fa-solid fa-location-dot',
+                    link: formData.link_google_maps
+                };
+            }
+
+            // GIFTS (Presentes)
+            const hasGiftsImage = !!appState.assetsMap['presentes'];
+            const giftsLink = formData.link_presentes;
+            const giftsModeDiv = document.getElementById('gifts-image-mode');
+            const isGiftsImageMode = (giftsModeDiv && !giftsModeDiv.classList.contains('hidden')) || (hasGiftsImage && !giftsLink);
+
+            if (isGiftsImageMode && hasGiftsImage) {
+                buttonConfigs['gifts'] = { id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: '#', isGiftImage: true };
+            } else if (!isGiftsImageMode && giftsLink) {
+                buttonConfigs['gifts'] = { id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: giftsLink };
+            }
+
+            // RSVP (Confirmation)
+            if (formData.numero_whatsapp) {
+                buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${formData.numero_whatsapp}` };
+            } else if (formData.link_confirmacao) {
+                buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao };
+            }
+
+            // MANUAL
+            const hasManualImg = !!appState.assetsMap['manual'];
+            const manualHtml = document.getElementById('manual-html-editor')?.value || document.getElementById('manual-raw-text')?.value;
+            const manualImageModeDiv = document.getElementById('manual-image-mode');
+            const isManualImageMode = (manualImageModeDiv && !manualImageModeDiv.classList.contains('hidden')) || (hasManualImg && (!manualHtml || manualHtml.trim() === ''));
+
+            if (isManualImageMode && hasManualImg) {
+                buttonConfigs['manual'] = { id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', isManualImage: true };
+            } else if (!isManualImageMode && manualHtml && manualHtml.trim() !== '') {
+                buttonConfigs['manual'] = { id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', manualText: manualHtml };
+            }
+
+            // EXTRAS LINKS
+            const extraLinks = window.builderState.linksExtras || [];
+            extraLinks.forEach((link, idx) => {
+                const extraId = `extra-${link.id || idx}`;
+                buttonConfigs[extraId] = {
+                    id: extraId,
+                    titulo: link.label,
+                    icone: link.icon || 'fa-solid fa-link',
+                    link: link.url
+                };
+            });
+
+            // Build final menu in the order defined by buttonOrder
+            const generatedMenu = [];
+            buttonOrder.forEach(buttonId => {
+                if (buttonConfigs[buttonId]) {
+                    generatedMenu.push(buttonConfigs[buttonId]);
                 }
             });
-        }
 
-        async function handleCustomZipUpload(file) {
-            const slug = document.getElementById('slug-input')?.value?.trim();
-            if (!slug) {
-                alert('Por favor, preencha o Slug antes de fazer upload do ZIP.');
-                document.getElementById('slug-input')?.focus();
+            // Add any buttons that exist but aren't in buttonOrder (safety fallback)
+            Object.keys(buttonConfigs).forEach(buttonId => {
+                if (!buttonOrder.includes(buttonId)) {
+                    generatedMenu.push(buttonConfigs[buttonId]);
+                }
+            });
+
+            const menuConfig = generatedMenu;
+
+            console.log("DEBUG PUBLISH: Button Order from Preview:", buttonOrder);
+            console.log("DEBUG PUBLISH: Generated Menu (Ordered):", generatedMenu);
+
+            // -------------------------------------------------------------------
+
+            htmlContent = htmlContent.replace(/\[\[MENU_CONFIG\]\]/g, JSON.stringify(menuConfig));
+            htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, buttonSize || '1.0');
+            htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, companionHideClass || '');
+
+            filesMap['index.html'] = utf8_to_b64(htmlContent);
+
+            // DIAGNOSTICS: Generate Debug Log for User (Optional)
+            const isDebugEnabled = document.getElementById('debug-log-toggle')?.checked;
+            if (window.DebugLogger && isDebugEnabled) {
+                console.log("Generating Debug Report...");
+                window.DebugLogger.generateReport(formData, menuConfig, htmlContent);
+            }
+
+            // 5. Send to API
+            // showDeployStatusArea(); // REMOVED: Do not reset steps
+
+            // STEP 1 COMPLETE: Build Done
+            window.updateDeployStep('step-build', 'done');
+
+            // STEP 2 START: Upload Loading
+            window.updateDeployStep('step-upload', 'loading');
+
+            // We use /api/publish which is intercepted by supabase-adapter
+            // Edge Function has the GitHub token stored securely
+            // 4.1. Reconstruct Menu Config & Variables
+
+
+            const payload = {
+                slug: slug,
+                files: filesMap
+            };
+
+            const response = await fetch('/api/publish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Falha na publicação');
+
+            // STEP 2 COMPLETE: Upload Done
+            window.updateDeployStep('step-upload', 'done');
+
+            // STEP 3 START: Verifying (Live)
+            window.updateDeployStep('step-live', 'loading');
+
+            publishBtn.innerHTML = '<i class="fa-solid fa-check"></i> Enviado!';
+            publishBtn.classList.remove('bg-brand-600');
+            publishBtn.classList.add('bg-blue-600'); // Blue = Sent, Green = Live
+
+            const liveUrl = `https://convites.mforge.com.br/${slug}/`;
+
+            // 6. Poll for Deployment Status (GitHub Actions)
+            // Pass SHA from deployBatch result to track specific build
+            logDebug(`Resultado do Deploy: ${JSON.stringify(result)}`);
+
+            // Save timestamp for History Sorting (Recency)
+            try {
+                const timestamps = JSON.parse(localStorage.getItem('autoBuilder_historyTimestamps') || '{}');
+                timestamps[slug] = Date.now();
+                localStorage.setItem('autoBuilder_historyTimestamps', JSON.stringify(timestamps));
+                console.log(`[History] Timestamp updated for ${slug}`);
+            } catch (e) {
+                console.warn('Failed to update history timestamp', e);
+            }
+
+            await pollDeployStatus(slug, liveUrl, result.sha);
+
+        } catch (err) {
+            console.error('Publish Error:', err);
+            showDeployError(err.message);
+            window.updateDeployStep('step-upload', 'reset'); // or error state
+
+            const publishStatusArea = document.getElementById('publish-status-area');
+            if (publishStatusArea) publishStatusArea.classList.add('hidden'); // Hide on error for retry
+
+        } finally {
+            if (publishBtn.innerHTML.includes('Iniciando') || publishBtn.innerHTML.includes('Aguardando')) {
+                publishBtn.innerHTML = originalText;
+            }
+            publishBtn.disabled = false;
+        }
+    });
+}
+
+// ==========================================
+// DEPLOYMENT UI HELPERS
+// ==========================================
+
+function showDeployStatusArea() {
+    const area = document.getElementById('publish-status-area');
+    const successActions = document.getElementById('publish-success-actions');
+    const statusText = document.getElementById('deploy-status-text');
+
+    if (area) area.classList.remove('hidden');
+    if (successActions) successActions.classList.add('hidden');
+    if (statusText) {
+        statusText.innerText = 'Iniciando...';
+        statusText.className = 'text-xs font-mono text-gray-500 bg-gray-200 px-2 py-1 rounded';
+    }
+
+    // Reset Steps to Pending
+    [1, 2, 3].forEach(id => window.updateDeployStep(id, 'pending'));
+}
+
+// Helper to update individual steps in the inline UI
+window.updateDeployStep = function (stepId, status) {
+    // Map legacy string IDs to new numeric IDs if necessary
+    const map = { 'step-build': 1, 'step-upload': 2, 'step-live': 3 };
+    const id = map[stepId] || stepId;
+
+    const container = document.getElementById(`deploy-step-${id}`);
+    if (!container) {
+        console.warn(`[DeployUI] Step container #deploy-step-${id} not found`);
+        return;
+    }
+
+    const iconEl = container.querySelector('.step-icon');
+    const textEl = container.querySelector('span');
+
+    // Reset Base Classes
+    container.className = 'flex items-center gap-3 transition-colors duration-300';
+    if (iconEl) iconEl.className = 'step-icon text-lg transition-all duration-300 w-6 text-center';
+
+    if (status === 'loading') {
+        container.classList.add('text-amber-600', 'font-bold');
+        if (iconEl) iconEl.className = 'step-icon fa-solid fa-spinner fa-spin text-lg text-amber-500';
+
+    } else if (status === 'done') {
+        container.classList.add('text-green-600', 'font-medium');
+        if (iconEl) iconEl.className = 'step-icon fa-solid fa-check-circle text-lg text-green-500';
+
+    } else if (status === 'pending') {
+        container.classList.add('text-gray-400');
+        if (iconEl) iconEl.className = 'step-icon fa-regular fa-circle text-lg text-gray-300';
+
+    } else if (status === 'error') {
+        container.classList.add('text-red-600', 'font-bold');
+        if (iconEl) iconEl.className = 'step-icon fa-solid fa-circle-xmark text-lg text-red-500';
+    }
+};
+
+function showDeployError(msg) {
+    alert('Erro ao publicar: ' + msg);
+    const statusText = document.getElementById('deploy-status-text');
+    if (statusText) {
+        statusText.innerText = 'Erro: ' + msg;
+        statusText.className = 'text-xs font-mono text-red-500';
+    }
+}
+
+// Debug Helper
+function logDebug(msg) {
+    console.log(`[DeployDebug] ${msg}`);
+    let debugEl = document.getElementById('deploy-debug-log');
+    if (!debugEl) {
+        // Lazy create debug container if missing
+        const container = document.getElementById('publish-status-area');
+        if (container) {
+            debugEl = document.createElement('div');
+            debugEl.id = 'deploy-debug-log';
+            debugEl.className = 'mt-4 p-2 bg-black text-xs font-mono text-green-400 overflow-y-auto max-h-48 rounded border border-gray-700 shadow-inner block';
+            debugEl.style.display = 'block'; // Force block
+            container.appendChild(debugEl);
+        } else {
+            console.warn("Could not find #publish-status-area to inject debug log");
+        }
+    }
+    if (debugEl) {
+        const line = document.createElement('div');
+        line.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        line.style.borderBottom = '1px solid #333';
+        line.style.padding = '2px 0';
+        debugEl.appendChild(line);
+        debugEl.scrollTop = debugEl.scrollHeight;
+    }
+}
+
+/**
+ * Poll GitHub Actions status until success or timeout
+ */
+async function pollDeployStatus(slug, liveUrl, commitSha = null) {
+    const checkBtn = document.getElementById('btn-publish');
+    let attempts = 0;
+    const maxAttempts = 60; // 5 minutes (5s interval)
+
+    logDebug(`Iniciando Polling. Slug: ${slug}, SHA: ${commitSha?.substring(0, 7)}...`);
+
+    // Ensure UI is visible FIRST (resets steps to pending)
+    // showDeployStatusArea(); // REMOVED: Resets UI steps incorrectly
+
+    // THEN set status to loading
+    window.updateDeployStep('step-live', 'loading');
+    checkBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Construindo...';
+
+    // Update Status Text
+    const statusText = document.getElementById('deploy-status-text');
+
+    // Asset Fallback Check
+    const assetPath = window.builderState?.assetsMap?.capa;
+    let checkUrl = liveUrl;
+    if (assetPath) checkUrl = liveUrl + assetPath;
+
+    return new Promise((resolve, reject) => {
+        const interval = setInterval(async () => {
+            attempts++;
+
+            // 1. GitHub Workflow Check (Primary)
+            if (commitSha && window.githubAdapter) {
+                try {
+                    const workflow = await window.githubAdapter.getLatestWorkflowStatus(commitSha);
+                    if (workflow) {
+                        const status = workflow.status; // queued, in_progress, completed
+                        const conclusion = workflow.conclusion; // success, failure, neutral, cancelled
+
+                        logDebug(`Workflow: ${status} [${conclusion || '...'}]`);
+
+                        if (statusText) {
+                            // Translate status for user
+                            let msg = 'Processando...';
+                            if (status === 'queued') msg = 'Na fila...';
+                            else if (status === 'in_progress') msg = 'Construindo site...';
+                            else if (conclusion === 'success') msg = 'Concluído!';
+                            statusText.innerText = `${msg} (${Math.round(attempts * 2)}s)`;
+                        }
+
+                        if (status === 'completed') {
+                            if (conclusion === 'success') {
+                                logDebug('Workflow Success!');
+                                finishPolling(true);
+                                return;
+                            } else {
+                                logDebug(`Workflow Failed: ${conclusion}`);
+                                finishPolling(false, `Erro no Build: ${conclusion}`);
+                                return;
+                            }
+                        }
+                    } else {
+                        logDebug(`Aguardando Workflow... (Tentativa ${attempts})`);
+                        if (statusText) statusText.innerText = 'Inicializando workflow...';
+                    }
+                } catch (e) {
+                    logDebug(`Erro no check: ${e.message}`);
+                    console.warn("Workflow check failed", e);
+                }
+            } else if (statusText) {
+                logDebug('Sem SHA ou Adapter. Usando Fallback.');
+                // Fallback messaging
+                if (attempts % 4 === 0) statusText.innerText = 'Verificando disponibilidade...';
+            }
+
+            // 2. Timeout Check
+            if (attempts >= maxAttempts) {
+                logDebug('Timeout. Assumindo sucesso (Otimista).');
+                finishPolling(true); // Optimistic success
                 return;
             }
 
-            if (!confirm(`Publicar ZIP personalizado em: mforgedesign.github.io/${slug}?`)) return;
+            // 3. Asset Availability Check (Secondary)
+            // If we don't have SHA, or as backup if workflow API fails but site is live
+            if (!commitSha && assetPath) {
+                const img = new Image();
+                img.onload = () => {
+                    logDebug('Imagem carregou. Site Online.');
+                    finishPolling(true);
+                };
+                img.src = `${checkUrl}?t=${Date.now()}`;
+            }
 
-            console.log('[CustomZIP] Starting upload:', file.name, 'to', slug);
+        }, 2000);
 
-            try {
-                // 1. Unzip locally (Client-Side)
-                const zip = new JSZip();
-                const zipContent = await zip.loadAsync(file);
+        function finishPolling(success, errorMsg) {
+            clearInterval(interval);
+            if (success) {
+                // STEP 3 COMPLETE: Live Done
+                window.updateDeployStep('step-live', 'done');
+                checkBtn.innerHTML = '<i class="fa-solid fa-check"></i> Publicado!';
+                checkBtn.classList.remove('bg-brand-600', 'bg-blue-600', 'bg-yellow-600', 'bg-red-600'); // Ensure all removed
+                checkBtn.classList.add('bg-green-600');
 
-                const filesMap = {};
-
-                // 2. Extract files to base64 map
-                const promises = Object.keys(zipContent.files).map(async (filename) => {
-                    const zipEntry = zipContent.files[filename];
-                    if (zipEntry.dir) return; // Skip directories (GitHub API handles paths)
-
-                    const blob = await zipEntry.async('blob');
-
-                    // Convert to base64
-                    const reader = new FileReader();
-                    const base64 = await new Promise((resolve) => {
-                        reader.onload = () => resolve(reader.result.split(',')[1]);
-                        reader.readAsDataURL(blob);
-                    });
-
-                    filesMap[filename] = base64;
-                });
-
-                await Promise.all(promises);
-                console.log('[CustomZIP] Extracted files:', Object.keys(filesMap));
-
-                // 3. Send to Standard Publish API (reusing deploy-github)
-                // We bypass the build step but use the same deployment function
-                const response = await fetch('/api/publish', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        slug: slug,
-                        files: filesMap // { "index.html": "...", "assets/..." }
-                    })
-                });
-
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.error || 'Falha no deploy');
-
-                const liveUrl = `https://mforgedesign.github.io/${slug}/`;
-                alert(`ZIP publicado com sucesso!\n\nAcesse: ${liveUrl}`);
-                window.open(liveUrl, '_blank');
-
-            } catch (err) {
-                console.error('[CustomZIP] Error:', err);
-                alert('Erro no upload: ' + err.message);
+                if (statusText) statusText.innerText = 'Disponível Online!';
+                finalizeSuccessUI(liveUrl, slug);
+                resolve();
+            } else {
+                window.updateDeployStep('step-live', 'error');
+                checkBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Erro';
+                checkBtn.classList.remove('bg-brand-600', 'bg-blue-600');
+                checkBtn.classList.add('bg-red-600');
+                if (statusText && errorMsg) statusText.innerText = errorMsg;
+                console.error(errorMsg);
+                resolve(); // Resolve anyway to stop spinner
             }
         }
-    }
-
-    // Helper to reverse map contexts (since we defined map one way)
-    // We can just define a helper function or object
-    function findDropzoneId(contextTarget) {
-        // DROPZONE_CONTEXTS is: { 'id': 'context' }
-        // We need 'context' -> 'id'
-        // Since `DROPZONE_CONTEXTS` is in closure, we rely on it being available or re-scan
-        // Ideally we move DROPZONE_CONTEXTS to higher scope or define here
-        const dropzones = {
-            'capa': 'cover-dropzone',
-            'folha_vazia': 'leaf-dropzone',
-            'vid_abertura': 'intro-video-dropzone',
-            'fundo_tela': 'fill-image-dropzone',  // Unified fundo
-            'presentes': 'gifts-image-dropzone',
-            'manual': 'manual-image-dropzone',
-            'musica': 'music-dropzone'
-        };
-        return dropzones[contextTarget];
-    }
+    });
+}
 
 
-    // [REMOVED] Duplicate updateDeployStep - using the correct window.updateDeployStep from line 1753
+function finalizeSuccessUI(liveUrl, slug) {
+    const successActions = document.getElementById('publish-success-actions');
+    const btnOpenLive = document.getElementById('btn-open-live');
+    const btnOpenRepo = document.getElementById('btn-open-repo');
+    const btnCopyLink = document.getElementById('btn-copy-link');
+    const statusText = document.getElementById('deploy-status-text');
 
-    // ========================================
-    // AI Generation Buttons
-    // ========================================
+    if (successActions) successActions.classList.remove('hidden');
+    if (statusText) statusText.innerText = 'Disponível Online';
 
-    // Map AI button types to dropzone IDs
-    const AI_TYPE_TO_DROPZONE = {
-        'cover': 'cover-dropzone',
-        'leaf': 'leaf-dropzone',
-        'intro': 'intro-video-dropzone',
-        'fill': 'fill-image-dropzone',  // Unified fundo
-        'manual': 'manual-image-dropzone',
-        'gifts': 'gifts-image-dropzone'
-    };
+    if (btnOpenLive) btnOpenLive.href = liveUrl;
 
-    function setupAIButtons() {
-        const aiButtons = [
-            { id: 'btn-generate-cover', type: 'cover', promptId: 'cover-prompt', mediaType: 'image' },
-            { id: 'btn-generate-leaf', type: 'leaf', promptId: 'leaf-prompt', mediaType: 'image' },
-            { id: 'btn-generate-intro', type: 'intro', promptId: 'intro-motion-prompt', mediaType: 'video' },
-            { id: 'btn-generate-loop', type: 'loop', promptId: 'loop-motion-prompt', mediaType: 'video' },
-            { id: 'btn-generate-fill', type: 'fill', promptId: 'fill-prompt', mediaType: 'image' },
-            { id: 'manual-generate-image-btn', type: 'manual', promptId: 'manual-image-prompt', mediaType: 'image' },
-            { id: 'gifts-generate-image-btn', type: 'gifts', promptId: 'gifts-image-prompt', mediaType: 'image' }
-        ];
+    // Repo URL construction
+    // Structure: https://github.com/mforgedesign/Convites/tree/recuperaçãohoje/convites/${slug}
+    // Updated to point to the correct invites repo
+    const repoUrl = `https://github.com/mforgedesign/Convites/tree/recuperaçãohoje/convites/${slug}`;
+    if (btnOpenRepo) btnOpenRepo.href = repoUrl;
 
-        aiButtons.forEach(({ id, type, promptId, mediaType }) => {
-            const btn = document.getElementById(id);
-            if (!btn) return;
-
-            btn.addEventListener('click', async () => {
-                const promptEl = document.getElementById(promptId);
-                const customPrompt = promptEl?.value; // User can override AI prompt
-
-                try {
-                    await window.AIGeneration.generate(type, {
-                        customPrompt,
-                        onProgress: (step) => {
-                            btn.disabled = true;
-                            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i>${step}`;
-                        },
-                        onSuccess: (url) => {
-                            btn.innerHTML = '<i class="fa-solid fa-check mr-2"></i>Gerado!';
-                            setTimeout(() => {
-                                btn.innerHTML = btn.dataset.originalText || 'Gerar';
-                                btn.disabled = false;
-                            }, 2000);
-                        },
-                        onError: (error) => {
-                            alert('Erro ao gerar: ' + error);
-                            btn.innerHTML = btn.dataset.originalText || 'Gerar';
-                            btn.disabled = false;
-                        }
-                    });
-                } catch (err) {
-                    console.error('AI generation error:', err);
-                }
+    if (btnCopyLink) {
+        btnCopyLink.onclick = () => {
+            navigator.clipboard.writeText(liveUrl).then(() => {
+                const originalIcon = btnCopyLink.innerHTML;
+                btnCopyLink.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+                setTimeout(() => btnCopyLink.innerHTML = originalIcon, 2000);
             });
+        };
+    }
+}
 
-            // Store original text for reset
-            btn.dataset.originalText = btn.innerHTML;
+// ----------------------------------------
+// 5. CUSTOM ZIP UPLOAD (Bypass Build)
+// ----------------------------------------
+const customZipDropzone = document.getElementById('custom-zip-dropzone');
+if (customZipDropzone) {
+    const zipInput = customZipDropzone.querySelector('input[type="file"]');
+
+    // Click handler
+    customZipDropzone.addEventListener('click', (e) => {
+        if (e.target !== zipInput) {
+            zipInput?.click();
+        }
+    });
+
+    // Drag and Drop
+    customZipDropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        customZipDropzone.classList.add('border-brand-500', 'bg-brand-50');
+    });
+
+    customZipDropzone.addEventListener('dragleave', () => {
+        customZipDropzone.classList.remove('border-brand-500', 'bg-brand-50');
+    });
+
+    customZipDropzone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        customZipDropzone.classList.remove('border-brand-500', 'bg-brand-50');
+        const file = e.dataTransfer.files[0];
+        if (file && file.name.endsWith('.zip')) {
+            await handleCustomZipUpload(file);
+        } else {
+            alert('Por favor, envie um arquivo .zip');
+        }
+    });
+
+    // File input change
+    if (zipInput) {
+        zipInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                await handleCustomZipUpload(file);
+                zipInput.value = ''; // Reset for future uploads
+            }
         });
     }
 
-    // ==================== PUBLIC AI GENERATION API ====================
-    // This will be called by both UI buttons and chatbot
+    async function handleCustomZipUpload(file) {
+        const slug = document.getElementById('slug-input')?.value?.trim();
+        if (!slug) {
+            alert('Por favor, preencha o Slug antes de fazer upload do ZIP.');
+            document.getElementById('slug-input')?.focus();
+            return;
+        }
 
-    window.AIGeneration = {
-        /**
-         * Generate media using AI
-         * @param {string} type - Generation type (cover, leaf, intro, loop, fill, manual, gifts)
-         * @param {object} options - Generation options
-         * @returns {Promise<string>} URL of generated media
-         */
-        async generate(type, options = {}) {
-            const {
+        if (!confirm(`Publicar ZIP personalizado em: mforgedesign.github.io/${slug}?`)) return;
+
+        console.log('[CustomZIP] Starting upload:', file.name, 'to', slug);
+
+        try {
+            // 1. Unzip locally (Client-Side)
+            const zip = new JSZip();
+            const zipContent = await zip.loadAsync(file);
+
+            const filesMap = {};
+
+            // 2. Extract files to base64 map
+            const promises = Object.keys(zipContent.files).map(async (filename) => {
+                const zipEntry = zipContent.files[filename];
+                if (zipEntry.dir) return; // Skip directories (GitHub API handles paths)
+
+                const blob = await zipEntry.async('blob');
+
+                // Convert to base64
+                const reader = new FileReader();
+                const base64 = await new Promise((resolve) => {
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.readAsDataURL(blob);
+                });
+
+                filesMap[filename] = base64;
+            });
+
+            await Promise.all(promises);
+            console.log('[CustomZIP] Extracted files:', Object.keys(filesMap));
+
+            // 3. Send to Standard Publish API (reusing deploy-github)
+            // We bypass the build step but use the same deployment function
+            const response = await fetch('/api/publish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    slug: slug,
+                    files: filesMap // { "index.html": "...", "assets/..." }
+                })
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Falha no deploy');
+
+            const liveUrl = `https://mforgedesign.github.io/${slug}/`;
+            alert(`ZIP publicado com sucesso!\n\nAcesse: ${liveUrl}`);
+            window.open(liveUrl, '_blank');
+
+        } catch (err) {
+            console.error('[CustomZIP] Error:', err);
+            alert('Erro no upload: ' + err.message);
+        }
+    }
+}
+
+// Helper to reverse map contexts (since we defined map one way)
+// We can just define a helper function or object
+function findDropzoneId(contextTarget) {
+    // DROPZONE_CONTEXTS is: { 'id': 'context' }
+    // We need 'context' -> 'id'
+    // Since `DROPZONE_CONTEXTS` is in closure, we rely on it being available or re-scan
+    // Ideally we move DROPZONE_CONTEXTS to higher scope or define here
+    const dropzones = {
+        'capa': 'cover-dropzone',
+        'folha_vazia': 'leaf-dropzone',
+        'vid_abertura': 'intro-video-dropzone',
+        'fundo_tela': 'fill-image-dropzone',  // Unified fundo
+        'presentes': 'gifts-image-dropzone',
+        'manual': 'manual-image-dropzone',
+        'musica': 'music-dropzone'
+    };
+    return dropzones[contextTarget];
+}
+
+
+// [REMOVED] Duplicate updateDeployStep - using the correct window.updateDeployStep from line 1753
+
+// ========================================
+// AI Generation Buttons
+// ========================================
+
+// Map AI button types to dropzone IDs
+const AI_TYPE_TO_DROPZONE = {
+    'cover': 'cover-dropzone',
+    'leaf': 'leaf-dropzone',
+    'intro': 'intro-video-dropzone',
+    'fill': 'fill-image-dropzone',  // Unified fundo
+    'manual': 'manual-image-dropzone',
+    'gifts': 'gifts-image-dropzone'
+};
+
+function setupAIButtons() {
+    const aiButtons = [
+        { id: 'btn-generate-cover', type: 'cover', promptId: 'cover-prompt', mediaType: 'image' },
+        { id: 'btn-generate-leaf', type: 'leaf', promptId: 'leaf-prompt', mediaType: 'image' },
+        { id: 'btn-generate-intro', type: 'intro', promptId: 'intro-motion-prompt', mediaType: 'video' },
+        { id: 'btn-generate-loop', type: 'loop', promptId: 'loop-motion-prompt', mediaType: 'video' },
+        { id: 'btn-generate-fill', type: 'fill', promptId: 'fill-prompt', mediaType: 'image' },
+        { id: 'manual-generate-image-btn', type: 'manual', promptId: 'manual-image-prompt', mediaType: 'image' },
+        { id: 'gifts-generate-image-btn', type: 'gifts', promptId: 'gifts-image-prompt', mediaType: 'image' }
+    ];
+
+    aiButtons.forEach(({ id, type, promptId, mediaType }) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+
+        btn.addEventListener('click', async () => {
+            const promptEl = document.getElementById(promptId);
+            const customPrompt = promptEl?.value; // User can override AI prompt
+
+            try {
+                await window.AIGeneration.generate(type, {
+                    customPrompt,
+                    onProgress: (step) => {
+                        btn.disabled = true;
+                        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i>${step}`;
+                    },
+                    onSuccess: (url) => {
+                        btn.innerHTML = '<i class="fa-solid fa-check mr-2"></i>Gerado!';
+                        setTimeout(() => {
+                            btn.innerHTML = btn.dataset.originalText || 'Gerar';
+                            btn.disabled = false;
+                        }, 2000);
+                    },
+                    onError: (error) => {
+                        alert('Erro ao gerar: ' + error);
+                        btn.innerHTML = btn.dataset.originalText || 'Gerar';
+                        btn.disabled = false;
+                    }
+                });
+            } catch (err) {
+                console.error('AI generation error:', err);
+            }
+        });
+
+        // Store original text for reset
+        btn.dataset.originalText = btn.innerHTML;
+    });
+}
+
+// ==================== PUBLIC AI GENERATION API ====================
+// This will be called by both UI buttons and chatbot
+
+window.AIGeneration = {
+    /**
+     * Generate media using AI
+     * @param {string} type - Generation type (cover, leaf, intro, loop, fill, manual, gifts)
+     * @param {object} options - Generation options
+     * @returns {Promise<string>} URL of generated media
+     */
+    async generate(type, options = {}) {
+        const {
+            customPrompt,
+            listContent,
+            rulesContent,
+            referenceImage,
+            onProgress,
+            onSuccess,
+            onError
+        } = options;
+
+        try {
+            // Step 1: Build payload using ai-prompts module
+            if (onProgress) onProgress('Preparando prompt...');
+
+            const payload = window.AIPrompts.buildGenerationPayload(type, {
                 customPrompt,
                 listContent,
                 rulesContent,
-                referenceImage,
-                onProgress,
-                onSuccess,
-                onError
-            } = options;
+                referenceImage
+            });
 
-            try {
-                // Step 1: Build payload using ai-prompts module
-                if (onProgress) onProgress('Preparando prompt...');
-
-                const payload = window.AIPrompts.buildGenerationPayload(type, {
-                    customPrompt,
-                    listContent,
-                    rulesContent,
-                    referenceImage
-                });
-
-                // Step 2: Get required image URL for video/image-to-image
-                if (payload.mode === 'image-to-video' || payload.mode === 'image-to-image') {
-                    const imageUrl = await this.getRequiredImage(type);
-                    if (!imageUrl) {
-                        throw new Error(this.getMissingImageMessage(type));
-                    }
-                    payload.image_url = imageUrl;
+            // Step 2: Get required image URL for video/image-to-image
+            if (payload.mode === 'image-to-video' || payload.mode === 'image-to-image') {
+                const imageUrl = await this.getRequiredImage(type);
+                if (!imageUrl) {
+                    throw new Error(this.getMissingImageMessage(type));
                 }
-
-                // Step 3: Call API
-                if (onProgress) onProgress('Gerando...');
-
-                const isVideo = payload.mode === 'image-to-video';
-                const endpoint = isVideo ? '/api/generate/video' : '/api/generate/image';
-
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await response.json();
-
-                // Step 4: Extract URL
-                let generatedUrl;
-                if (isVideo) {
-                    generatedUrl = data.data?.video?.url || data.video_url || data.url;
-                } else {
-                    generatedUrl = data.data?.images?.[0]?.url || data.image_url || data.url;
-                }
-
-                if (!generatedUrl) {
-                    throw new Error('API não retornou URL válida');
-                }
-
-                // Step 5: Update dropzone preview
-                const dropzoneId = AI_TYPE_TO_DROPZONE[type];
-                const dropzone = document.getElementById(dropzoneId);
-                if (dropzone) {
-                    updateDropzonePreview(dropzone, generatedUrl, isVideo ? 'video' : 'image');
-                }
-
-                // Step 6: Update state
-                window.builderState.assets[type] = generatedUrl;
-
-                // Success callback
-                if (onSuccess) onSuccess(generatedUrl);
-
-                console.log(`✅ Generated ${type}:`, generatedUrl);
-                return generatedUrl;
-
-            } catch (error) {
-                console.error(`❌ Generation error (${type}):`, error);
-                if (onError) onError(error.message);
-                throw error;
-            }
-        },
-
-        /**
-         * Get required image URL for video/image-to-image generation
-         * NOTE: Persistence uses Portuguese names (capa, folha_vazia), 
-         *       while AI generation uses English names (cover, leaf).
-         *       We check both for compatibility.
-         */
-        async getRequiredImage(type) {
-            const assets = window.builderState?.assets || {};
-
-            // Image-to-Video requirements
-            if (type === 'intro') {
-                // Needs capa.jpg - check both naming conventions
-                return assets.cover || assets.capa;
-            }
-            if (type === 'loop') {
-                // Needs background_only.jpg
-                return assets.background_only || assets.folha_vazia;
+                payload.image_url = imageUrl;
             }
 
-            // Image-to-Image requirements
-            if (type === 'fill') {
-                // Needs leaf_only.png
-                return assets.leaf_only || assets.leaf || assets.folha_vazia;
-            }
-            if (type === 'manual' || type === 'gifts') {
-                // Fallback chain for manual/gifts images
-                return assets.background_only || assets.leaf || assets.folha_vazia || assets.capa;
-            }
+            // Step 3: Call API
+            if (onProgress) onProgress('Gerando...');
 
-            return null;
-        },
+            const isVideo = payload.mode === 'image-to-video';
+            const endpoint = isVideo ? '/api/generate/video' : '/api/generate/image';
 
-        /**
-         * Get user-friendly message for missing images
-         */
-        getMissingImageMessage(type) {
-            const messages = {
-                'intro': '⚠️ Falta a Capa!\nPor favor, faça upload ou gere a imagem da Capa antes de criar a animação.',
-                'loop': '⚠️ Falta o Background!\nRealize o tratamento da Folha Vazia ("Separar Camadas") para obter o "background_only.jpg".',
-                'fill': '⚠️ Falta a Folha Recortada!\nRealize o tratamento da Folha Vazia para obter o "leaf_only.png".',
-                'manual': 'Faça upload da Folha Vazia ou do background tratado primeiro.',
-                'gifts': 'Faça upload da Folha Vazia ou do background tratado primeiro.'
-            };
-            return messages[type] || 'Imagem base necessária não encontrada.';
-        },
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
-        /**
-         * Programmatically set custom prompt (for chatbot)
-         */
-        setPrompt(type, promptText) {
-            const promptIds = {
-                'cover': 'cover-prompt',
-                'leaf': 'leaf-prompt',
-                'intro': 'intro-motion-prompt',
-                'loop': 'loop-motion-prompt',
-                'fill': 'fill-prompt',
-                'manual': 'manual-image-prompt',
-                'gifts': 'gifts-image-prompt'
-            };
+            const data = await response.json();
 
-            const promptId = promptIds[type];
-            const promptEl = document.getElementById(promptId);
-            if (promptEl) {
-                promptEl.value = promptText;
-            }
-        },
-
-        /**
-         * Trigger generation button programmatically (for chatbot)
-         */
-        async triggerGeneration(type) {
-            const buttonIds = {
-                'cover': 'btn-generate-cover',
-                'leaf': 'btn-generate-leaf',
-                'intro': 'btn-generate-intro',
-                'loop': 'btn-generate-loop',
-                'fill': 'btn-generate-fill',
-                'manual': 'manual-generate-image-btn',
-                'gifts': 'gifts-generate-image-btn'
-            };
-
-            const btn = document.getElementById(buttonIds[type]);
-            if (btn) {
-                btn.click();
+            // Step 4: Extract URL
+            let generatedUrl;
+            if (isVideo) {
+                generatedUrl = data.data?.video?.url || data.video_url || data.url;
             } else {
-                // Fallback: call generate directly
-                return await this.generate(type);
+                generatedUrl = data.data?.images?.[0]?.url || data.image_url || data.url;
             }
+
+            if (!generatedUrl) {
+                throw new Error('API não retornou URL válida');
+            }
+
+            // Step 5: Update dropzone preview
+            const dropzoneId = AI_TYPE_TO_DROPZONE[type];
+            const dropzone = document.getElementById(dropzoneId);
+            if (dropzone) {
+                updateDropzonePreview(dropzone, generatedUrl, isVideo ? 'video' : 'image');
+            }
+
+            // Step 6: Update state
+            window.builderState.assets[type] = generatedUrl;
+
+            // Success callback
+            if (onSuccess) onSuccess(generatedUrl);
+
+            console.log(`✅ Generated ${type}:`, generatedUrl);
+            return generatedUrl;
+
+        } catch (error) {
+            console.error(`❌ Generation error (${type}):`, error);
+            if (onError) onError(error.message);
+            throw error;
         }
-    };
+    },
+
+    /**
+     * Get required image URL for video/image-to-image generation
+     * NOTE: Persistence uses Portuguese names (capa, folha_vazia), 
+     *       while AI generation uses English names (cover, leaf).
+     *       We check both for compatibility.
+     */
+    async getRequiredImage(type) {
+        const assets = window.builderState?.assets || {};
+
+        // Image-to-Video requirements
+        if (type === 'intro') {
+            // Needs capa.jpg - check both naming conventions
+            return assets.cover || assets.capa;
+        }
+        if (type === 'loop') {
+            // Needs background_only.jpg
+            return assets.background_only || assets.folha_vazia;
+        }
+
+        // Image-to-Image requirements
+        if (type === 'fill') {
+            // Needs leaf_only.png
+            return assets.leaf_only || assets.leaf || assets.folha_vazia;
+        }
+        if (type === 'manual' || type === 'gifts') {
+            // Fallback chain for manual/gifts images
+            return assets.background_only || assets.leaf || assets.folha_vazia || assets.capa;
+        }
+
+        return null;
+    },
+
+    /**
+     * Get user-friendly message for missing images
+     */
+    getMissingImageMessage(type) {
+        const messages = {
+            'intro': '⚠️ Falta a Capa!\nPor favor, faça upload ou gere a imagem da Capa antes de criar a animação.',
+            'loop': '⚠️ Falta o Background!\nRealize o tratamento da Folha Vazia ("Separar Camadas") para obter o "background_only.jpg".',
+            'fill': '⚠️ Falta a Folha Recortada!\nRealize o tratamento da Folha Vazia para obter o "leaf_only.png".',
+            'manual': 'Faça upload da Folha Vazia ou do background tratado primeiro.',
+            'gifts': 'Faça upload da Folha Vazia ou do background tratado primeiro.'
+        };
+        return messages[type] || 'Imagem base necessária não encontrada.';
+    },
+
+    /**
+     * Programmatically set custom prompt (for chatbot)
+     */
+    setPrompt(type, promptText) {
+        const promptIds = {
+            'cover': 'cover-prompt',
+            'leaf': 'leaf-prompt',
+            'intro': 'intro-motion-prompt',
+            'loop': 'loop-motion-prompt',
+            'fill': 'fill-prompt',
+            'manual': 'manual-image-prompt',
+            'gifts': 'gifts-image-prompt'
+        };
+
+        const promptId = promptIds[type];
+        const promptEl = document.getElementById(promptId);
+        if (promptEl) {
+            promptEl.value = promptText;
+        }
+    },
+
+    /**
+     * Trigger generation button programmatically (for chatbot)
+     */
+    async triggerGeneration(type) {
+        const buttonIds = {
+            'cover': 'btn-generate-cover',
+            'leaf': 'btn-generate-leaf',
+            'intro': 'btn-generate-intro',
+            'loop': 'btn-generate-loop',
+            'fill': 'btn-generate-fill',
+            'manual': 'manual-generate-image-btn',
+            'gifts': 'gifts-generate-image-btn'
+        };
+
+        const btn = document.getElementById(buttonIds[type]);
+        if (btn) {
+            btn.click();
+        } else {
+            // Fallback: call generate directly
+            return await this.generate(type);
+        }
+    }
+};
 
 
-    // ========================================
-    // Manual HTML Editor
-    // ========================================
+// ========================================
+// Manual HTML Editor
+// ========================================
 
-    function setupManualEditor() {
-        const htmlEditor = document.getElementById('manual-html-editor');
-        const preview = document.getElementById('manual-preview');
+function setupManualEditor() {
+    const htmlEditor = document.getElementById('manual-html-editor');
+    const preview = document.getElementById('manual-preview');
 
-        if (htmlEditor && preview) {
-            htmlEditor.addEventListener('input', () => {
-                preview.innerHTML = htmlEditor.value || `
+    if (htmlEditor && preview) {
+        htmlEditor.addEventListener('input', () => {
+            preview.innerHTML = htmlEditor.value || `
                     <div class="text-center text-gray-400">
                         <i class="fa-solid fa-eye-slash text-3xl mb-2"></i>
                         <p class="text-sm">Digite o texto e clique em "Otimizar" para ver a prévia</p>
                     </div>
                 `;
-            });
+        });
 
-            // Trigger preview update on state restoration
-            document.addEventListener('stateUpdated', (e) => {
-                if (e.detail && e.detail.source === 'persistence' && htmlEditor.value) {
-                    htmlEditor.dispatchEvent(new Event('input'));
-                }
-            });
-        }
-
-        // Optimize button
-        const optimizeBtn = document.getElementById('manual-optimize-btn');
-        const rawText = document.getElementById('manual-raw-text');
-
-        if (optimizeBtn && rawText && htmlEditor && preview) {
-            optimizeBtn.addEventListener('click', async () => {
-                const text = rawText.value;
-                if (!text) return;
-
-                // UI Feedback: Loading state
-                const originalBtnText = optimizeBtn.innerHTML;
-                optimizeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Otimizando (IA)...';
-                optimizeBtn.disabled = true;
-
-                try {
-                    if (!window.supabaseClient) throw new Error("Supabase client not initialized");
-
-                    // Call Supabase Edge Function
-                    const { data, error } = await window.supabaseClient.functions.invoke('optimize-manual', {
-                        body: { text }
-                    });
-
-                    if (error) throw new Error(error.message);
-                    if (!data || !data.html) throw new Error("No HTML returned from AI");
-
-                    // Show fallback toast if GPT was used
-                    if (data.usedFallback) {
-                        showToast('⚠️ Gemini falhou. Usado GPT-4o-mini como fallback.', 'warning');
-                    }
-
-                    // Update Editors
-                    htmlEditor.value = data.html;
-                    preview.innerHTML = data.html;
-
-                    // Trigger input event to save state if needed
-                    htmlEditor.dispatchEvent(new Event('input'));
-
-                } catch (err) {
-                    console.error('[Manual Optimizer] Error:', err);
-                    alert('Erro ao otimizar texto: ' + err.message);
-                } finally {
-                    // Restore Button
-                    optimizeBtn.innerHTML = originalBtnText;
-                    optimizeBtn.disabled = false;
-                }
-            });
-        }
-    }
-
-    // ========================================
-    // Auto-Prompt Logic (Theme Integration)
-    // ========================================
-
-    function setupAutoPromptListener() {
-        // Listen for internal state updates from Form
+        // Trigger preview update on state restoration
         document.addEventListener('stateUpdated', (e) => {
-            const { field, value, state } = e.detail;
-
-            // Trigger when theme or colors change
-            if (field === 'tema' || field === 'event_theme' || field === 'paleta_cores') {
-                console.log('[Windows] Theme changed, refreshing prompts...');
-                refreshAnimationPrompts();
+            if (e.detail && e.detail.source === 'persistence' && htmlEditor.value) {
+                htmlEditor.dispatchEvent(new Event('input'));
             }
         });
     }
 
-    function refreshAnimationPrompts() {
-        if (!window.AIPrompts) return;
+    // Optimize button
+    const optimizeBtn = document.getElementById('manual-optimize-btn');
+    const rawText = document.getElementById('manual-raw-text');
 
-        // Intro Prompt
-        const introPrompt = window.AIPrompts.getOpeningVideoPrompt();
-        window.AIGeneration.setPrompt('intro', introPrompt);
+    if (optimizeBtn && rawText && htmlEditor && preview) {
+        optimizeBtn.addEventListener('click', async () => {
+            const text = rawText.value;
+            if (!text) return;
 
-        // Loop Prompt
-        const loopPrompt = window.AIPrompts.getLoopVideoPrompt();
-        window.AIGeneration.setPrompt('loop', loopPrompt);
-
-        console.log('✨ Animation prompts updated based on new theme');
-    }
-
-    // ========================================
-    // Cover Generation Logic (AI)
-    // ========================================
-
-    function setupCoverGeneration() {
-        const generateBtn = document.getElementById('btn-generate-cover');
-        const promptInput = document.getElementById('cover-prompt');
-        const coverDropzone = document.getElementById('cover-dropzone');
-        const refDropzone = document.getElementById('cover-reference-dropzone');
-
-        if (!generateBtn || !coverDropzone) return;
-
-        // update button text based on state
-        function updateButtonState() {
-            const hasCover = coverDropzone.style.backgroundImage && coverDropzone.style.backgroundImage !== 'none';
-            if (hasCover) {
-                generateBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Regenerar com IA';
-                generateBtn.classList.remove('from-brand-600', 'to-indigo-600');
-                generateBtn.classList.add('from-purple-600', 'to-pink-600');
-            } else {
-                generateBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Gerar com IA';
-                generateBtn.classList.add('from-brand-600', 'to-indigo-600');
-                generateBtn.classList.remove('from-purple-600', 'to-pink-600');
-            }
-        }
-
-        // Listen to changes on dropzone to update button
-        const observer = new MutationObserver(updateButtonState);
-        observer.observe(coverDropzone, { attributes: true, attributeFilter: ['style'] });
-        updateButtonState(); // init
-
-        generateBtn.addEventListener('click', async () => {
-            if (!window.APIClient) {
-                alert('Erro: API Client não carregado.');
-                return;
-            }
-
-            const prompt = promptInput.value || (window.getCoverPrompt ? window.getCoverPrompt() : '');
-            if (!prompt) {
-                alert('Por favor, digite um prompt ou preencha o formulário para auto-geração.');
-                promptInput.focus();
-                return;
-            }
-
-            // Get Reference Image if available (data-base64 stored on element or we read input)
-            // Easier: read the file input directly if file was dragged, OR read the background image data uri
-            let referenceImageBase64 = null;
-            const refInput = refDropzone?.querySelector('input[type="file"]');
-
-            if (refDropzone && refDropzone.dataset.base64) {
-                referenceImageBase64 = refDropzone.dataset.base64;
-                console.log('Using reference image from cache');
-            }
-
-            // UI Loading State
-            const originalText = generateBtn.innerHTML;
-            generateBtn.disabled = true;
-            generateBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Gerando...';
+            // UI Feedback: Loading state
+            const originalBtnText = optimizeBtn.innerHTML;
+            optimizeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Otimizando (IA)...';
+            optimizeBtn.disabled = true;
 
             try {
-                console.log('Calling APIClient.generateCover...');
-                const imageUrl = await window.APIClient.generateCover(prompt, referenceImageBase64);
+                if (!window.supabaseClient) throw new Error("Supabase client not initialized");
 
-                // Update Main Dropzone
-                updateDropzonePreview(coverDropzone, imageUrl, 'image');
+                // Call Supabase Edge Function
+                const { data, error } = await window.supabaseClient.functions.invoke('optimize-manual', {
+                    body: { text }
+                });
 
-                // Persist (assuming updateDropzonePreview handles UI, we need to trigger state update)
-                // Since updateDropzonePreview is purely UI in some versions, let's ensure we call updateField
-                if (window.AutoBuilderForm && window.AutoBuilderForm.updateField) {
-                    // We might need to upload this remote URL to our server or save it?
-                    // For now, we set it as the value. The build system handles URLs.
-                    window.AutoBuilderForm.updateField('capa', imageUrl);
+                if (error) throw new Error(error.message);
+                if (!data || !data.html) throw new Error("No HTML returned from AI");
+
+                // Show fallback toast if GPT was used
+                if (data.usedFallback) {
+                    showToast('⚠️ Gemini falhou. Usado GPT-4o-mini como fallback.', 'warning');
                 }
 
-                alert('Capa gerada com sucesso!');
+                // Update Editors
+                htmlEditor.value = data.html;
+                preview.innerHTML = data.html;
 
-            } catch (error) {
-                console.error('Generation failed:', error);
-                alert(`Erro na geração: ${error.message}`);
+                // Trigger input event to save state if needed
+                htmlEditor.dispatchEvent(new Event('input'));
+
+            } catch (err) {
+                console.error('[Manual Optimizer] Error:', err);
+                alert('Erro ao otimizar texto: ' + err.message);
             } finally {
-                generateBtn.disabled = false;
-                generateBtn.innerHTML = originalText;
-                updateButtonState(); // refresh state
+                // Restore Button
+                optimizeBtn.innerHTML = originalBtnText;
+                optimizeBtn.disabled = false;
             }
         });
     }
+}
 
-    // ========================================
-    // Leaf Generation Logic (Blank Sheet)
-    // ========================================
-    function setupLeafGeneration() {
-        const generateBtn = document.getElementById('btn-generate-leaf');
-        const promptInput = document.getElementById('leaf-prompt');
-        const leafDropzone = document.getElementById('leaf-dropzone');
+// ========================================
+// Auto-Prompt Logic (Theme Integration)
+// ========================================
 
-        // Layer Processing Controls
-        const processBtn = document.getElementById('btn-process-layers');
-        const leafOnlyDropzone = document.getElementById('dropzone-leaf-only');
-        const bgOnlyDropzone = document.getElementById('dropzone-background-only');
+function setupAutoPromptListener() {
+    // Listen for internal state updates from Form
+    document.addEventListener('stateUpdated', (e) => {
+        const { field, value, state } = e.detail;
 
-        if (!generateBtn || !leafDropzone) return;
+        // Trigger when theme or colors change
+        if (field === 'tema' || field === 'event_theme' || field === 'paleta_cores') {
+            console.log('[Windows] Theme changed, refreshing prompts...');
+            refreshAnimationPrompts();
+        }
+    });
+}
 
-        // 1. Leaf Generation (Text-to-Image)
+function refreshAnimationPrompts() {
+    if (!window.AIPrompts) return;
+
+    // Intro Prompt
+    const introPrompt = window.AIPrompts.getOpeningVideoPrompt();
+    window.AIGeneration.setPrompt('intro', introPrompt);
+
+    // Loop Prompt
+    const loopPrompt = window.AIPrompts.getLoopVideoPrompt();
+    window.AIGeneration.setPrompt('loop', loopPrompt);
+
+    console.log('✨ Animation prompts updated based on new theme');
+}
+
+// ========================================
+// Cover Generation Logic (AI)
+// ========================================
+
+function setupCoverGeneration() {
+    const generateBtn = document.getElementById('btn-generate-cover');
+    const promptInput = document.getElementById('cover-prompt');
+    const coverDropzone = document.getElementById('cover-dropzone');
+    const refDropzone = document.getElementById('cover-reference-dropzone');
+
+    if (!generateBtn || !coverDropzone) return;
+
+    // update button text based on state
+    function updateButtonState() {
+        const hasCover = coverDropzone.style.backgroundImage && coverDropzone.style.backgroundImage !== 'none';
+        if (hasCover) {
+            generateBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Regenerar com IA';
+            generateBtn.classList.remove('from-brand-600', 'to-indigo-600');
+            generateBtn.classList.add('from-purple-600', 'to-pink-600');
+        } else {
+            generateBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Gerar com IA';
+            generateBtn.classList.add('from-brand-600', 'to-indigo-600');
+            generateBtn.classList.remove('from-purple-600', 'to-pink-600');
+        }
+    }
+
+    // Listen to changes on dropzone to update button
+    const observer = new MutationObserver(updateButtonState);
+    observer.observe(coverDropzone, { attributes: true, attributeFilter: ['style'] });
+    updateButtonState(); // init
+
+    generateBtn.addEventListener('click', async () => {
+        if (!window.APIClient) {
+            alert('Erro: API Client não carregado.');
+            return;
+        }
+
+        const prompt = promptInput.value || (window.getCoverPrompt ? window.getCoverPrompt() : '');
+        if (!prompt) {
+            alert('Por favor, digite um prompt ou preencha o formulário para auto-geração.');
+            promptInput.focus();
+            return;
+        }
+
+        // Get Reference Image if available (data-base64 stored on element or we read input)
+        // Easier: read the file input directly if file was dragged, OR read the background image data uri
+        let referenceImageBase64 = null;
+        const refInput = refDropzone?.querySelector('input[type="file"]');
+
+        if (refDropzone && refDropzone.dataset.base64) {
+            referenceImageBase64 = refDropzone.dataset.base64;
+            console.log('Using reference image from cache');
+        }
+
+        // UI Loading State
+        const originalText = generateBtn.innerHTML;
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Gerando...';
+
+        try {
+            console.log('Calling APIClient.generateCover...');
+            const imageUrl = await window.APIClient.generateCover(prompt, referenceImageBase64);
+
+            // Update Main Dropzone
+            updateDropzonePreview(coverDropzone, imageUrl, 'image');
+
+            // Persist (assuming updateDropzonePreview handles UI, we need to trigger state update)
+            // Since updateDropzonePreview is purely UI in some versions, let's ensure we call updateField
+            if (window.AutoBuilderForm && window.AutoBuilderForm.updateField) {
+                // We might need to upload this remote URL to our server or save it?
+                // For now, we set it as the value. The build system handles URLs.
+                window.AutoBuilderForm.updateField('capa', imageUrl);
+            }
+
+            alert('Capa gerada com sucesso!');
+
+        } catch (error) {
+            console.error('Generation failed:', error);
+            alert(`Erro na geração: ${error.message}`);
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = originalText;
+            updateButtonState(); // refresh state
+        }
+    });
+}
+
+// ========================================
+// Leaf Generation Logic (Blank Sheet)
+// ========================================
+function setupLeafGeneration() {
+    const generateBtn = document.getElementById('btn-generate-leaf');
+    const promptInput = document.getElementById('leaf-prompt');
+    const leafDropzone = document.getElementById('leaf-dropzone');
+
+    // Layer Processing Controls
+    const processBtn = document.getElementById('btn-process-layers');
+    const leafOnlyDropzone = document.getElementById('dropzone-leaf-only');
+    const bgOnlyDropzone = document.getElementById('dropzone-background-only');
+
+    if (!generateBtn || !leafDropzone) return;
+
+    // 1. Leaf Generation (Text-to-Image)
+    generateBtn.addEventListener('click', async () => {
+        if (!window.APIClient) {
+            alert('Erro: API Client não carregado.');
+            return;
+        }
+
+        const prompt = promptInput.value || (window.AIPrompts ? window.AIPrompts.getBlankSheetPrompt() : '');
+        if (!prompt) {
+            alert('Por favor, digite um prompt ou certifique-se que o módulo de prompts está carregado.');
+            promptInput?.focus();
+            return;
+        }
+
+        // UI Loading State
+        const originalText = generateBtn.innerHTML;
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Gerando...';
+
+        try {
+            // Call API
+            const imageUrl = await window.APIClient.generateLeaf(prompt);
+
+            // Update UI
+            updateDropzonePreview(leafDropzone, imageUrl);
+
+            // Update Form Logic
+            // Assuming AutoBuilderForm is global and handles 'calda' or 'folha'
+            if (window.AutoBuilderForm) {
+                window.AutoBuilderForm.updateField('folha', imageUrl);
+            }
+
+        } catch (error) {
+            console.error('Leaf Generation failed:', error);
+            alert(`Erro na geração: ${error.message}`);
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = originalText;
+        }
+    });
+
+    // 2. Treatment Pipeline (Separate Layers: Leaf Only + Background Only)
+    if (processBtn) {
+        processBtn.addEventListener('click', async () => {
+            if (!window.APIClient) return;
+
+            // Check if we have a leaf image to process
+            const leafImage = leafDropzone.style.backgroundImage;
+            if (!leafImage || leafImage === 'none') {
+                alert('Por favor, gere ou faça upload de uma Folha Vazia primeiro.');
+                return;
+            }
+
+            // Get URL from background-image url("...")
+            let leafUrl = leafImage.slice(4, -1).replace(/"/g, "");
+
+            // If it's a blob URL, we might need to convert it to base64 for the API
+            // For now, let's assume APIClient handles it or logic helper does.
+            // NOTE: APIClient expects Base64 or Public URL. Blob URLs won't work remotely.
+            // We need to fetch the blob and convert to base64.
+
+            const originalText = processBtn.innerHTML;
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processando...';
+
+            try {
+                // Convert to base64 if needed
+                let base64Input = leafUrl;
+                if (leafUrl.startsWith('blob:') || leafUrl.startsWith('http')) {
+                    const resp = await fetch(leafUrl);
+                    const blob = await resp.blob();
+                    base64Input = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result); // Helper
+                        reader.readAsDataURL(blob);
+                    });
+                }
+
+                // A. Remove Background (Get Leaf Only)
+                const leafOnlyUrl = await window.APIClient.removeBackground(base64Input);
+                if (leafOnlyDropzone) updateDropzonePreview(leafOnlyDropzone, leafOnlyUrl);
+                if (window.AutoBuilderForm) window.AutoBuilderForm.updateField('folha_only', leafOnlyUrl);
+
+                // B. Inpaint (Get Background Only)
+                try {
+                    console.log('Generating mask for inpainting...');
+
+                    // 1. Create Mask from Leaf Only (Alpha Channel)
+                    const maskDataUrl = await createMaskFromImage(leafOnlyUrl);
+
+                    // 2. Call Inpaint API
+                    // Prompt: "clean background, empty table, no paper, elegant texture"
+                    // Trigger Inpaint to remove the leaf area defined by mask
+                    const backgroundOnlyUrl = await window.APIClient.inpaint(
+                        base64Input, // Original Image
+                        maskDataUrl, // Mask (White = area to remove/change)
+                        "clean background, texture, empty surface, high quality, consistent lighting"
+                    );
+
+                    // 3. Update UI
+                    if (bgOnlyDropzone) updateDropzonePreview(bgOnlyDropzone, backgroundOnlyUrl);
+                    if (window.AutoBuilderForm) window.AutoBuilderForm.updateField('background_only', backgroundOnlyUrl);
+
+                } catch (bgError) {
+                    console.error('Background Generation check failed:', bgError);
+                    // Don't block whole flow if masking fails, but log it.
+                    alert('Folha separada, mas houve erro ao gerar o background limpo: ' + bgError.message);
+                }
+
+            } catch (error) {
+                console.error('Treatment failed:', error);
+                alert(`Erro no tratamento: ${error.message}`);
+            } finally {
+                processBtn.disabled = false;
+                processBtn.innerHTML = originalText;
+            }
+        });
+    }
+}
+
+/**
+ * Helper: Create a binary mask from a transparent image.
+ * White = Non-Transparent (Subject) -> Area to Inpaint/Remove
+ * Black = Transparent (Background) -> Keep
+ */
+function createMaskFromImage(imageUrl) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+
+            // Draw image
+            ctx.drawImage(img, 0, 0);
+
+            // Get pixel data
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            // Loop through pixels
+            for (let i = 0; i < data.length; i += 4) {
+                const alpha = data[i + 3];
+
+                // If pixel has opacity (is part of leaf) -> Make it WHITE (Target for Inpaint)
+                // If pixel is transparent -> Make it BLACK (Keep original background)
+                if (alpha > 10) {
+                    data[i] = 255;     // R
+                    data[i + 1] = 255; // G
+                    data[i + 2] = 255; // B
+                    data[i + 3] = 255; // Alpha
+                } else {
+                    data[i] = 0;
+                    data[i + 1] = 0;
+                    data[i + 2] = 0;
+                    data[i + 3] = 255; // Alpha (Opaque black)
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = (err) => reject(err);
+        img.src = imageUrl;
+    });
+}
+
+
+/**
+ * Setup Process Buttons (Generate Leaf, Treatment)
+ */
+function setupProcessButtons() {
+    const generateBtn = document.getElementById('btn-generate-leaf');
+    const processBtn = document.getElementById('btn-process-complete');
+    const promptInput = document.getElementById('leaf-prompt');
+
+    const leafDropzone = document.getElementById('dropzone-folha');
+    const leafOnlyDropzone = document.getElementById('dropzone-folha-only');
+    const bgOnlyDropzone = document.getElementById('dropzone-background-only');
+
+    // 1. Generate Leaf
+    if (generateBtn) {
         generateBtn.addEventListener('click', async () => {
             if (!window.APIClient) {
                 alert('Erro: API Client não carregado.');
@@ -3055,7 +3223,6 @@
                 updateDropzonePreview(leafDropzone, imageUrl);
 
                 // Update Form Logic
-                // Assuming AutoBuilderForm is global and handles 'calda' or 'folha'
                 if (window.AutoBuilderForm) {
                     window.AutoBuilderForm.updateField('folha', imageUrl);
                 }
@@ -3068,359 +3235,177 @@
                 generateBtn.innerHTML = originalText;
             }
         });
-
-        // 2. Treatment Pipeline (Separate Layers: Leaf Only + Background Only)
-        if (processBtn) {
-            processBtn.addEventListener('click', async () => {
-                if (!window.APIClient) return;
-
-                // Check if we have a leaf image to process
-                const leafImage = leafDropzone.style.backgroundImage;
-                if (!leafImage || leafImage === 'none') {
-                    alert('Por favor, gere ou faça upload de uma Folha Vazia primeiro.');
-                    return;
-                }
-
-                // Get URL from background-image url("...")
-                let leafUrl = leafImage.slice(4, -1).replace(/"/g, "");
-
-                // If it's a blob URL, we might need to convert it to base64 for the API
-                // For now, let's assume APIClient handles it or logic helper does.
-                // NOTE: APIClient expects Base64 or Public URL. Blob URLs won't work remotely.
-                // We need to fetch the blob and convert to base64.
-
-                const originalText = processBtn.innerHTML;
-                processBtn.disabled = true;
-                processBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processando...';
-
-                try {
-                    // Convert to base64 if needed
-                    let base64Input = leafUrl;
-                    if (leafUrl.startsWith('blob:') || leafUrl.startsWith('http')) {
-                        const resp = await fetch(leafUrl);
-                        const blob = await resp.blob();
-                        base64Input = await new Promise((resolve) => {
-                            const reader = new FileReader();
-                            reader.onloadend = () => resolve(reader.result); // Helper
-                            reader.readAsDataURL(blob);
-                        });
-                    }
-
-                    // A. Remove Background (Get Leaf Only)
-                    const leafOnlyUrl = await window.APIClient.removeBackground(base64Input);
-                    if (leafOnlyDropzone) updateDropzonePreview(leafOnlyDropzone, leafOnlyUrl);
-                    if (window.AutoBuilderForm) window.AutoBuilderForm.updateField('folha_only', leafOnlyUrl);
-
-                    // B. Inpaint (Get Background Only)
-                    try {
-                        console.log('Generating mask for inpainting...');
-
-                        // 1. Create Mask from Leaf Only (Alpha Channel)
-                        const maskDataUrl = await createMaskFromImage(leafOnlyUrl);
-
-                        // 2. Call Inpaint API
-                        // Prompt: "clean background, empty table, no paper, elegant texture"
-                        // Trigger Inpaint to remove the leaf area defined by mask
-                        const backgroundOnlyUrl = await window.APIClient.inpaint(
-                            base64Input, // Original Image
-                            maskDataUrl, // Mask (White = area to remove/change)
-                            "clean background, texture, empty surface, high quality, consistent lighting"
-                        );
-
-                        // 3. Update UI
-                        if (bgOnlyDropzone) updateDropzonePreview(bgOnlyDropzone, backgroundOnlyUrl);
-                        if (window.AutoBuilderForm) window.AutoBuilderForm.updateField('background_only', backgroundOnlyUrl);
-
-                    } catch (bgError) {
-                        console.error('Background Generation check failed:', bgError);
-                        // Don't block whole flow if masking fails, but log it.
-                        alert('Folha separada, mas houve erro ao gerar o background limpo: ' + bgError.message);
-                    }
-
-                } catch (error) {
-                    console.error('Treatment failed:', error);
-                    alert(`Erro no tratamento: ${error.message}`);
-                } finally {
-                    processBtn.disabled = false;
-                    processBtn.innerHTML = originalText;
-                }
-            });
-        }
     }
 
-    /**
-     * Helper: Create a binary mask from a transparent image.
-     * White = Non-Transparent (Subject) -> Area to Inpaint/Remove
-     * Black = Transparent (Background) -> Keep
-     */
-    function createMaskFromImage(imageUrl) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.crossOrigin = "Anonymous";
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
+    // 2. Treatment Pipeline
+    if (processBtn) {
+        processBtn.addEventListener('click', async () => {
+            if (!window.APIClient) return;
 
-                // Draw image
-                ctx.drawImage(img, 0, 0);
-
-                // Get pixel data
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
-
-                // Loop through pixels
-                for (let i = 0; i < data.length; i += 4) {
-                    const alpha = data[i + 3];
-
-                    // If pixel has opacity (is part of leaf) -> Make it WHITE (Target for Inpaint)
-                    // If pixel is transparent -> Make it BLACK (Keep original background)
-                    if (alpha > 10) {
-                        data[i] = 255;     // R
-                        data[i + 1] = 255; // G
-                        data[i + 2] = 255; // B
-                        data[i + 3] = 255; // Alpha
-                    } else {
-                        data[i] = 0;
-                        data[i + 1] = 0;
-                        data[i + 2] = 0;
-                        data[i + 3] = 255; // Alpha (Opaque black)
-                    }
-                }
-
-                ctx.putImageData(imageData, 0, 0);
-                resolve(canvas.toDataURL('image/png'));
-            };
-            img.onerror = (err) => reject(err);
-            img.src = imageUrl;
-        });
-    }
-
-
-    /**
-     * Setup Process Buttons (Generate Leaf, Treatment)
-     */
-    function setupProcessButtons() {
-        const generateBtn = document.getElementById('btn-generate-leaf');
-        const processBtn = document.getElementById('btn-process-complete');
-        const promptInput = document.getElementById('leaf-prompt');
-
-        const leafDropzone = document.getElementById('dropzone-folha');
-        const leafOnlyDropzone = document.getElementById('dropzone-folha-only');
-        const bgOnlyDropzone = document.getElementById('dropzone-background-only');
-
-        // 1. Generate Leaf
-        if (generateBtn) {
-            generateBtn.addEventListener('click', async () => {
-                if (!window.APIClient) {
-                    alert('Erro: API Client não carregado.');
-                    return;
-                }
-
-                const prompt = promptInput.value || (window.AIPrompts ? window.AIPrompts.getBlankSheetPrompt() : '');
-                if (!prompt) {
-                    alert('Por favor, digite um prompt ou certifique-se que o módulo de prompts está carregado.');
-                    promptInput?.focus();
-                    return;
-                }
-
-                // UI Loading State
-                const originalText = generateBtn.innerHTML;
-                generateBtn.disabled = true;
-                generateBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Gerando...';
-
-                try {
-                    // Call API
-                    const imageUrl = await window.APIClient.generateLeaf(prompt);
-
-                    // Update UI
-                    updateDropzonePreview(leafDropzone, imageUrl);
-
-                    // Update Form Logic
-                    if (window.AutoBuilderForm) {
-                        window.AutoBuilderForm.updateField('folha', imageUrl);
-                    }
-
-                } catch (error) {
-                    console.error('Leaf Generation failed:', error);
-                    alert(`Erro na geração: ${error.message}`);
-                } finally {
-                    generateBtn.disabled = false;
-                    generateBtn.innerHTML = originalText;
-                }
-            });
-        }
-
-        // 2. Treatment Pipeline
-        if (processBtn) {
-            processBtn.addEventListener('click', async () => {
-                if (!window.APIClient) return;
-
-                // Check if we have a leaf image to process
-                const leafImage = leafDropzone.style.backgroundImage;
-                if (!leafImage || leafImage === 'none') {
-                    alert('Por favor, gere ou faça upload de uma Folha Vazia primeiro.');
-                    return;
-                }
-
-                // Get URL from background-image url("...")
-                let leafUrl = leafImage.slice(4, -1).replace(/"/g, "");
-
-                const originalText = processBtn.innerHTML;
-                processBtn.disabled = true;
-                processBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processando...';
-
-                try {
-                    // Convert to base64 if needed
-                    let base64Input = leafUrl;
-                    if (leafUrl.startsWith('blob:') || leafUrl.startsWith('http')) {
-                        const resp = await fetch(leafUrl);
-                        const blob = await resp.blob();
-                        base64Input = await new Promise((resolve) => {
-                            const reader = new FileReader();
-                            reader.onloadend = () => resolve(reader.result); // Helper
-                            reader.readAsDataURL(blob);
-                        });
-                    }
-
-                    // A. Remove Background (Get Leaf Only)
-                    const leafOnlyUrl = await window.APIClient.removeBackground(base64Input);
-                    if (leafOnlyDropzone) updateDropzonePreview(leafOnlyDropzone, leafOnlyUrl);
-                    if (window.AutoBuilderForm) window.AutoBuilderForm.updateField('folha_only', leafOnlyUrl);
-
-                    // B. Inpaint (Get Background Only)
-                    try {
-                        const maskDataUrl = await createMaskFromImage(leafOnlyUrl);
-
-                        const backgroundOnlyUrl = await window.APIClient.inpaint(
-                            base64Input, // Original Image
-                            maskDataUrl, // Mask
-                            "clean background, texture, empty surface, high quality, consistent lighting"
-                        );
-
-                        if (bgOnlyDropzone) updateDropzonePreview(bgOnlyDropzone, backgroundOnlyUrl);
-                        if (window.AutoBuilderForm) window.AutoBuilderForm.updateField('background_only', backgroundOnlyUrl);
-
-                    } catch (bgError) {
-                        console.error('Background Generation check failed:', bgError);
-                        alert('Folha separada, mas houve erro ao gerar o background limpo: ' + bgError.message);
-                    }
-
-                } catch (error) {
-                    console.error('Treatment failed:', error);
-                    alert(`Erro no tratamento: ${error.message}`);
-                } finally {
-                    processBtn.disabled = false;
-                    processBtn.innerHTML = originalText;
-                }
-            });
-        }
-    }
-
-
-    async function initWindows() {
-        console.log('[Windows] Initializing...');
-
-        try {
-            try {
-                setupDropzones();
-                console.log('[Windows] Dropzones setup complete.');
-            } catch (err) {
-                console.error('[Windows] Failed to setup dropzones:', err);
+            // Check if we have a leaf image to process
+            const leafImage = leafDropzone.style.backgroundImage;
+            if (!leafImage || leafImage === 'none') {
+                alert('Por favor, gere ou faça upload de uma Folha Vazia primeiro.');
+                return;
             }
 
-            // Independent blocks wrapped to prevent cascading failures
-            try { setupProcessButtons(); } catch (e) { console.warn('Process Buttons setup failed', e); }
+            // Get URL from background-image url("...")
+            let leafUrl = leafImage.slice(4, -1).replace(/"/g, "");
 
-            // Mode toggles
-            try { setupModeToggle('manual', ['text', 'image']); } catch (e) { console.warn('Manual Mode setup failed', e); }
-            try { setupModeToggle('gifts', ['link', 'image']); } catch (e) { console.warn('Gifts Mode setup failed', e); }
-            try { setupModeToggle('fill', ['overlay', 'flat']); } catch (e) { console.warn('Fill Mode setup failed', e); }
+            const originalText = processBtn.innerHTML;
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processando...';
 
-            // Animation tabs
-            try { setupAnimationTabs(); } catch (e) { console.warn('Animation Tabs setup failed', e); }
+            try {
+                // Convert to base64 if needed
+                let base64Input = leafUrl;
+                if (leafUrl.startsWith('blob:') || leafUrl.startsWith('http')) {
+                    const resp = await fetch(leafUrl);
+                    const blob = await resp.blob();
+                    base64Input = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result); // Helper
+                        reader.readAsDataURL(blob);
+                    });
+                }
 
-            // Auto-Prompt Listener
-            try { setupAutoPromptListener(); } catch (e) { console.warn('AutoPrompt setup failed', e); }
+                // A. Remove Background (Get Leaf Only)
+                const leafOnlyUrl = await window.APIClient.removeBackground(base64Input);
+                if (leafOnlyDropzone) updateDropzonePreview(leafOnlyDropzone, leafOnlyUrl);
+                if (window.AutoBuilderForm) window.AutoBuilderForm.updateField('folha_only', leafOnlyUrl);
 
-            // Music player
-            try { setupMusicPlayer(); } catch (e) { console.warn('Music Player setup failed', e); }
+                // B. Inpaint (Get Background Only)
+                try {
+                    const maskDataUrl = await createMaskFromImage(leafOnlyUrl);
 
-            // Toggle switches
-            try { setupToggleSwitches(); } catch (e) { console.warn('Toggle Switches setup failed', e); }
+                    const backgroundOnlyUrl = await window.APIClient.inpaint(
+                        base64Input, // Original Image
+                        maskDataUrl, // Mask
+                        "clean background, texture, empty surface, high quality, consistent lighting"
+                    );
 
-            // Finalize buttons
-            try { setupFinalizeButtons(); } catch (e) { console.warn('Finalize Buttons setup failed', e); }
+                    if (bgOnlyDropzone) updateDropzonePreview(bgOnlyDropzone, backgroundOnlyUrl);
+                    if (window.AutoBuilderForm) window.AutoBuilderForm.updateField('background_only', backgroundOnlyUrl);
 
-            // AI generation buttons - CRITICAL: This sets up click handlers for all AI buttons including intro/loop
-            try { setupAIButtons(); } catch (e) { console.warn('AI Buttons setup failed', e); }
-            try { setupCoverGeneration(); } catch (e) { console.warn('Cover Gen setup failed', e); }
-            try { setupLeafGeneration(); } catch (e) { console.warn('Leaf Gen setup failed', e); }
+                } catch (bgError) {
+                    console.error('Background Generation check failed:', bgError);
+                    alert('Folha separada, mas houve erro ao gerar o background limpo: ' + bgError.message);
+                }
 
-            // Manual editor
-            try { setupManualEditor(); } catch (e) { console.warn('Manual Editor setup failed', e); }
+            } catch (error) {
+                console.error('Treatment failed:', error);
+                alert(`Erro no tratamento: ${error.message}`);
+            } finally {
+                processBtn.disabled = false;
+                processBtn.innerHTML = originalText;
+            }
+        });
+    }
+}
 
-            // Initialize default prompts for animation if fields are empty
-            try { initializeDefaultPrompts(); } catch (e) { console.warn('Default Prompts setup failed', e); }
 
-            console.log('✅ Windows controller initialized');
-        } catch (fatalError) {
-            console.error('[Windows] CRITICAL INITIALIZATION ERROR:', fatalError);
+async function initWindows() {
+    console.log('[Windows] Initializing...');
+
+    try {
+        try {
+            setupDropzones();
+            console.log('[Windows] Dropzones setup complete.');
+        } catch (err) {
+            console.error('[Windows] Failed to setup dropzones:', err);
         }
+
+        // Independent blocks wrapped to prevent cascading failures
+        try { setupProcessButtons(); } catch (e) { console.warn('Process Buttons setup failed', e); }
+
+        // Mode toggles
+        try { setupModeToggle('manual', ['text', 'image']); } catch (e) { console.warn('Manual Mode setup failed', e); }
+        try { setupModeToggle('gifts', ['link', 'image']); } catch (e) { console.warn('Gifts Mode setup failed', e); }
+        try { setupModeToggle('fill', ['overlay', 'flat']); } catch (e) { console.warn('Fill Mode setup failed', e); }
+
+        // Animation tabs
+        try { setupAnimationTabs(); } catch (e) { console.warn('Animation Tabs setup failed', e); }
+
+        // Auto-Prompt Listener
+        try { setupAutoPromptListener(); } catch (e) { console.warn('AutoPrompt setup failed', e); }
+
+        // Music player
+        try { setupMusicPlayer(); } catch (e) { console.warn('Music Player setup failed', e); }
+
+        // Toggle switches
+        try { setupToggleSwitches(); } catch (e) { console.warn('Toggle Switches setup failed', e); }
+
+        // Finalize buttons
+        try { setupFinalizeButtons(); } catch (e) { console.warn('Finalize Buttons setup failed', e); }
+
+        // AI generation buttons - CRITICAL: This sets up click handlers for all AI buttons including intro/loop
+        try { setupAIButtons(); } catch (e) { console.warn('AI Buttons setup failed', e); }
+        try { setupCoverGeneration(); } catch (e) { console.warn('Cover Gen setup failed', e); }
+        try { setupLeafGeneration(); } catch (e) { console.warn('Leaf Gen setup failed', e); }
+
+        // Manual editor
+        try { setupManualEditor(); } catch (e) { console.warn('Manual Editor setup failed', e); }
+
+        // Initialize default prompts for animation if fields are empty
+        try { initializeDefaultPrompts(); } catch (e) { console.warn('Default Prompts setup failed', e); }
+
+        console.log('✅ Windows controller initialized');
+    } catch (fatalError) {
+        console.error('[Windows] CRITICAL INITIALIZATION ERROR:', fatalError);
+    }
+}
+
+/**
+ * Initialize default prompts for animation fields if they are empty.
+ * This ensures users always have a good starting point.
+ */
+function initializeDefaultPrompts() {
+    if (!window.AIPrompts) {
+        console.warn('[Windows] AIPrompts not loaded, skipping default prompt initialization');
+        return;
     }
 
-    /**
-     * Initialize default prompts for animation fields if they are empty.
-     * This ensures users always have a good starting point.
-     */
-    function initializeDefaultPrompts() {
-        if (!window.AIPrompts) {
-            console.warn('[Windows] AIPrompts not loaded, skipping default prompt initialization');
-            return;
-        }
+    const introPromptEl = document.getElementById('intro-motion-prompt');
+    const loopPromptEl = document.getElementById('loop-motion-prompt');
 
-        const introPromptEl = document.getElementById('intro-motion-prompt');
-        const loopPromptEl = document.getElementById('loop-motion-prompt');
-
-        // Only populate if the field is truly empty (not if user cleared it intentionally via persistence)
-        // We check if the field is empty AND there's no persisted state for it
-        if (introPromptEl && !introPromptEl.value.trim()) {
-            const defaultIntroPrompt = window.AIPrompts.getOpeningVideoPrompt();
-            introPromptEl.value = defaultIntroPrompt;
-            console.log('[Windows] Initialized intro prompt with default');
-        }
-
-        if (loopPromptEl && !loopPromptEl.value.trim()) {
-            const defaultLoopPrompt = window.AIPrompts.getLoopVideoPrompt();
-            loopPromptEl.value = defaultLoopPrompt;
-            console.log('[Windows] Initialized loop prompt with default');
-        }
+    // Only populate if the field is truly empty (not if user cleared it intentionally via persistence)
+    // We check if the field is empty AND there's no persisted state for it
+    if (introPromptEl && !introPromptEl.value.trim()) {
+        const defaultIntroPrompt = window.AIPrompts.getOpeningVideoPrompt();
+        introPromptEl.value = defaultIntroPrompt;
+        console.log('[Windows] Initialized intro prompt with default');
     }
 
-    // ========================================
-    // Initialize on DOM Ready
-    // ========================================
-    // ========================================
-    // Expose to Global Scope
-    // ========================================
-    window.updateDropzonePreview = updateDropzonePreview;
-
-    // Auto-init
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initWindows);
-    } else {
-        initWindows();
+    if (loopPromptEl && !loopPromptEl.value.trim()) {
+        const defaultLoopPrompt = window.AIPrompts.getLoopVideoPrompt();
+        loopPromptEl.value = defaultLoopPrompt;
+        console.log('[Windows] Initialized loop prompt with default');
     }
+}
 
-    // ========================================
-    // Expose to Global Scope
-    // ========================================
-    window.AutoBuilderWindows = {
-        setupModeToggle,
-        setupAnimationTabs,
-        setupMusicPlayer
-    };
+// ========================================
+// Initialize on DOM Ready
+// ========================================
+// ========================================
+// Expose to Global Scope
+// ========================================
+window.updateDropzonePreview = updateDropzonePreview;
 
-    console.log('[Windows] Init Complete.');
-})();
+// Auto-init
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWindows);
+} else {
+    initWindows();
+}
+
+// ========================================
+// Expose to Global Scope
+// ========================================
+window.AutoBuilderWindows = {
+    setupModeToggle,
+    setupAnimationTabs,
+    setupMusicPlayer
+};
+
+console.log('[Windows] Init Complete.');
+}) ();
