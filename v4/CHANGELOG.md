@@ -4,6 +4,14 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 19:35] - v4.3.29 - Fix Definitive 2.0: Presentes (Hidden DOM)
+### Arquivos Modificados:
+*   `static/js/preview.js`:
+    *   **Inline Style Check**: Alterado para checar `element.style.backgroundImage` em vez de `getComputedStyle`.
+    *   **Motivo**: `getComputedStyle` retorna `none` ou vazio se o elemento pai (aba) estiver oculto (`display: none`). Checar o estilo inline garante que detectamos a imagem mesmo se o usuário estiver em outra aba.
+
+---
+
 ## [16/01/2026 - 19:10] - v4.3.28 - Fix Definitive: Presentes (DOM Truth)
 ### Arquivos Modificados:
 *   `static/js/preview.js`:
