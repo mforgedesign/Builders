@@ -1134,6 +1134,152 @@
             });
         }
 
+        // Bind "Local Import" (Folder/ZIP)
+        const localImportBtn = document.getElementById('btn-local-import');
+        const localImportInput = document.getElementById('local-import-input');
+
+        if (localImportBtn && localImportInput) {
+            localImportBtn.addEventListener('click', () => {
+                localImportInput.click();
+            });
+
+            localImportInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Reset input
+                localImportInput.value = '';
+
+                console.log(`[Import] Selected file: ${file.name}`);
+
+                // Show loading
+                document.body.style.cursor = 'wait';
+                const originalText = localImportBtn.innerHTML;
+                localImportBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Importando...';
+
+                try {
+                    // Check for JSZip
+                    if (!window.JSZip) {
+                        throw new Error('JSZip library not loaded');
+                    }
+
+                    const zip = new JSZip();
+                    const zipContent = await zip.loadAsync(file);
+
+                    console.log('[Import] ZIP loaded, analyzing contents...');
+
+                    // 1. Look for Data
+                    let appState = null;
+                    let isCompatible = false;
+                    const dataFile = zipContent.file('data.json') || zipContent.file('form_data.json');
+                    const indexFile = zipContent.file('index.html');
+
+                    // Content extraction
+                    let jsonContentStr = '';
+                    let htmlContent = '';
+
+                    if (dataFile) {
+                        jsonContentStr = await dataFile.async('string');
+                        try {
+                            const parsed = JSON.parse(jsonContentStr);
+                            if ((parsed.version && parseFloat(parsed.version) >= 4.0) || (parsed.assetsMap && parsed.assetsMap.fundo_tela)) {
+                                appState = parsed;
+                                isCompatible = true;
+                                console.log('[Import] Compatible V4+ JSON found');
+                            }
+                        } catch (e) { console.warn('JSON Parse Error', e); }
+                    }
+
+                    // 2. If valid V4 data, direct load
+                    if (isCompatible && appState) {
+                        // Pass zip context for asset hydration
+                        await window.restoreBuilderState(appState, zipContent);
+                        if (window.showToast) window.showToast('Convite importado com sucesso!', 'success');
+                    } else {
+                        // 3. AI Import Strategy (Legacy)
+                        console.log('[Import] Legacy format detected. Initiating AI Analysis...');
+
+                        if (indexFile) htmlContent = await indexFile.async('string');
+
+                        // Detect assets for Visual Context
+                        // Look for filled sheet images (folha*, background*, etc)
+                        let visualContext = null;
+                        const validExts = ['.jpg', '.jpeg', '.png', '.webp'];
+
+                        // Find first image that looks like a filled sheet
+                        const visualFile = Object.values(zipContent.files).find(f => {
+                            if (f.dir) return false;
+                            const lower = f.name.toLowerCase();
+                            return validExts.some(ext => lower.endsWith(ext)) &&
+                                (lower.includes('folha') || lower.includes('background') || lower.includes('fundo'));
+                        });
+
+                        if (visualFile) {
+                            const blob = await visualFile.async('blob');
+                            const base64 = await new Promise((resolve) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result);
+                                reader.readAsDataURL(blob);
+                            });
+                            visualContext = { type: 'image', base64: base64 };
+                            console.log(`[Import] Found visual context: ${visualFile.name}`);
+                        }
+
+                        // Prepare Payload for AI
+                        const payload = {
+                            htmlContent,
+                            jsonContent: jsonContentStr,
+                            fileList: Object.keys(zipContent.files),
+                            visualContext
+                        };
+
+                        if (window.GeminiAdapter) {
+                            // Use GeminiAdapter (which will bridge to GPT via Edge Function)
+                            const aiData = await window.GeminiAdapter.analyzeRepository(payload);
+
+                            // Map assets from ZIP to appState
+                            // Simple mapping strategy for ZIP
+                            if (!aiData.assetsMap) aiData.assetsMap = {};
+
+                            // Try to map basic assets from ZIP files
+                            const contexts = {
+                                'capa': ['capa', 'cover'],
+                                'folha_vazia': ['folha', 'sheet', 'leaf', 'background'],
+                                'fundo_tela': ['fundo', 'background', 'bg', 'loop'],
+                                'vid_abertura': ['intro', 'abertura'],
+                                'musica': ['musica', 'music']
+                            };
+
+                            Object.keys(zipContent.files).forEach(path => {
+                                const lower = path.toLowerCase();
+                                for (const [ctx, keywords] of Object.entries(contexts)) {
+                                    if (!aiData.assetsMap[ctx] && keywords.some(k => lower.includes(k))) {
+                                        aiData.assetsMap[ctx] = path; // In ZIP, path is key
+                                    }
+                                }
+                            });
+
+                            await window.restoreBuilderState(aiData, zipContent);
+                            if (window.showToast) window.showToast('Convite legado convertido com I.A!', 'success');
+                        } else {
+                            throw new Error('Módulo de I.A não disponível');
+                        }
+                    }
+
+                    // Go to Form
+                    document.querySelector('[data-window="form"]')?.click();
+
+                } catch (error) {
+                    console.error('[Import] Error:', error);
+                    alert('Erro na importação: ' + error.message);
+                } finally {
+                    localImportBtn.innerHTML = originalText;
+                    document.body.style.cursor = 'default';
+                }
+            });
+        }
+
+
         // ----------------------------------------
         // 1. PREVIEW LOCAL (Client-Side)
         // ----------------------------------------
