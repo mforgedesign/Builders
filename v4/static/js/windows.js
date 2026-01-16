@@ -894,6 +894,12 @@
         if (appState.assetsMap) {
             const promises = Object.entries(appState.assetsMap).map(async ([context, path]) => {
                 try {
+                    // Skip null/undefined paths (AI may return null for missing assets)
+                    if (!path) {
+                        console.warn(`[Restore] Skipping null path for asset: ${context}`);
+                        return;
+                    }
+
                     let blob = null;
                     let url = null;
 
