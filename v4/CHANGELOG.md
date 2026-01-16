@@ -4,6 +4,20 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 17:20] - v4.3.21 - Deploy Debug
+### Ações Realizadas:
+*   **Deploy**: Execução do script `deploy_to_github.py` para atualizar a versão com logs de debug.
+*   **URL**: https://builder.mforge.com.br/v4/
+
+---
+
+## [16/01/2026 - 17:15] - v4.3.21 - Debug Preview Button
+### Arquivos Modificados:
+*   `static/js/preview.js`:
+    *   **Debug**: Adicionado log detalhado em `isButtonVisible` para rastrear estado do botão "Presentes" (Link vs Media).
+
+---
+
 ## [16/01/2026 - 17:00] - v4.3.20 - Deploy Manual
 ### Ações Realizadas:
 *   **Deploy**: Execução do script `deploy_to_github.py` para atualizar a versão em produção no repositório `mforgedesign/Builders`.
