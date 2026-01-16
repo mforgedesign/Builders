@@ -240,7 +240,6 @@
             if (base64) {
                 await saveAssetToDB(context, base64);
                 console.log(`[Persistence] Asset saved: ${context} (${(base64.length / 1024).toFixed(1)}KB)`);
-                // alert removed
             }
         } catch (e) {
             console.error(`[Persistence] Failed to process asset ${context}:`, e);
@@ -252,45 +251,50 @@
     // ========================================
 
     async function restoreState() {
+        console.log('[Persistence] ♻️ Starting Restore Sequence...');
+
         try {
             // 1. Restore Form Data from localStorage
             const savedRaw = localStorage.getItem(STORAGE_KEY);
             let savedState = null;
 
             if (savedRaw) {
-                savedState = JSON.parse(savedRaw);
-                console.log('[Persistence] Found form state from:', new Date(savedState.timestamp).toLocaleString());
+                try {
+                    savedState = JSON.parse(savedRaw);
+                    console.log(`[Persistence] 📄 Found Form Data (${new Date(savedState.timestamp).toLocaleString()})`);
 
-                if (savedState.formData) {
-                    document.dispatchEvent(new CustomEvent('stateUpdated', {
-                        detail: { source: 'persistence', data: savedState }
-                    }));
-                }
-
-                // Restore Extra Links
-                if (savedState.linksExtras && window.AutoBuilderLinksExtras) {
-                    console.log('[Persistence] Restoring extra links...');
-                    if (window.builderState) {
-                        window.builderState.linksExtras = [...savedState.linksExtras];
+                    if (savedState.formData) {
+                        document.dispatchEvent(new CustomEvent('stateUpdated', {
+                            detail: { source: 'persistence', data: savedState }
+                        }));
                     }
-                    window.AutoBuilderLinksExtras.populateLinks(savedState.linksExtras);
-                    document.dispatchEvent(new CustomEvent('linksExtrasUpdated', {
-                        detail: { links: savedState.linksExtras }
-                    }));
-                }
 
-                // Restore Toggles
-                if (savedState.toggles) {
-                    console.log('[Persistence] Restoring toggles:', savedState.toggles);
-                    if (savedState.toggles.manualMode) document.getElementById(`manual-mode-${savedState.toggles.manualMode}`)?.click();
-                    if (savedState.toggles.giftsMode) document.getElementById(`gifts-mode-${savedState.toggles.giftsMode}`)?.click();
-                    // fillMode toggle removed - unified approach
-
-                    const animateToggle = document.getElementById('animate-background-toggle');
-                    if (animateToggle && savedState.toggles.animateBackground !== undefined) {
-                        animateToggle.checked = savedState.toggles.animateBackground;
-                        animateToggle.dispatchEvent(new Event('change'));
+                    // Restore Extra Links
+                    if (savedState.linksExtras && window.AutoBuilderLinksExtras) {
+                        if (window.builderState) {
+                            window.builderState.linksExtras = [...savedState.linksExtras];
+                        }
+                        window.AutoBuilderLinksExtras.populateLinks(savedState.linksExtras);
+                        document.dispatchEvent(new CustomEvent('linksExtrasUpdated', {
+                            detail: { links: savedState.linksExtras }
+                        }));
                     }
+
+                    // Restore Toggles
+                    if (savedState.toggles) {
+                        const { manualMode, giftsMode, animateBackground } = savedState.toggles;
+
+                        if (manualMode) document.getElementById(`manual-mode-${manualMode}`)?.click();
+                        if (giftsMode) document.getElementById(`gifts-mode-${giftsMode}`)?.click();
+
+                        const animateToggle = document.getElementById('animate-background-toggle');
+                        if (animateToggle && animateBackground !== undefined) {
+                            animateToggle.checked = animateBackground;
+                            animateToggle.dispatchEvent(new Event('change'));
+                        }
+                    }
+                } catch (parseErr) {
+                    console.error('[Persistence] Corrupt localStorage data:', parseErr);
                 }
             }
 
@@ -299,215 +303,189 @@
             const assetCount = Object.keys(assets).length;
 
             if (assetCount > 0) {
-                console.log(`[Persistence] Restoring ${assetCount} assets from IndexedDB...`);
+                console.log(`[Persistence] 📦 Restoring ${assetCount} assets from IndexedDB...`);
 
-                // DEBUG TRACE
-                alert(`[PERSISTENCE] Restaurando ${assetCount} arquivos do banco.`);
-
-                'capa': 'cover-dropzone',
+                const dropzoneMap = {
+                    'capa': 'cover-dropzone',
                     'folha_vazia': 'leaf-dropzone',
-                        'folha': 'leaf-dropzone', // Alias
-                            'fundo_tela': 'fill-image-dropzone',
-                                'folha_preenchida': 'fill-image-dropzone', // Alias
-                                    'background': 'fill-image-dropzone', // Alias
-                                        'vid_abertura': 'intro-video-dropzone',
-                                            'musica': 'music-dropzone',
-                                                'presentes': 'gifts-image-dropzone',
-                                                    'manual': 'manual-image-dropzone'
-            };
+                    'folha': 'leaf-dropzone', // Alias
+                    'fundo_tela': 'fill-image-dropzone',
+                    'folha_preenchida': 'fill-image-dropzone', // Alias
+                    'background': 'fill-image-dropzone', // Alias
+                    'vid_abertura': 'intro-video-dropzone',
+                    'musica': 'music-dropzone',
+                    'presentes': 'gifts-image-dropzone',
+                    'manual': 'manual-image-dropzone'
+                };
 
-            const base64ToBlob = (dataUrl) => {
-                if (!dataUrl || !dataUrl.startsWith('data:')) return null;
-                try {
-                    const [header, base64] = dataUrl.split(',');
-                    const mimeMatch = header.match(/data:([^;]+)/);
-                    const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
-                    const binary = atob(base64);
-                    const array = new Uint8Array(binary.length);
-                    for (let i = 0; i < binary.length; i++) {
-                        array[i] = binary.charCodeAt(i);
-                    }
-                    return new Blob([array], { type: mime });
-                } catch (e) {
-                    return null;
-                }
-            };
-
-            if (window.builderState) {
-                window.builderState.assets = {};
-            }
-
-            for (const [context, dataUrl] of Object.entries(assets)) {
-                if (!dataUrl) continue;
-
-                const dropzoneId = dropzoneMap[context];
-                let type = 'image';
-
-                if (context.includes('video') || context === 'vid_abertura' ||
-                    context === 'vid_loop' || context === 'folha_animada') {
-                    type = 'video';
-                } else if (context === 'musica') {
-                    type = 'audio';
-                }
-
-                // Save dataUrl directly to builderState (APIs need URLs, not Blobs)
                 if (window.builderState) {
-                    window.builderState.assets[context] = dataUrl;
+                    window.builderState.assets = window.builderState.assets || {};
                 }
 
-                // Update UI
-                if (dropzoneId) {
-                    const dropzone = document.getElementById(dropzoneId);
-                    if (dropzone) {
-                        if (type === 'audio') {
-                            const audioPlayer = document.getElementById('music-audio-player');
-                            const trackName = document.getElementById('music-track-name');
-                            const removeBtn = document.getElementById('music-remove-btn');
-                            const playBtn = document.getElementById('music-play-btn');
+                for (const [context, dataUrl] of Object.entries(assets)) {
+                    if (!dataUrl) continue;
 
-                            if (audioPlayer) {
-                                audioPlayer.src = dataUrl;
-                                audioPlayer.load();
+                    // Determine Type
+                    let type = 'image';
+                    if (context.includes('video') || context === 'vid_abertura' || context === 'vid_loop' || context === 'folha_animada') {
+                        type = 'video';
+                    } else if (context === 'musica') {
+                        type = 'audio';
+                    }
+
+                    // Populate Builder State
+                    if (window.builderState) {
+                        window.builderState.assets[context] = dataUrl;
+                    }
+
+                    // Update UI (Dropzones)
+                    const dropzoneId = dropzoneMap[context];
+                    if (dropzoneId) {
+                        const dropzone = document.getElementById(dropzoneId);
+                        if (dropzone) {
+                            // Visual Update
+                            if (window.updateDropzonePreview) {
+                                window.updateDropzonePreview(dropzone, dataUrl, type);
                             }
-                            if (trackName) trackName.textContent = 'Música Restaurada';
-                            if (removeBtn) removeBtn.classList.remove('hidden');
-                            if (playBtn) playBtn.disabled = false;
-                        } else if (window.updateDropzonePreview) {
-                            window.updateDropzonePreview(dropzone, dataUrl, type);
+
+                            // Event Dispatch
+                            document.dispatchEvent(new CustomEvent('mediaUpdated', {
+                                detail: {
+                                    type: context,
+                                    data: { url: dataUrl, type: type },
+                                    skipPersistence: true // CRITICAL: Prevent Saving Loop
+                                }
+                            }));
                         }
+                    }
 
-                        document.dispatchEvent(new CustomEvent('mediaUpdated', {
-                            detail: {
-                                type: context,
-                                data: { url: dataUrl, type: type },
-                                skipPersistence: true // Prevent re-saving restored assets
-                            }
-                        }));
+                    // Audio Specific Logic
+                    if (type === 'audio' && context === 'musica') {
+                        const player = document.getElementById('music-audio-player');
+                        const trackName = document.getElementById('music-track-name');
+                        const removeBtn = document.getElementById('music-remove-btn');
+                        const playBtn = document.getElementById('music-play-btn');
+
+                        if (player) {
+                            player.src = dataUrl;
+                            player.load();
+                        }
+                        if (trackName) trackName.textContent = 'Música Restaurada';
+                        if (removeBtn) removeBtn.classList.remove('hidden');
+                        if (playBtn) playBtn.disabled = false;
                     }
                 }
             }
 
-            console.log(`[Persistence] Assets restored: ${assetCount}`);
-        } else {
-            console.log('[Persistence] No assets found in IndexedDB');
-        }
+            // Notify User
+            if (savedState || assetCount > 0) {
+                showRestoreToast();
+            }
 
-        // Final state update
-        if (savedState) {
-            document.dispatchEvent(new CustomEvent('stateUpdated', {
-                detail: { source: 'persistence', data: savedState }
-            }));
+        } catch (e) {
+            console.error('[Persistence] Error restoring state:', e);
         }
-
-        // Notify user
-        if (savedState || assetCount > 0) {
-            showRestoreToast();
-        }
-
-    } catch (e) {
-        console.error('[Persistence] Error restoring state:', e);
     }
-}
 
     function showRestoreToast() {
-    const toast = document.createElement('div');
-    toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50 flex items-center gap-2 animate-fade-in-up';
-    toast.innerHTML = '<i class="fa-solid fa-rotate-left text-green-400"></i> Trabalho anterior restaurado';
-    document.body.appendChild(toast);
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50 flex items-center gap-2 animate-fade-in-up';
+        toast.innerHTML = '<i class="fa-solid fa-rotate-left text-green-400"></i> Trabalho anterior restaurado';
+        document.body.appendChild(toast);
 
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.5s';
-        setTimeout(() => toast.remove(), 500);
-    }, 3000);
-}
-
-// ========================================
-// Event Listeners
-// ========================================
-
-async function init() {
-    // Initialize IndexedDB
-    try {
-        await openDatabase();
-    } catch (e) {
-        console.error('[Persistence] Failed to open IndexedDB:', e);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.5s';
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
     }
 
-    // Listen for form state changes
-    document.addEventListener('stateUpdated', (e) => {
-        if (e.detail && e.detail.source === 'persistence') return;
-        scheduleSave();
-    });
+    // ========================================
+    // Event Listeners
+    // ========================================
 
-    document.addEventListener('linksExtrasUpdated', scheduleSave);
+    async function init() {
+        // Initialize IndexedDB
+        try {
+            await openDatabase();
+        } catch (e) {
+            console.error('[Persistence] Failed to open IndexedDB:', e);
+        }
 
-    // Listen for media changes
-    document.addEventListener('mediaUpdated', async (e) => {
-        // CRITICAL FIX: Ignore events marked as 'preview-only' or 'skipPersistence'
-        if (e.detail && e.detail.skipPersistence) return;
+        // Listen for form state changes
+        document.addEventListener('stateUpdated', (e) => {
+            if (e.detail && e.detail.source === 'persistence') return;
+            scheduleSave();
+        });
 
-        if (e.detail && e.detail.type && e.detail.data) {
-            const { type, data } = e.detail;
+        document.addEventListener('linksExtrasUpdated', scheduleSave);
 
-            if (data.blob || data.file) {
-                await processAndSaveAsset(type, data.blob || data.file);
-            } else if (data.url && data.url.startsWith('data:')) {
-                await saveAssetToDB(type, data.url);
-                console.log(`[Persistence] Asset saved: ${type} (base64 direct)`);
-            } else if (data.url && data.url.startsWith('blob:')) {
-                try {
-                    const response = await fetch(data.url);
-                    const blob = await response.blob();
-                    await processAndSaveAsset(type, blob);
-                } catch (err) {
-                    console.error(`[Persistence] Failed to fetch blob URL for ${type}:`, err);
+        // Listen for media changes
+        document.addEventListener('mediaUpdated', async (e) => {
+            // CRITICAL FIX: Ignore events marked as 'preview-only' or 'skipPersistence'
+            if (e.detail && e.detail.skipPersistence) return;
+
+            if (e.detail && e.detail.type && e.detail.data) {
+                const { type, data } = e.detail;
+
+                if (data.blob || data.file) {
+                    await processAndSaveAsset(type, data.blob || data.file);
+                } else if (data.url && data.url.startsWith('data:')) {
+                    await saveAssetToDB(type, data.url);
+                    console.log(`[Persistence] Asset saved: ${type} (base64 direct)`);
+                } else if (data.url && data.url.startsWith('blob:')) {
+                    try {
+                        const response = await fetch(data.url);
+                        const blob = await response.blob();
+                        await processAndSaveAsset(type, blob);
+                    } catch (err) {
+                        console.error(`[Persistence] Failed to fetch blob URL for ${type}:`, err);
+                    }
                 }
             }
-        }
+        });
+
+        document.addEventListener('input', (e) => {
+            if (e.target.matches('input, textarea, select')) {
+                scheduleSave();
+            }
+        });
+
+        // Restore after modules are ready
+        setTimeout(restoreState, 500);
+
+        console.log('[Persistence] Initialized with IndexedDB storage (Recreated)');
+    }
+
+    // ========================================
+    // Cleanup on close
+    // ========================================
+
+    window.addEventListener('beforeunload', () => {
+        saveFormState();
     });
 
-    document.addEventListener('input', (e) => {
-        if (e.target.matches('input, textarea, select')) {
-            scheduleSave();
-        }
-    });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 
-    // Restore after modules are ready
-    setTimeout(restoreState, 500);
+    // ========================================
+    // Public API
+    // ========================================
 
-    console.log('[Persistence] Initialized with IndexedDB storage');
-}
+    window.Persistence = {
+        clear: async () => {
+            localStorage.removeItem(STORAGE_KEY);
+            await clearAllAssetsFromDB();
+            console.log('[Persistence] All data cleared');
+            location.reload();
+        },
+        forceSave: saveFormState,
+        forceRestore: restoreState,
+        removeAsset: deleteAssetFromDB,
+        processAsset: processAndSaveAsset
+    };
 
-// ========================================
-// Cleanup on close
-// ========================================
-
-window.addEventListener('beforeunload', () => {
-    saveFormState();
-});
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
-
-// ========================================
-// Public API
-// ========================================
-
-window.Persistence = {
-    clear: async () => {
-        localStorage.removeItem(STORAGE_KEY);
-        await clearAllAssetsFromDB();
-        console.log('[Persistence] All data cleared');
-        location.reload();
-    },
-    forceSave: saveFormState,
-    forceRestore: restoreState,
-    removeAsset: deleteAssetFromDB,
-    processAsset: processAndSaveAsset
-};
-
-}) ();
+})();
