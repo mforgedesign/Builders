@@ -4,6 +4,32 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 21:10] - v4.3.0 - Botões Arrastáveis no Preview
+### Arquivos Modificados:
+*   `index.html`:
+    *   **Novo**: Adicionado SortableJS CDN (1.15.2) para drag-and-drop.
+*   `final_template.html`:
+    *   **Fix**: Reduzido espaçamento entre botões de `gap-6` para `gap-3` (alinhado com preview).
+*   `static/js/preview.js`:
+    *   **Reescrita Completa**: Implementado sistema de botões arrastáveis (drag-and-drop).
+    *   **Novo**: Array `buttonOrder` unificado que define a ordem dos botões.
+    *   **Novo**: Integração com SortableJS para arrastar e reordenar botões no preview.
+    *   **Novo**: Persistência da ordem em localStorage (`autoBuilder_buttonOrder`).
+    *   **Nova API Pública**: `AutoBuilderPreview.getButtonOrder()`, `setButtonOrder()`, `resetButtonOrder()`.
+    *   **Evento**: Dispara `buttonOrderChanged` ao reordenar.
+*   `static/js/windows.js`:
+    *   **Refatorado**: Geração de `menuConfig` agora usa `AutoBuilderPreview.getButtonOrder()` para garantir que o convite publicado tenha a mesma ordem de botões do preview.
+    *   **Fix**: Corrigida função duplicada `updateDeployStep` que causava falha nas bolinhas de status.
+    *   **Fix**: Corrigida lógica de substituição de assets (`assetsMap` contém strings, não objetos).
+
+### Comportamento Esperado:
+1. No preview do Builder, os botões podem ser arrastados para alterar a ordem.
+2. A nova ordem é salva automaticamente no localStorage.
+3. Ao publicar, o convite final respeita a ordem definida no preview.
+4. O espaçamento entre botões agora é consistente entre preview e convite final.
+
+---
+
 ## [15/01/2026 - 19:15] - v4.2.20 - Simplificação: Fundo Unificado da Tela de Botões
 ### Arquivos Modificados:
 *   `index.html`:
