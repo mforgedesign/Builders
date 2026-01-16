@@ -4,6 +4,22 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 16:45] - v4.3.19 - Deploy Manual
+### Ações Realizadas:
+*   **Deploy**: Execução do script `deploy_to_github.py` para atualizar a versão em produção no repositório `mforgedesign/Builders`.
+*   **URL**: https://builder.mforge.com.br/v4/
+
+---
+
+## [16/01/2026 - 16:40] - v4.3.19 - Fix: Visibilidade de Botões (Presentes/Manual)
+### Arquivos Modificados:
+*   `static/js/form.js`:
+    *   **Fix Critical**: Adicionado listener para o evento `mediaUpdated`.
+    *   **Lógica de Exclusividade Mútua**: Agora, quando uma imagem é enviada para "Presentes" ou "Manual", o sistema **limpa automaticamente** os campos de texto correspondentes (`link_presentes` ou `manual_content`).
+    *   **Rationale**: O `preview.js` prioriza Links sobre Imagens. Se o campo de link não fosse limpo, o botão continuava agindo como Link (ou não aparecia corretamente) mesmo após o upload da imagem. Essa correção garante que o estado reflita a intenção do usuário (Imagem > Link se imagem for nova).
+
+---
+
 ## [15/01/2026 - 22:35] - v4.3.5 - Importação Local e I.A (OpenAI)
 ### Arquivos Modificados:
 *   `index.html`:
