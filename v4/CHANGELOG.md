@@ -4,6 +4,13 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 18:00] - v4.3.23 - Fix: Visualização Botão Presentes
+### Arquivos Modificados:
+*   `static/js/preview.js`:
+    *   **Fix Visibility**: O botão de presentes agora verifica tanto `currentState.media_presentes` (evento) quanto `currentState.presentes` (estado salvo/persistido) para garantir que apareça mesmo se o evento de media for perdido ou sobrescrito. Adicionado logs de debug mais detalhados.
+
+---
+
 ## [16/01/2026 - 17:50] - v4.3.22 - Fix: Restore Vídeo Persistence
 ### Arquivos Modificados:
 *   `static/js/persistence.js`:
