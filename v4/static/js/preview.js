@@ -33,7 +33,7 @@
     // Current state container
     let currentState = {
         cor_botoes: '#4f46e5',
-        posicao_botoes: 50,
+        posicao_botoes: 20,
         timer_contagem: false,
         links_extras: [],
         link_google_maps: '',
@@ -509,7 +509,7 @@
                     updateTimerVisibility(currentState.timer_contagem);
                     updateShadow(currentState.sombra_gradiente || '#000000');
                     updateButtonColors(currentState.cor_botoes || '#4f46e5');
-                    updateButtonPosition(currentState.posicao_botoes || 50);
+                    updateButtonPosition(currentState.posicao_botoes || 20);
                 }
             })
             .catch(() => console.log('[Preview] State fetch failed/skipped'));
