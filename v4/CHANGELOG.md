@@ -24,6 +24,14 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [15/01/2026 - 22:50] - v4.3.7 - Fix: Slug e Detecção de Imagem
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **Feature**: O `slug` do convite agora é gerado automaticamente a partir do **nome do arquivo** importado (ex: `ConviteEster.zip` -> `conviteester`).
+    *   **Improvement**: Melhoria na lógica de busca de imagem para análise da I.A. (Procura por folha -> fundo -> capa -> maior imagem), garantindo que o texto seja lido mesmo se os nomes dos arquivos forem diferentes.
+
+---
+
 ## [15/01/2026 - 22:45] - v4.3.6 - Fix: Preview na Importação
 ### Arquivos Modificados:
 *   `static/js/preview.js`:
