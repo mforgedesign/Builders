@@ -4,6 +4,13 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 17:50] - v4.3.22 - Fix: Restore Vídeo Persistence
+### Arquivos Modificados:
+*   `static/js/persistence.js`:
+    *   **Fix Restore**: Correção na detecção do tipo de ativo durante a restauração via IndexedDB. Agora verifica o MIME type do Base64 (`data:video/`) para garantir que vídeos no `fundo_tela` não sejam tratados como imagens (tela preta).
+
+---
+
 ## [16/01/2026 - 17:20] - v4.3.21 - Deploy Debug
 ### Ações Realizadas:
 *   **Deploy**: Execução do script `deploy_to_github.py` para atualizar a versão com logs de debug.
