@@ -195,15 +195,20 @@
                 </button>
             </nav>
 
-            <!-- User Info -->
+            <!-- Local Import -->
             <div class="p-4 border-t border-slate-700">
-                <div class="flex items-center gap-3">
-                    <img src="https://ui-avatars.com/api/?name=User&background=random" class="w-8 h-8 rounded-full">
-                    <div>
-                        <p class="text-xs text-slate-400">Logado como</p>
-                        <p class="text-sm text-white font-medium">Usuário</p>
+                <input type="file" id="local-import-input" accept=".zip,.rar" class="hidden">
+                <button id="btn-local-import"
+                    class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition-colors group">
+                    <div
+                        class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                        <i class="fa-solid fa-folder-open"></i>
                     </div>
-                </div>
+                    <div class="text-left">
+                        <p class="text-xs text-slate-400">Importar</p>
+                        <p class="text-sm text-white font-medium">Pasta / ZIP</p>
+                    </div>
+                </button>
             </div>
         </aside>
 
