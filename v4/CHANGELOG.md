@@ -24,6 +24,13 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [16/01/2026 - 00:45] - v4.3.18 - Clean UI (No Alerts)
+### Arquivos Modificados:
+*   `windows.js` e `persistence.js`: Remoção total dos alertas de debug. Substituídos por Logs discretos ou Toasts de erro.
+*   `history.js`: Alerta de erro substituído por Toast nativo.
+
+---
+
 ## [16/01/2026 - 00:30] - v4.3.17 - History Import Fix
 ### Arquivos Modificados:
 *   `static/js/history.js`:
