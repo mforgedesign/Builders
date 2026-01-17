@@ -3292,6 +3292,55 @@
     }
 
 
+    function setupFinalizeButtons() {
+        const publishBtn = document.getElementById('btn-publish');
+
+        if (publishBtn) {
+            publishBtn.addEventListener('click', async () => {
+                const slugInput = document.getElementById('slug-input');
+                if (!slugInput) return;
+
+                const originalText = publishBtn.innerHTML;
+                publishBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Publicando...';
+                publishBtn.disabled = true;
+
+                try {
+                    const slug = slugInput.value.trim();
+                    if (!slug) {
+                        alert('Por favor, defina um nome (slug) para o convite.');
+                        slugInput.focus();
+                        throw new Error('Slug vazio');
+                    }
+
+                    const appState = window.generateBuilderState();
+
+                    const response = await fetch('/api/publish', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            slug: slug,
+                            state: appState
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Erro na publicação.');
+
+                    const liveUrl = result.url || `https://mforgedesign.github.io/${slug}/`;
+                    alert(`✅ Convite Publicado com Sucesso!\n\nAcesse: ${liveUrl}`);
+                    window.open(liveUrl, '_blank');
+
+                } catch (error) {
+                    console.error('[Publish] Error:', error);
+                    alert('Erro ao publicar: ' + error.message);
+                } finally {
+                    publishBtn.innerHTML = originalText;
+                    publishBtn.disabled = false;
+                }
+            });
+        }
+    }
+
     async function initWindows() {
         console.log('[Windows] Initializing...');
 
