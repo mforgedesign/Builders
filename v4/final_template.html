@@ -483,7 +483,7 @@
             const containerAcomp = document.getElementById('container-acompanhantes');
             const checkContainer = document.getElementById('check-no-acomp').parentElement;
 
-            if (companionHideClass.trim() === 'hidden') {
+            if (companionHideClass.includes('hidden')) {
                 // Feature Disabled globally
                 containerAcomp.classList.add('hidden');
                 checkContainer.classList.add('hidden');
@@ -515,7 +515,7 @@
             let message = `Olá! Gostaria de confirmar minha presença.\n\n*Nome:* ${name}\n*Telefone:* ${phone}`;
 
             // Only include companion info if feature is enabled
-            if (companionHideClass.trim() !== 'hidden') {
+            if (!companionHideClass.includes('hidden')) {
                 if (!checkNoAcomp.checked) {
                     if (acompCount > 0) {
                         message += `\n*Acompanhantes:* ${acompCount}`;
