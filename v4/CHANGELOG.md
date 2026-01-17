@@ -4,6 +4,16 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [17/01/2026 - 20:10] - v4.3.33 - Fix: GitHub 422 Error (Publish Logic)
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **Fix Critical**: Corrigido erro 422 "Unprocessable Entity" ao publicar.
+    *   **Refactor**: A lógica robusta de publicação (que gerava corretamente o `filesMap` e assets) estava "solta" no código e falhava silenciosamente. Essa lógica foi movida para dentro de `setupFinalizeButtons`, substituindo a implementação quebrada anterior.
+    *   **Correção**: O payload enviado para `/api/publish` agora contém todo o `filesMap` necessário para o deploy no GitHub, em vez de enviar apenas o `slug`.
+    *   **Cleanup**: Removido bloco de código duplicado/inativo (linhas ~1705-2176).
+
+---
+
 ## [17/01/2026 - 19:55] - v4.3.32 - Fix: Robustez no Deploy
 ### Arquivos Modificados:
 *   `static/js/github-adapter.js`:
