@@ -314,7 +314,7 @@
             try {
                 console.log('[API Adapter] Using GitHubAdapter.deployBatch');
                 const message = `Deploy ${body.slug} via AutoBuilder v4`;
-                const result = await window.githubAdapter.deployBatch(body.slug, body.files, message);
+                const result = await window.githubAdapter.deployBatch(body.slug, body.files || {}, message);
                 return createResponse(result);
             } catch (error) {
                 console.error('[API Adapter] GitHubAdapter failed, falling back to Supabase...', error);
