@@ -72,6 +72,10 @@
 
             console.log(`[GitHubAdapter] Starting Atomic Batch Deploy for ${slug}...`);
 
+            if (!filesMap || typeof filesMap !== 'object') {
+                throw new Error('filesMap inválido ou vazio para deploy.');
+            }
+
             // 1. Prepare Blobs and Subtree Items
             // We want to create a tree structure for the content of "convites/{slug}/"
             // The items in filesMap are relative to that folder (e.g. "index.html", "assets/foo.png")
