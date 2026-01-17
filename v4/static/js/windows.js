@@ -1702,478 +1702,7 @@
         });
     }
 
-    // ----------------------------------------
-    // 4. PUBLISH (Deploy to GitHub with timestamps)
-    // The GitHub Token is stored securely in Supabase Edge Function
-    // ----------------------------------------
-    const publishBtn = document.getElementById('btn-publish');
 
-    if (publishBtn) {
-        publishBtn.addEventListener('click', async () => {
-            const slugInput = document.getElementById('slug-input');
-            const slug = slugInput?.value?.trim();
-
-            console.log('[Publish] Slug input:', slugInput, 'Value:', slug);
-
-            if (!slug) {
-                await showAlertModal('Slug Obrigatório', 'Por favor, preencha o Slug do convite antes de publicar.', 'warning');
-                slugInput?.focus();
-                return;
-            }
-
-            const confirmed = await showConfirmModal(
-                'Publicar Convite',
-                `Seu convite será publicado em:<br><strong class="text-brand-600">convites.mforge.com.br/${slug}</strong><br><br>Deseja continuar?`,
-                'Publicar',
-                'Cancelar'
-            );
-
-            if (!confirmed) return;
-
-            const originalText = publishBtn.innerHTML;
-            try {
-                // UI: Start
-                publishBtn.disabled = true;
-                publishBtn.innerHTML = '<i class="fa-solid fa-rocket fa-bounce"></i> Iniciando...';
-
-
-                showDeployStatusArea(); // Show immediately
-                window.updateDeployStep('step-build', 'loading');
-                window.updateDeployStep('step-upload', 'pending');
-                window.updateDeployStep('step-live', 'pending');
-
-                // 1. Prepare Brain & Timestamp
-                const appState = window.generateBuilderState();
-                const formData = (window.AutoBuilderForm && window.AutoBuilderForm.data) || {}; // Moved up
-                const timestamp = Date.now();
-                const assetsMap = {
-                    // We use specific keys to identify context, but values will be timestamped paths
-                    'music': { source: window.builderState?.assets?.musica, context: 'musica', ext: 'mp3' },
-                    'cover': { selector: '#cover-dropzone', type: 'bg', context: 'capa', ext: 'png' },
-                    'leaf': { selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia', ext: 'png' },
-                    'fundo': { selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela', ext: 'auto' },  // Unified fundo
-                    'intro': { selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura', ext: 'mp4' },
-                    'manual': { selector: '#manual-image-dropzone', type: 'bg', context: 'manual', ext: 'png' },
-                    'gifts': { selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes', ext: 'png' }
-                };
-
-                const filesMap = {};
-
-                // Helper: Blob to Base64
-                const blobToBase64 = (blob) => {
-                    return new Promise((resolve, reject) => {
-                        if (!(blob instanceof Blob)) {
-                            console.warn('[Publish] Invalid blob passed to blobToBase64:', blob);
-                            resolve(''); // Return empty string to avoid crash
-                            return;
-                        }
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                            if (reader.result) {
-                                resolve(reader.result.split(',')[1]);
-                            }
-                        };
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
-                    });
-                };
-
-                // Helper: Fetch Blob
-                async function fetchBlobFromSelector(selector, type) {
-                    const el = document.querySelector(selector);
-                    if (!el) return null;
-                    let url = null;
-
-                    try {
-                        // Unified 'auto' mode for fondo_tela
-                        if (type === 'auto') {
-                            // Check for video first
-                            const video = el.querySelector('video');
-                            if (video && video.src) {
-                                url = video.src;
-                            } else {
-                                // Fallback to background image
-                                const style = el.style.backgroundImage;
-                                if (style && style !== 'none') {
-                                    // Remove 'url(' prefix, ')' suffix, and ANY quotes
-                                    url = style.slice(4, -1).replace(/['"]/g, "");
-                                }
-                            }
-                        } else if (type === 'bg') {
-                            const style = el.style.backgroundImage;
-                            if (style && style !== 'none') {
-                                url = style.slice(4, -1).replace(/['"]/g, "");
-                            }
-                        } else if (type === 'src') {
-                            url = el.src;
-                        }
-
-                        if (url) {
-                            // Handle Data URIs directly (fetch handles them but explicit check is safer?)
-                            // Fetch handles data: fine.
-                            const resp = await fetch(url);
-                            if (!resp.ok) throw new Error(`Network error: ${resp.status}`);
-                            return await resp.blob();
-                        }
-                    } catch (e) {
-                        console.warn('[Publish] Failed to catch asset from selector:', selector, url, e);
-                        // Fallback: If fetch fails but we have a URL, MAYBE return null so we keep the original URL?
-                        // If we return null, the loop continues and source is skipped?
-                        // Actually, if we return null here, loop logic needs to handle it.
-                        return null;
-                    }
-                    return null;
-                }
-
-                // 2. Collect Assets with Timestamped Names
-                // Format: assets/name_TIMESTAMP.ext
-                for (const [key, config] of Object.entries(assetsMap)) {
-                    let blob = null;
-
-                    if (config.source) {
-                        // If source is string (URL), fetch it
-                        if (typeof config.source === 'string') {
-                            try {
-                                console.log(`[Publish] Fetching remote asset for ${config.context}:`, config.source);
-                                const r = await fetch(config.source);
-                                if (r.ok) blob = await r.blob();
-                            } catch (e) { console.warn('Failed to fetch source:', config.source); }
-                        } else if (config.source instanceof Blob) {
-                            blob = config.source;
-                        }
-                    }
-                    else if (config.selector) {
-                        blob = await fetchBlobFromSelector(config.selector, config.type);
-                    }
-
-                    if (blob && blob instanceof Blob) {
-                        // Determine extension for 'auto' type
-                        if (config.ext === 'auto') {
-                            if (blob.type.includes('video')) config.ext = 'mp4';
-                            else if (blob.type.includes('image')) config.ext = 'png';
-                            else config.ext = 'dat';
-                        }
-
-                        // Define standardized name with timestamp
-                        const filename = `${config.context}_${timestamp}.${config.ext}`;
-                        const path = `assets/${filename}`;
-
-                        filesMap[path] = await blobToBase64(blob);
-
-                        // Update Brain Map (so restore knows exact file)
-                        appState.assetsMap[config.context] = path;
-
-                        // Special case for Unified Background: update videoLoop logic if it's a video
-                        if (config.context === 'fundo_tela' && config.ext === 'mp4') {
-                            // Ensure loop context is consistent if needed
-                        }
-                    }
-                }
-
-                // Helper: UTF-8 safe Base64 encoding
-                function utf8_to_b64(str) {
-                    return window.btoa(unescape(encodeURIComponent(str)));
-                }
-
-                // 3. Add Brain to Payload
-
-                // FORCE COMPLETE SYNC from DOM elements (Bulletproof against stale state)
-                try {
-                    console.log("DEBUG PUBLISH: Scraping Fresh Data from DOM Inputs...");
-                    const domData = {};
-                    document.querySelectorAll('.form-input[data-field]').forEach(input => {
-                        const field = input.getAttribute('data-field');
-                        if (!field) return;
-
-                        if (input.type === 'checkbox') {
-                            domData[field] = input.checked;
-                        } else if (input.type === 'radio') {
-                            if (input.checked) domData[field] = input.value;
-                        } else {
-                            domData[field] = input.value;
-                        }
-                    });
-
-                    console.log("DEBUG PUBLISH: DOM Data Scraped:", domData);
-                    Object.assign(formData, domData);
-
-                    // Sync to appState to ensure data.json is correct
-                    if (!appState.formData) appState.formData = {};
-                    Object.assign(appState.formData, domData);
-
-                    // Also sync back to global state for consistency
-                    if (window.AutoBuilderForm) {
-                        Object.assign(window.AutoBuilderForm.data, domData);
-                    }
-                } catch (err) {
-                    console.error("DEBUG PUBLISH: Error scraping DOM data", err);
-                }
-
-                filesMap['data.json'] = utf8_to_b64(JSON.stringify(appState, null, 2));
-
-                // 4. Prepare HTML with Correct Asset Links
-                // FORCE CACHE BUSTING on template fetch to ensure latest version
-                const templateResp = await fetch(`final_template.html?v=${Date.now()}`);
-                if (!templateResp.ok) throw new Error('Template não encontrado');
-                let htmlContent = await templateResp.text();
-
-                // 3.5. Computed Replacements (Date/Time, Offset, Color, Title)
-                const eventDate = formData.data_evento || formData.data;
-                const eventTime = formData.hora_evento || formData.hora || '00:00';
-                const eventDateTime = eventDate ? `${eventDate}T${eventTime}:00` : '';
-                htmlContent = htmlContent.replace(/\[\[EVENT_DATETIME\]\]/g, eventDateTime);
-
-                const buttonsOffset = formData.botoes_offset || formData.posicao_botoes || formData.buttons_offset || '0';
-                htmlContent = htmlContent.replace(/\[\[BUTTONS_OFFSET\]\]/g, buttonsOffset);
-
-                // Title Generation: Name | Event Type [Age]
-                const hostName = formData.nome_anfitriao || formData.nome || 'Convite';
-                const eventType = formData.tipo_evento || formData.event_type || 'Evento';
-                let pageTitle = `${hostName} | ${eventType}`;
-
-                // Add age if it exists and event type is related to birthday
-                if ((formData.idade_aniversariante || formData.idade) &&
-                    eventType.toLowerCase().includes('aniversário')) {
-                    pageTitle += ` ${formData.idade_aniversariante || formData.idade} Anos`;
-                }
-
-                htmlContent = htmlContent.replace(/\[\[OG_TITLE\]\]/g, pageTitle);
-
-                // Timer Logic: Safe Boolean Conversion
-                const isTimerEnabled = String(formData.timer_contagem).toLowerCase().trim() === 'true';
-                const timerHideClass = isTimerEnabled ? '' : 'hidden';
-                htmlContent = htmlContent.replace(/\[\[TIMER_HIDE_CLASS\]\]/g, timerHideClass);
-
-                // Watermark Logic
-                const isWatermarkEnabled = String(formData.watermark_enabled).toLowerCase().trim() === 'true';
-                const watermarkHideClass = isWatermarkEnabled ? '' : 'hidden';
-                htmlContent = htmlContent.replace(/\[\[WATERMARK_HIDE_CLASS\]\]/g, watermarkHideClass);
-
-                // Prioritize 'cor_botoes', then 'shadow_color', then default
-                const btnColor = formData.cor_botoes || formData.shadow_color || '#292524';
-                htmlContent = htmlContent.replace(/\[\[BUTTON_COLOR\]\]/g, btnColor);
-
-                for (const [key, value] of Object.entries(formData)) {
-                    const regex = new RegExp(`\\[\\[${key.toUpperCase()}\\]\\]`, 'g');
-                    // FIX: Handle 0 correctly (don't treat as falsey)
-                    const safeValue = (value !== undefined && value !== null) ? value : '';
-                    htmlContent = htmlContent.replace(regex, safeValue);
-                }
-
-                // 3.6. Asset Replacements (Critical for Published View)
-                // appState.assetsMap contains paths like: { 'capa': 'assets/capa_123.png' }
-                if (appState.assetsMap) {
-                    for (const [context, assetPath] of Object.entries(appState.assetsMap)) {
-                        if (!assetPath || typeof assetPath !== 'string') continue;
-
-                        // assetPath is already the relative path like 'assets/capa_123.png'
-                        const relativePath = assetPath;
-                        const filename = assetPath.split('/').pop(); // Get just the filename
-
-                        // Standard Replacement: [[CONTEXT_URL]]
-                        let tokenKey = context.toUpperCase();
-
-                        // Handle Aliases for tokens in final_template.html
-                        if (tokenKey === 'PRESENTES') tokenKey = 'PRESENTS';
-                        if (tokenKey === 'FOLHA_VAZIA') tokenKey = 'FOLHA';
-                        if (tokenKey === 'VID_ABERTURA') tokenKey = 'VIDEO_ABERTURA';
-
-                        // Replace URL
-                        const urlToken = `[[${tokenKey}_URL]]`;
-                        htmlContent = htmlContent.split(urlToken).join(relativePath);
-
-                        // Replace Filename (for OG tags etc)
-                        const filenameToken = `[[${tokenKey}_FILENAME]]`;
-                        htmlContent = htmlContent.split(filenameToken).join(filename);
-
-                        console.log(`[Publish] Replaced ${urlToken} -> ${relativePath}`);
-                    }
-                }
-
-                // Inject CSS Variable for Button Color (if template uses it)
-                const customStyle = `<style>:root { --button-color: ${btnColor}; } .custom-button-bg { background-color: var(--button-color) !important; }</style>`;
-                htmlContent = htmlContent.replace('</head>', `${customStyle}</head>`);
-
-
-
-
-                // 4.1. Reconstruct Menu Config & Variables (moved UP before payload generation)
-                const buttonSize = formData.button_size || '1.0';
-                const companionHideClass = formData.companion_hide_class || '';
-
-                // ============================================================
-                // Generate menuConfig using Preview's button order
-                // This ensures published invite matches the preview exactly
-                // ============================================================
-
-                // Get the button order from preview (or use default if not available)
-                const buttonOrder = (window.AutoBuilderPreview && window.AutoBuilderPreview.getButtonOrder)
-                    ? window.AutoBuilderPreview.getButtonOrder()
-                    : ['location', 'gifts', 'rsvp', 'manual'];
-
-                // Prepare button configs (same logic as before, but we'll sort them)
-                const buttonConfigs = {};
-
-                // LOCATION
-                if (formData.link_google_maps) {
-                    buttonConfigs['location'] = {
-                        id: 'location',
-                        titulo: 'Localização',
-                        icone: 'fa-solid fa-location-dot',
-                        link: formData.link_google_maps
-                    };
-                }
-
-                // GIFTS (Presentes)
-                const hasGiftsImage = !!appState.assetsMap['presentes'];
-                const giftsLink = formData.link_presentes;
-                const giftsModeDiv = document.getElementById('gifts-image-mode');
-                const isGiftsImageMode = (giftsModeDiv && !giftsModeDiv.classList.contains('hidden')) || (hasGiftsImage && !giftsLink);
-
-                if (isGiftsImageMode && hasGiftsImage) {
-                    buttonConfigs['gifts'] = { id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: '#', isGiftImage: true };
-                } else if (!isGiftsImageMode && giftsLink) {
-                    buttonConfigs['gifts'] = { id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: giftsLink };
-                }
-
-                // RSVP (Confirmation)
-                if (formData.numero_whatsapp) {
-                    buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${formData.numero_whatsapp}` };
-                } else if (formData.link_confirmacao) {
-                    buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao };
-                }
-
-                // MANUAL
-                const hasManualImg = !!appState.assetsMap['manual'];
-                const manualHtml = document.getElementById('manual-html-editor')?.value || document.getElementById('manual-raw-text')?.value;
-                const manualImageModeDiv = document.getElementById('manual-image-mode');
-                const isManualImageMode = (manualImageModeDiv && !manualImageModeDiv.classList.contains('hidden')) || (hasManualImg && (!manualHtml || manualHtml.trim() === ''));
-
-                if (isManualImageMode && hasManualImg) {
-                    buttonConfigs['manual'] = { id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', isManualImage: true };
-                } else if (!isManualImageMode && manualHtml && manualHtml.trim() !== '') {
-                    buttonConfigs['manual'] = { id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', manualText: manualHtml };
-                }
-
-                // EXTRAS LINKS
-                const extraLinks = window.builderState.linksExtras || [];
-                extraLinks.forEach((link, idx) => {
-                    const extraId = `extra-${link.id || idx}`;
-                    buttonConfigs[extraId] = {
-                        id: extraId,
-                        titulo: link.label,
-                        icone: link.icon || 'fa-solid fa-link',
-                        link: link.url
-                    };
-                });
-
-                // Build final menu in the order defined by buttonOrder
-                const generatedMenu = [];
-                buttonOrder.forEach(buttonId => {
-                    if (buttonConfigs[buttonId]) {
-                        generatedMenu.push(buttonConfigs[buttonId]);
-                    }
-                });
-
-                // Add any buttons that exist but aren't in buttonOrder (safety fallback)
-                Object.keys(buttonConfigs).forEach(buttonId => {
-                    if (!buttonOrder.includes(buttonId)) {
-                        generatedMenu.push(buttonConfigs[buttonId]);
-                    }
-                });
-
-                const menuConfig = generatedMenu;
-
-                console.log("DEBUG PUBLISH: Button Order from Preview:", buttonOrder);
-                console.log("DEBUG PUBLISH: Generated Menu (Ordered):", generatedMenu);
-
-                // -------------------------------------------------------------------
-
-                htmlContent = htmlContent.replace(/\[\[MENU_CONFIG\]\]/g, JSON.stringify(menuConfig));
-                htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, buttonSize || '1.0');
-                htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, companionHideClass || '');
-
-                filesMap['index.html'] = utf8_to_b64(htmlContent);
-
-                // DIAGNOSTICS: Generate Debug Log for User (Optional)
-                const isDebugEnabled = document.getElementById('debug-log-toggle')?.checked;
-                if (window.DebugLogger && isDebugEnabled) {
-                    console.log("Generating Debug Report...");
-                    window.DebugLogger.generateReport(formData, menuConfig, htmlContent);
-                }
-
-                // 5. Send to API
-                // showDeployStatusArea(); // REMOVED: Do not reset steps
-
-                // STEP 1 COMPLETE: Build Done
-                window.updateDeployStep('step-build', 'done');
-
-                // STEP 2 START: Upload Loading
-                window.updateDeployStep('step-upload', 'loading');
-
-                // We use /api/publish which is intercepted by supabase-adapter
-                // Edge Function has the GitHub token stored securely
-                // 4.1. Reconstruct Menu Config & Variables
-
-
-                const payload = {
-                    slug: slug,
-                    files: filesMap
-                };
-
-                const response = await fetch('/api/publish', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.error || 'Falha na publicação');
-
-                // STEP 2 COMPLETE: Upload Done
-                window.updateDeployStep('step-upload', 'done');
-
-                // STEP 3 START: Verifying (Live)
-                window.updateDeployStep('step-live', 'loading');
-
-                publishBtn.innerHTML = '<i class="fa-solid fa-check"></i> Enviado!';
-                publishBtn.classList.remove('bg-brand-600');
-                publishBtn.classList.add('bg-blue-600'); // Blue = Sent, Green = Live
-
-                const liveUrl = `https://convites.mforge.com.br/${slug}/`;
-
-                // 6. Poll for Deployment Status (GitHub Actions)
-                // Pass SHA from deployBatch result to track specific build
-                logDebug(`Resultado do Deploy: ${JSON.stringify(result)}`);
-
-                // Save timestamp for History Sorting (Recency)
-                try {
-                    const timestamps = JSON.parse(localStorage.getItem('autoBuilder_historyTimestamps') || '{}');
-                    timestamps[slug] = Date.now();
-                    localStorage.setItem('autoBuilder_historyTimestamps', JSON.stringify(timestamps));
-                    console.log(`[History] Timestamp updated for ${slug}`);
-                } catch (e) {
-                    console.warn('Failed to update history timestamp', e);
-                }
-
-                await pollDeployStatus(slug, liveUrl, result.sha);
-
-            } catch (err) {
-                console.error('Publish Error:', err);
-                showDeployError(err.message);
-                window.updateDeployStep('step-upload', 'reset'); // or error state
-
-                const publishStatusArea = document.getElementById('publish-status-area');
-                if (publishStatusArea) publishStatusArea.classList.add('hidden'); // Hide on error for retry
-
-            } finally {
-                if (publishBtn.innerHTML.includes('Iniciando') || publishBtn.innerHTML.includes('Aguardando')) {
-                    publishBtn.innerHTML = originalText;
-                }
-                publishBtn.disabled = false;
-            }
-        });
-    }
 
     // ==========================================
     // DEPLOYMENT UI HELPERS
@@ -3293,48 +2822,383 @@
 
 
     function setupFinalizeButtons() {
+        // 4. PUBLISH (Deploy to GitHub with timestamps)
         const publishBtn = document.getElementById('btn-publish');
-
         if (publishBtn) {
             publishBtn.addEventListener('click', async () => {
                 const slugInput = document.getElementById('slug-input');
-                if (!slugInput) return;
+                const slug = slugInput?.value?.trim();
+
+                console.log('[Publish] Slug input:', slugInput, 'Value:', slug);
+
+                if (!slug) {
+                    await showAlertModal('Slug Obrigatório', 'Por favor, preencha o Slug do convite antes de publicar.', 'warning');
+                    slugInput?.focus();
+                    return;
+                }
+
+                // IMPORTANT: Show Confirmation Modal First
+                const confirmed = await showConfirmModal(
+                    'Publicar Convite',
+                    `Seu convite será publicado em:<br><strong class="text-brand-600">convites.mforge.com.br/${slug}</strong><br><br>Deseja continuar?`,
+                    'Publicar',
+                    'Cancelar'
+                );
+                if (!confirmed) return;
 
                 const originalText = publishBtn.innerHTML;
-                publishBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Publicando...';
-                publishBtn.disabled = true;
-
                 try {
-                    const slug = slugInput.value.trim();
-                    if (!slug) {
-                        alert('Por favor, defina um nome (slug) para o convite.');
-                        slugInput.focus();
-                        throw new Error('Slug vazio');
+                    // UI: Start
+                    publishBtn.disabled = true;
+                    publishBtn.innerHTML = '<i class="fa-solid fa-rocket fa-bounce"></i> Iniciando...';
+
+
+                    showDeployStatusArea(); // Show immediately
+                    window.updateDeployStep('step-build', 'loading');
+                    window.updateDeployStep('step-upload', 'pending');
+                    window.updateDeployStep('step-live', 'pending');
+
+                    // 1. Prepare Brain & Timestamp
+                    const appState = window.generateBuilderState();
+                    const formData = (window.AutoBuilderForm && window.AutoBuilderForm.data) || {};
+                    const timestamp = Date.now();
+
+                    const assetsMap = {
+                        // We use specific keys to identify context, but values will be timestamped paths
+                        'music': { source: window.builderState?.assets?.musica, context: 'musica', ext: 'mp3' },
+                        'cover': { selector: '#cover-dropzone', type: 'bg', context: 'capa', ext: 'png' },
+                        'leaf': { selector: '#leaf-dropzone', type: 'bg', context: 'folha_vazia', ext: 'png' },
+                        'fundo': { selector: '#fill-image-dropzone', type: 'auto', context: 'fundo_tela', ext: 'auto' },
+                        'intro': { selector: '#intro-video-dropzone video', type: 'src', context: 'vid_abertura', ext: 'mp4' },
+                        'manual': { selector: '#manual-image-dropzone', type: 'bg', context: 'manual', ext: 'png' },
+                        'gifts': { selector: '#gifts-image-dropzone', type: 'bg', context: 'presentes', ext: 'png' }
+                    };
+
+                    const filesMap = {};
+
+                    // Helper: Blob to Base64
+                    const blobToBase64 = (blob) => {
+                        return new Promise((resolve, reject) => {
+                            if (!(blob instanceof Blob)) {
+                                console.warn('[Publish] Invalid blob passed to blobToBase64:', blob);
+                                resolve(''); // Return empty string to avoid crash
+                                return;
+                            }
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                if (reader.result) {
+                                    resolve(reader.result.split(',')[1]);
+                                }
+                            };
+                            reader.onerror = reject;
+                            reader.readAsDataURL(blob);
+                        });
+                    };
+
+                    // Helper: Fetch Blob
+                    async function fetchBlobFromSelector(selector, type) {
+                        const el = document.querySelector(selector);
+                        if (!el) return null;
+                        let url = null;
+
+                        try {
+                            if (type === 'auto') {
+                                const video = el.querySelector('video');
+                                if (video && video.src) {
+                                    url = video.src;
+                                } else {
+                                    const style = el.style.backgroundImage;
+                                    if (style && style !== 'none') {
+                                        url = style.slice(4, -1).replace(/['"]/g, "");
+                                    }
+                                }
+                            } else if (type === 'bg') {
+                                const style = el.style.backgroundImage;
+                                if (style && style !== 'none') {
+                                    url = style.slice(4, -1).replace(/['"]/g, "");
+                                }
+                            } else if (type === 'src') {
+                                url = el.src;
+                            }
+
+                            if (url) {
+                                const resp = await fetch(url);
+                                if (!resp.ok) throw new Error(`Network error: ${resp.status}`);
+                                return await resp.blob();
+                            }
+                        } catch (e) {
+                            console.warn('[Publish] Failed to catch asset from selector:', selector, url, e);
+                            return null;
+                        }
+                        return null;
                     }
 
-                    const appState = window.generateBuilderState();
+                    // 2. Collect Assets with Timestamped Names
+                    for (const [key, config] of Object.entries(assetsMap)) {
+                        let blob = null;
+
+                        if (config.source) {
+                            if (typeof config.source === 'string') {
+                                try {
+                                    console.log(`[Publish] Fetching remote asset for ${config.context}:`, config.source);
+                                    const r = await fetch(config.source);
+                                    if (r.ok) blob = await r.blob();
+                                } catch (e) { console.warn('Failed to fetch source:', config.source); }
+                            } else if (config.source instanceof Blob) {
+                                blob = config.source;
+                            }
+                        }
+                        else if (config.selector) {
+                            blob = await fetchBlobFromSelector(config.selector, config.type);
+                        }
+
+                        if (blob && blob instanceof Blob) {
+                            if (config.ext === 'auto') {
+                                if (blob.type.includes('video')) config.ext = 'mp4';
+                                else if (blob.type.includes('image')) config.ext = 'png';
+                                else config.ext = 'dat';
+                            }
+
+                            const filename = `${config.context}_${timestamp}.${config.ext}`;
+                            const path = `assets/${filename}`;
+
+                            filesMap[path] = await blobToBase64(blob);
+                            appState.assetsMap[config.context] = path;
+                        }
+                    }
+
+                    // Helper: UTF-8 safe Base64 encoding
+                    function utf8_to_b64(str) {
+                        return window.btoa(unescape(encodeURIComponent(str)));
+                    }
+
+                    // 3. Add Brain to Payload
+                    try {
+                        console.log("DEBUG PUBLISH: Scraping Fresh Data from DOM Inputs...");
+                        const domData = {};
+                        document.querySelectorAll('.form-input[data-field]').forEach(input => {
+                            const field = input.getAttribute('data-field');
+                            if (!field) return;
+
+                            if (input.type === 'checkbox') {
+                                domData[field] = input.checked;
+                            } else if (input.type === 'radio') {
+                                if (input.checked) domData[field] = input.value;
+                            } else {
+                                domData[field] = input.value;
+                            }
+                        });
+
+                        Object.assign(formData, domData);
+                        if (!appState.formData) appState.formData = {};
+                        Object.assign(appState.formData, domData);
+                        if (window.AutoBuilderForm) {
+                            Object.assign(window.AutoBuilderForm.data, domData);
+                        }
+                    } catch (err) {
+                        console.error("DEBUG PUBLISH: Error scraping DOM data", err);
+                    }
+
+                    filesMap['data.json'] = utf8_to_b64(JSON.stringify(appState, null, 2));
+
+                    // 4. Prepare HTML with Correct Asset Links
+                    const templateResp = await fetch(`final_template.html?v=${Date.now()}`);
+                    if (!templateResp.ok) throw new Error('Template não encontrado');
+                    let htmlContent = await templateResp.text();
+
+                    const eventDate = formData.data_evento || formData.data;
+                    const eventTime = formData.hora_evento || formData.hora || '00:00';
+                    const eventDateTime = eventDate ? `${eventDate}T${eventTime}:00` : '';
+                    htmlContent = htmlContent.replace(/\[\[EVENT_DATETIME\]\]/g, eventDateTime);
+
+                    const buttonsOffset = formData.botoes_offset || formData.posicao_botoes || formData.buttons_offset || '0';
+                    htmlContent = htmlContent.replace(/\[\[BUTTONS_OFFSET\]\]/g, buttonsOffset);
+
+                    const hostName = formData.nome_anfitriao || formData.nome || 'Convite';
+                    const eventType = formData.tipo_evento || formData.event_type || 'Evento';
+                    let pageTitle = `${hostName} | ${eventType}`;
+
+                    if ((formData.idade_aniversariante || formData.idade) &&
+                        eventType.toLowerCase().includes('aniversário')) {
+                        pageTitle += ` ${formData.idade_aniversariante || formData.idade} Anos`;
+                    }
+
+                    htmlContent = htmlContent.replace(/\[\[OG_TITLE\]\]/g, pageTitle);
+
+                    const isTimerEnabled = String(formData.timer_contagem).toLowerCase().trim() === 'true';
+                    const timerHideClass = isTimerEnabled ? '' : 'hidden';
+                    htmlContent = htmlContent.replace(/\[\[TIMER_HIDE_CLASS\]\]/g, timerHideClass);
+
+                    const isWatermarkEnabled = String(formData.watermark_enabled).toLowerCase().trim() === 'true';
+                    const watermarkHideClass = isWatermarkEnabled ? '' : 'hidden';
+                    htmlContent = htmlContent.replace(/\[\[WATERMARK_HIDE_CLASS\]\]/g, watermarkHideClass);
+
+                    const btnColor = formData.cor_botoes || formData.shadow_color || '#292524';
+                    htmlContent = htmlContent.replace(/\[\[BUTTON_COLOR\]\]/g, btnColor);
+
+                    for (const [key, value] of Object.entries(formData)) {
+                        const regex = new RegExp(`\\[\\[${key.toUpperCase()}\\]\\]`, 'g');
+                        const safeValue = (value !== undefined && value !== null) ? value : '';
+                        htmlContent = htmlContent.replace(regex, safeValue);
+                    }
+
+                    if (appState.assetsMap) {
+                        for (const [context, assetPath] of Object.entries(appState.assetsMap)) {
+                            if (!assetPath || typeof assetPath !== 'string') continue;
+
+                            const relativePath = assetPath;
+                            const filename = assetPath.split('/').pop();
+
+                            let tokenKey = context.toUpperCase();
+                            if (tokenKey === 'PRESENTES') tokenKey = 'PRESENTS';
+                            if (tokenKey === 'FOLHA_VAZIA') tokenKey = 'FOLHA';
+                            if (tokenKey === 'VID_ABERTURA') tokenKey = 'VIDEO_ABERTURA';
+
+                            const urlToken = `[[${tokenKey}_URL]]`;
+                            htmlContent = htmlContent.split(urlToken).join(relativePath);
+
+                            const filenameToken = `[[${tokenKey}_FILENAME]]`;
+                            htmlContent = htmlContent.split(filenameToken).join(filename);
+                        }
+                    }
+
+                    const customStyle = `<style>:root { --button-color: ${btnColor}; } .custom-button-bg { background-color: var(--button-color) !important; }</style>`;
+                    htmlContent = htmlContent.replace('</head>', `${customStyle}</head>`);
+
+                    const buttonSize = formData.button_size || '1.0';
+                    const companionHideClass = formData.companion_hide_class || '';
+
+                    // Generate menuConfig 
+                    const buttonOrder = (window.AutoBuilderPreview && window.AutoBuilderPreview.getButtonOrder)
+                        ? window.AutoBuilderPreview.getButtonOrder()
+                        : ['location', 'gifts', 'rsvp', 'manual'];
+
+                    const buttonConfigs = {};
+
+                    if (formData.link_google_maps) {
+                        buttonConfigs['location'] = {
+                            id: 'location',
+                            titulo: 'Localização',
+                            icone: 'fa-solid fa-location-dot',
+                            link: formData.link_google_maps
+                        };
+                    }
+
+                    const hasGiftsImage = !!appState.assetsMap['presentes'];
+                    const giftsLink = formData.link_presentes;
+                    const giftsModeDiv = document.getElementById('gifts-image-mode');
+                    const isGiftsImageMode = (giftsModeDiv && !giftsModeDiv.classList.contains('hidden')) || (hasGiftsImage && !giftsLink);
+
+                    if (isGiftsImageMode && hasGiftsImage) {
+                        buttonConfigs['gifts'] = { id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: '#', isGiftImage: true };
+                    } else if (!isGiftsImageMode && giftsLink) {
+                        buttonConfigs['gifts'] = { id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: giftsLink };
+                    }
+
+                    if (formData.numero_whatsapp) {
+                        buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${formData.numero_whatsapp}` };
+                    } else if (formData.link_confirmacao) {
+                        buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao };
+                    }
+
+                    const hasManualImg = !!appState.assetsMap['manual'];
+                    const manualHtml = document.getElementById('manual-html-editor')?.value || document.getElementById('manual-raw-text')?.value;
+                    const manualImageModeDiv = document.getElementById('manual-image-mode');
+                    const isManualImageMode = (manualImageModeDiv && !manualImageModeDiv.classList.contains('hidden')) || (hasManualImg && (!manualHtml || manualHtml.trim() === ''));
+
+                    if (isManualImageMode && hasManualImg) {
+                        buttonConfigs['manual'] = { id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', isManualImage: true };
+                    } else if (!isManualImageMode && manualHtml && manualHtml.trim() !== '') {
+                        buttonConfigs['manual'] = { id: 'manual', titulo: 'Manual', icone: 'fa-solid fa-book-open', link: '#', manualText: manualHtml };
+                    }
+
+                    const extraLinks = window.builderState.linksExtras || [];
+                    extraLinks.forEach((link, idx) => {
+                        const extraId = `extra-${link.id || idx}`;
+                        buttonConfigs[extraId] = {
+                            id: extraId,
+                            titulo: link.label,
+                            icone: link.icon || 'fa-solid fa-link',
+                            link: link.url
+                        };
+                    });
+
+                    const generatedMenu = [];
+                    buttonOrder.forEach(buttonId => {
+                        if (buttonConfigs[buttonId]) {
+                            generatedMenu.push(buttonConfigs[buttonId]);
+                        }
+                    });
+
+                    Object.keys(buttonConfigs).forEach(buttonId => {
+                        if (!buttonOrder.includes(buttonId)) {
+                            generatedMenu.push(buttonConfigs[buttonId]);
+                        }
+                    });
+
+                    const menuConfig = generatedMenu;
+
+                    htmlContent = htmlContent.replace(/\[\[MENU_CONFIG\]\]/g, JSON.stringify(menuConfig));
+                    htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, buttonSize || '1.0');
+                    htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, companionHideClass || '');
+
+                    filesMap['index.html'] = utf8_to_b64(htmlContent);
+
+                    // DIAGNOSTICS
+                    const isDebugEnabled = document.getElementById('debug-log-toggle')?.checked;
+                    if (window.DebugLogger && isDebugEnabled) {
+                        window.DebugLogger.generateReport(formData, menuConfig, htmlContent);
+                    }
+
+                    // 5. Build Payload & Send
+                    window.updateDeployStep('step-build', 'done');
+                    window.updateDeployStep('step-upload', 'loading');
+
+                    const payload = {
+                        slug: slug,
+                        files: filesMap
+                    };
 
                     const response = await fetch('/api/publish', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            slug: slug,
-                            state: appState
-                        })
+                        body: JSON.stringify(payload)
                     });
 
                     const result = await response.json();
-                    if (!response.ok) throw new Error(result.error || 'Erro na publicação.');
+                    if (!response.ok) throw new Error(result.error || 'Falha na publicação');
 
-                    const liveUrl = result.url || `https://mforgedesign.github.io/${slug}/`;
-                    alert(`✅ Convite Publicado com Sucesso!\n\nAcesse: ${liveUrl}`);
-                    window.open(liveUrl, '_blank');
+                    window.updateDeployStep('step-upload', 'done');
+                    window.updateDeployStep('step-live', 'loading');
 
-                } catch (error) {
-                    console.error('[Publish] Error:', error);
-                    alert('Erro ao publicar: ' + error.message);
+                    publishBtn.innerHTML = '<i class="fa-solid fa-check"></i> Enviado!';
+                    publishBtn.classList.remove('bg-brand-600');
+                    publishBtn.classList.add('bg-blue-600');
+
+                    const liveUrl = `https://convites.mforge.com.br/${slug}/`;
+
+                    try {
+                        const timestamps = JSON.parse(localStorage.getItem('autoBuilder_historyTimestamps') || '{}');
+                        timestamps[slug] = Date.now();
+                        localStorage.setItem('autoBuilder_historyTimestamps', JSON.stringify(timestamps));
+                    } catch (e) {
+                        console.warn('Failed to update history timestamp', e);
+                    }
+
+                    await pollDeployStatus(slug, liveUrl, result.sha);
+
+                } catch (err) {
+                    console.error('Publish Error:', err);
+                    showDeployError(err.message);
+                    window.updateDeployStep('step-upload', 'reset');
+
+                    const publishStatusArea = document.getElementById('publish-status-area');
+                    if (publishStatusArea) publishStatusArea.classList.add('hidden');
+
                 } finally {
-                    publishBtn.innerHTML = originalText;
+                    if (publishBtn.innerHTML.includes('Iniciando') || publishBtn.innerHTML.includes('Aguardando')) {
+                        publishBtn.innerHTML = originalText;
+                    }
                     publishBtn.disabled = false;
                 }
             });
