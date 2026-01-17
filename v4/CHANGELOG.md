@@ -4,7 +4,27 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [17/01/2026 - 19:50] - v4.3.31 - Fix: Toggle de Acompanhantes e Timer
+### Arquivos Modificados:
+*   `static/js/build-system.js`:
+    *   **Fix**: Atualizada a lógica de `COMPANION_HIDE_CLASS` e `TIMER_HIDE_CLASS`.
+    *   **Robustez**: Adicionada verificação para strings `"true"`/`"on"` além de booleanos.
+    *   **CSS**: Alterado de `'hidden'` para `'!hidden'` para forçar o desaparecimento e evitar conflitos com classes `flex` do Tailwind.
+    *   **Backup**: `build-system_bkp_20260117_toggle_fix.js`
+
+---
+
+## [16/01/2026 - 21:56] - v4.3.30 - Ajuste: Posição Padrão dos Botões
+### Arquivos Modificados:
+*   `static/js/build-system.js`:
+    *   **Fix**: Alterado o valor padrão de `BUTTONS_OFFSET` de `50` para `-40`.
+    *   **Motivo**: Os botões estavam posicionados muito alto no convite gerado devido ao `items-start` usado para alinhamento. A nova posição (90px mais baixo) coloca os botões mais próximos da parte inferior da tela, conforme feedback do usuário.
+    *   **Backup**: `build-system_bkp_20260116_2156.js`
+
+---
+
 ## [16/01/2026 - 19:35] - v4.3.29 - Fix Definitive 2.0: Presentes (Hidden DOM)
+
 ### Arquivos Modificados:
 *   `static/js/preview.js`:
     *   **Inline Style Check**: Alterado para checar `element.style.backgroundImage` em vez de `getComputedStyle`.
