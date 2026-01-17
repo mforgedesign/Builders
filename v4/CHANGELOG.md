@@ -4,6 +4,15 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [17/01/2026 - 19:55] - v4.3.32 - Fix: Robustez no Deploy
+### Arquivos Modificados:
+*   `static/js/github-adapter.js`:
+    *   **Fix**: Adicionada verificação de nulidade para `filesMap` em `deployBatch` para evitar crashes.
+*   `static/js/supabase-adapter.js`:
+    *   **Fix**: Adicionado valor padrão `{}` para `body.files` ao chamar o adapter do GitHub.
+
+---
+
 ## [17/01/2026 - 19:50] - v4.3.31 - Fix: Toggle de Acompanhantes e Timer
 ### Arquivos Modificados:
 *   `static/js/build-system.js`:
