@@ -4,6 +4,17 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [17/01/2026 - 20:40] - v4.3.34 - Fix Definitive: Toggle Acompanhantes
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **Fix**: O cálculo da classe `companionHideClass` agora é feito APÓS a leitura fresca do DOM (`querySelectorAll`), baseando-se diretamente no estado do checkbox `permitir_acompanhante`.
+    *   **Correção**: Antes, o script buscava uma propriedade que não existia no objeto `formData` reconstruído, resultando sempre em string vazia ("") e exibindo os campos indevidamente.
+*   `final_template.html`:
+    *   **Logic Update**: A verificação JS injetada agora usa `.includes('hidden')` em vez de `=== 'hidden'`.
+    *   **Motivo**: Para suportar a classe `!hidden` (Tailwind force) e aumentar a robustez da verificação.
+
+---
+
 ## [17/01/2026 - 20:10] - v4.3.33 - Fix: GitHub 422 Error (Publish Logic)
 ### Arquivos Modificados:
 *   `static/js/windows.js`:
