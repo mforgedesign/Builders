@@ -3066,7 +3066,8 @@
                     htmlContent = htmlContent.replace('</head>', `${customStyle}</head>`);
 
                     const buttonSize = formData.button_size || '1.0';
-                    const companionHideClass = formData.companion_hide_class || '';
+                    const isCompanionEnabled = String(formData.permitir_acompanhante).toLowerCase().trim() === 'true' || formData.permitir_acompanhante === true || formData.permitir_acompanhante === 'on';
+                    const companionHideClass = isCompanionEnabled ? '' : '!hidden';
 
                     // Generate menuConfig 
                     const buttonOrder = (window.AutoBuilderPreview && window.AutoBuilderPreview.getButtonOrder)
