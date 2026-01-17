@@ -372,21 +372,24 @@
 
         // ✅ 4. BUTTONS_OFFSET (position from bottom)
         html = html.replace(/\[\[BUTTONS_OFFSET\]\]/g,
-            formData.posicao_botoes || formData.button_position || '50');
+            formData.posicao_botoes || formData.button_position || '-40');
 
         // ✅ 5. BUTTON_SIZE (convert string to float)
         const sizeMap = { 'pequeno': 0.8, 'medio': 1.0, 'grande': 1.2 };
         const buttonSize = sizeMap[formData.tamanho_botoes] || sizeMap[formData.button_size] || 1.0;
         html = html.replace(/\[\[BUTTON_SIZE\]\]/g, buttonSize);
 
-        // ✅ 6. TIMER_HIDE_CLASS (show if enabled, hide if disabled)
-        const timerEnabled = formData.timer_contagem || formData.countdown_timer;
-        const timerClass = timerEnabled ? '' : 'hidden';
+        // Helper to check truthy values (boolean, string 'true'/'on', or 1)
+        const isTrue = (val) => val === true || val === 'true' || val === 'on' || val === 1;
+
+        // ✅ 6. TIMER_HIDE_CLASS (show if enabled, hide if disabled with !important to override flex)
+        const timerEnabled = isTrue(formData.timer_contagem) || isTrue(formData.countdown_timer);
+        const timerClass = timerEnabled ? '' : '!hidden';
         html = html.replace(/\[\[TIMER_HIDE_CLASS\]\]/g, timerClass);
 
         // ✅ 7. COMPANION_HIDE_CLASS (FIXED LOGIC: show if enabled)
-        const companionEnabled = formData.permitir_acompanhante || formData.allow_companion;
-        const companionClass = companionEnabled ? '' : 'hidden';
+        const companionEnabled = isTrue(formData.permitir_acompanhante) || isTrue(formData.allow_companion);
+        const companionClass = companionEnabled ? '' : '!hidden';
         html = html.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, companionClass);
 
         // ✅ 8. EVENT_DATETIME (combine date + time for countdown)
