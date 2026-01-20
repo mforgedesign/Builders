@@ -82,13 +82,14 @@
             return;
         }
 
-        // 2. RSVP (Confirmar) - Priority: Link Confirmacao > WhatsApp
+        // 2. RSVP (Confirmar) - PRIORIDADE: Link > WhatsApp
         if (btn.id === 'rsvp') {
-            if (currentState.link_confirmacao) {
-                window.open(currentState.link_confirmacao, '_blank');
-            } else if (currentState.numero_whatsapp) {
-                const num = currentState.numero_whatsapp.replace(/\D/g, '');
-                window.open(`https://wa.me/${num}`, '_blank');
+            const linkConfirmacao = (currentState.link_confirmacao || '').trim();
+            const numeroWhatsapp = (currentState.numero_whatsapp || '').replace(/\D/g, '');
+            if (linkConfirmacao) {
+                window.open(linkConfirmacao, '_blank');
+            } else if (numeroWhatsapp) {
+                window.open(`https://wa.me/${numeroWhatsapp}`, '_blank');
             }
             return;
         }
@@ -180,7 +181,7 @@
             case 'location':
                 return !!currentState.link_google_maps;
             case 'rsvp':
-                return !!currentState.numero_whatsapp || !!currentState.link_confirmacao;
+                return !!(currentState.numero_whatsapp || '').replace(/\D/g, '') || !!(currentState.link_confirmacao || '').trim();
             case 'gifts':
                 // Logic: Visible if Link exists OR Image exists
                 // Image check: Check 'presentes' (direct URL from state) OR 'media_presentes' (event object)
