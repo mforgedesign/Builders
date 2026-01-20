@@ -881,9 +881,10 @@
             }
         }
 
-        // 2. Hydrate Links
-        if (appState.linksExtras && window.LinksExtras) {
-            window.LinksExtras.restore(appState.linksExtras);
+        // 2. Hydrate Links Extras
+        if (appState.linksExtras && window.AutoBuilderLinksExtras && window.AutoBuilderLinksExtras.populateLinks) {
+            window.AutoBuilderLinksExtras.populateLinks(appState.linksExtras);
+            console.log('[Restore] Links extras restored:', appState.linksExtras.length);
         }
 
         // 3. Hydrate Toggles (Best Effort)
@@ -1511,15 +1512,21 @@
                     menuConfig.push({ titulo: 'Manual do Convidado', icone: 'fa-solid fa-book-open', link: '#', id: 'manual', isManualImage: true });
                 }
 
-                // RSVP (WhatsApp/Link) - PRIORIDADE: Link > WhatsApp
-                const linkConfirmacao = (formData.link_confirmacao || formData.confirmation_link || '').trim();
-                const numeroWhatsapp = (formData.numero_whatsapp || formData.whatsapp_number || '').replace(/\D/g, '');
-                if (linkConfirmacao) {
-                    // Link tem prioridade - abre diretamente sem popup
-                    menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: linkConfirmacao, id: 'rsvp' });
-                } else if (numeroWhatsapp) {
-                    // WhatsApp - usa popup de confirmação
-                    menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${numeroWhatsapp}`, id: 'rsvp' });
+                // RSVP (WhatsApp/Link) - Campo Unificado com Auto-Detecção
+                // Retrocompatibilidade: suporta campo antigo numero_whatsapp e link_confirmacao
+                const confirmacao = (formData.confirmacao || formData.link_confirmacao || formData.numero_whatsapp || '').trim();
+                if (confirmacao) {
+                    const isUrl = confirmacao.startsWith('http');
+                    if (isUrl) {
+                        // É um link - abre diretamente
+                        menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: confirmacao, id: 'rsvp' });
+                    } else {
+                        // É um número de telefone - usa popup WhatsApp
+                        const cleanNum = confirmacao.replace(/\D/g, '');
+                        if (cleanNum) {
+                            menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${cleanNum}`, id: 'rsvp' });
+                        }
+                    }
                 }
 
                 // Inject menuConfig
@@ -3099,13 +3106,18 @@
                         buttonConfigs['gifts'] = { id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: giftsLink };
                     }
 
-                    // RSVP: Link tem prioridade sobre WhatsApp
-                    const linkConfirmacao2 = (formData.link_confirmacao || '').trim();
-                    const numeroWhatsapp2 = (formData.numero_whatsapp || '').replace(/\D/g, '');
-                    if (linkConfirmacao2) {
-                        buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: linkConfirmacao2 };
-                    } else if (numeroWhatsapp2) {
-                        buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${numeroWhatsapp2}` };
+                    // RSVP: Campo Unificado com Auto-Detecção
+                    const confirmacao2 = (formData.confirmacao || formData.link_confirmacao || formData.numero_whatsapp || '').trim();
+                    if (confirmacao2) {
+                        const isUrl2 = confirmacao2.startsWith('http');
+                        if (isUrl2) {
+                            buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: confirmacao2 };
+                        } else {
+                            const cleanNum2 = confirmacao2.replace(/\D/g, '');
+                            if (cleanNum2) {
+                                buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${cleanNum2}` };
+                            }
+                        }
                     }
 
                     const hasManualImg = !!appState.assetsMap['manual'];
