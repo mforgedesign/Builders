@@ -565,22 +565,16 @@
                         <div class="p-6">
                             <h3 class="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4">Confirmação de
                                 Presença</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Número do
-                                        WhatsApp</label>
-                                    <input type="tel" id="form-numero_whatsapp" name="numero_whatsapp"
-                                        data-field="numero_whatsapp"
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp ou Link</label>
+                                    <input type="text" id="form-confirmacao" name="confirmacao" data-field="confirmacao"
                                         class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none"
-                                        placeholder="5511999999999">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Link de Confirmação
-                                        (Alternativo)</label>
-                                    <input type="url" id="form-link_confirmacao" name="link_confirmacao"
-                                        data-field="link_confirmacao"
-                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none"
-                                        placeholder="https://forms.google.com/...">
+                                        placeholder="5511999999999 ou https://forms.google.com/...">
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <i class="fa-solid fa-circle-info mr-1"></i>
+                                        Número = popup WhatsApp | Link = abre direto
+                                    </p>
                                 </div>
                             </div>
                         </div>
