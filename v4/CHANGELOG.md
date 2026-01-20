@@ -4,6 +4,49 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [20/01/2026 - 19:00] - v4.3.35 - Fix: Prioridade Link vs WhatsApp (RSVP)
+### Problema:
+*   O campo de link de confirmação (`link_confirmacao`) deveria desativar o popup de WhatsApp quando preenchido, mas o botão continuava gerando popup mesmo com o WhatsApp vazio.
+
+### Causa Raiz:
+*   A lógica verificava `numero_whatsapp` antes de `link_confirmacao`, e não validava strings vazias corretamente.
+
+### Arquivos Modificados:
+*   `static/js/windows.js`:
+    *   **Linhas 1514-1524 (Preview Local)**: Invertida prioridade. Agora verifica `link_confirmacao` ANTES de `numero_whatsapp`. Adicionado `.trim()` e `.replace(/\D/g, '')` para validar strings vazias.
+    *   **Código anterior**:
+        ```javascript
+        if (formData.numero_whatsapp || formData.whatsapp_number) {
+            const cleanNum = (formData.numero_whatsapp || formData.whatsapp_number).replace(/\D/g, '');
+            menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: `https://wa.me/${cleanNum}`, id: 'rsvp' });
+        } else if (formData.link_confirmacao || formData.confirmation_link) {
+            menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao || formData.confirmation_link, id: 'rsvp' });
+        }
+        ```
+    *   **Código novo**:
+        ```javascript
+        const linkConfirmacao = (formData.link_confirmacao || formData.confirmation_link || '').trim();
+        const numeroWhatsapp = (formData.numero_whatsapp || formData.whatsapp_number || '').replace(/\D/g, '');
+        if (linkConfirmacao) {
+            menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: linkConfirmacao, id: 'rsvp' });
+        } else if (numeroWhatsapp) {
+            menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${numeroWhatsapp}`, id: 'rsvp' });
+        }
+        ```
+    *   **Linhas 3098-3108 (Publicação)**: Mesma correção aplicada.
+*   `static/js/build-system.js`:
+    *   **Linhas 268-288**: Consolidada lógica RSVP. Link agora tem prioridade. Ícone alterado para `fa-brands fa-whatsapp` quando usando WhatsApp.
+*   `static/js/preview.js`:
+    *   **Linhas 85-95 (handleButtonClick)**: Corrigida lógica de click do botão RSVP no preview.
+    *   **Linha 182 (isButtonVisible)**: Adicionada validação de string vazia com `.replace()` e `.trim()`.
+
+### Comportamento Esperado:
+1. Se `link_confirmacao` está preenchido → botão abre o link diretamente (sem popup).
+2. Se apenas `numero_whatsapp` está preenchido → botão abre popup de confirmação com formulário.
+3. Se ambos preenchidos → link tem prioridade.
+
+---
+
 ## [17/01/2026 - 20:40] - v4.3.34 - Fix Definitive: Toggle Acompanhantes
 ### Arquivos Modificados:
 *   `static/js/windows.js`:
