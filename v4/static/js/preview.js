@@ -17,7 +17,7 @@
     // All possible buttons with their metadata
     const BUTTON_DEFINITIONS = {
         'location': { label: 'Local', icon: 'fa-solid fa-location-dot', stateKey: 'link_google_maps' },
-        'rsvp': { label: 'Confirmar', icon: 'fa-brands fa-whatsapp', stateKey: 'numero_whatsapp' },
+        'rsvp': { label: 'Confirmar', icon: 'fa-brands fa-whatsapp', stateKey: 'confirmacao' },
         'gifts': { label: 'Presentes', icon: 'fa-solid fa-gift', stateKey: 'link_presentes' },
         'manual': { label: 'Manual', icon: 'fa-solid fa-book-open', stateKey: 'manual' }
     };
@@ -37,9 +37,10 @@
         timer_contagem: false,
         links_extras: [],
         link_google_maps: '',
-        numero_whatsapp: '',
+        confirmacao: '',
+        numero_whatsapp: '', // Legacy
         link_presentes: '',
-        link_confirmacao: '',
+        link_confirmacao: '', // Legacy
         manual_content: '',
         media_folha_animada: null,
         media_folha_preenchida: null,
@@ -82,14 +83,17 @@
             return;
         }
 
-        // 2. RSVP (Confirmar) - PRIORIDADE: Link > WhatsApp
+        // 2. RSVP (Confirmar) - Campo Unificado com Auto-Detecção
         if (btn.id === 'rsvp') {
-            const linkConfirmacao = (currentState.link_confirmacao || '').trim();
-            const numeroWhatsapp = (currentState.numero_whatsapp || '').replace(/\D/g, '');
-            if (linkConfirmacao) {
-                window.open(linkConfirmacao, '_blank');
-            } else if (numeroWhatsapp) {
-                window.open(`https://wa.me/${numeroWhatsapp}`, '_blank');
+            const confirmacao = (currentState.confirmacao || currentState.link_confirmacao || currentState.numero_whatsapp || '').trim();
+            if (confirmacao) {
+                const isUrl = confirmacao.startsWith('http');
+                if (isUrl) {
+                    window.open(confirmacao, '_blank');
+                } else {
+                    const cleanNum = confirmacao.replace(/\D/g, '');
+                    if (cleanNum) window.open(`https://wa.me/${cleanNum}`, '_blank');
+                }
             }
             return;
         }
@@ -181,7 +185,9 @@
             case 'location':
                 return !!currentState.link_google_maps;
             case 'rsvp':
-                return !!(currentState.numero_whatsapp || '').replace(/\D/g, '') || !!(currentState.link_confirmacao || '').trim();
+                // Campo unificado com retrocompatibilidade
+                const confirmacao = (currentState.confirmacao || currentState.link_confirmacao || currentState.numero_whatsapp || '').trim();
+                return !!confirmacao;
             case 'gifts':
                 // Logic: Visible if Link exists OR Image exists
                 // Image check: Check 'presentes' (direct URL from state) OR 'media_presentes' (event object)
