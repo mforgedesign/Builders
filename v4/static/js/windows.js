@@ -1511,12 +1511,15 @@
                     menuConfig.push({ titulo: 'Manual do Convidado', icone: 'fa-solid fa-book-open', link: '#', id: 'manual', isManualImage: true });
                 }
 
-                // RSVP (WhatsApp/Link)
-                if (formData.numero_whatsapp || formData.whatsapp_number) {
-                    const cleanNum = (formData.numero_whatsapp || formData.whatsapp_number).replace(/\D/g, '');
-                    menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: `https://wa.me/${cleanNum}`, id: 'rsvp' });
-                } else if (formData.link_confirmacao || formData.confirmation_link) {
-                    menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao || formData.confirmation_link, id: 'rsvp' });
+                // RSVP (WhatsApp/Link) - PRIORIDADE: Link > WhatsApp
+                const linkConfirmacao = (formData.link_confirmacao || formData.confirmation_link || '').trim();
+                const numeroWhatsapp = (formData.numero_whatsapp || formData.whatsapp_number || '').replace(/\D/g, '');
+                if (linkConfirmacao) {
+                    // Link tem prioridade - abre diretamente sem popup
+                    menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: linkConfirmacao, id: 'rsvp' });
+                } else if (numeroWhatsapp) {
+                    // WhatsApp - usa popup de confirmação
+                    menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${numeroWhatsapp}`, id: 'rsvp' });
                 }
 
                 // Inject menuConfig
@@ -3096,10 +3099,13 @@
                         buttonConfigs['gifts'] = { id: 'gifts', titulo: 'Presentes', icone: 'fa-solid fa-gift', link: giftsLink };
                     }
 
-                    if (formData.numero_whatsapp) {
-                        buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${formData.numero_whatsapp}` };
-                    } else if (formData.link_confirmacao) {
-                        buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: formData.link_confirmacao };
+                    // RSVP: Link tem prioridade sobre WhatsApp
+                    const linkConfirmacao2 = (formData.link_confirmacao || '').trim();
+                    const numeroWhatsapp2 = (formData.numero_whatsapp || '').replace(/\D/g, '');
+                    if (linkConfirmacao2) {
+                        buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: linkConfirmacao2 };
+                    } else if (numeroWhatsapp2) {
+                        buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-brands fa-whatsapp', link: `https://wa.me/${numeroWhatsapp2}` };
                     }
 
                     const hasManualImg = !!appState.assetsMap['manual'];
