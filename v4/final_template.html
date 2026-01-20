@@ -458,12 +458,11 @@
         window.abrirRSVP = function (e, link) {
             e.preventDefault();
 
-            // 1. Detect if it is a phone number or URL
-            const isWhatsappLink = link.includes("wa.me") || link.includes("whatsapp.com");
-            const isExternalUrl = link.startsWith("http") && !isWhatsappLink;
-
-            // If it looks like a URL but NOT a whatsapp URL, open it directly
-            if (isExternalUrl) {
+            // SIMPLIFIED LOGIC: Any URL opens directly, only raw phone numbers use popup
+            const isUrl = link.startsWith("http");
+            
+            if (isUrl) {
+                // ANY URL (forms, group chats, wedding sites, etc) opens directly
                 window.open(link, '_blank');
                 return;
             }
