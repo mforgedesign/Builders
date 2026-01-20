@@ -4,6 +4,91 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [20/01/2026 - 19:41] - v4.3.37 - Fix: Extra Links não importavam
+
+### Problema:
+*   Links extras não eram restaurados ao importar convites do histórico.
+
+### Causa Raiz:
+*   API mismatch: `restoreBuilderState` chamava `window.LinksExtras.restore()`, mas o módulo expõe `window.AutoBuilderLinksExtras.populateLinks()`.
+
+### Arquivos Modificados:
+
+#### `static/js/windows.js` (linhas 884-888):
+*   **Código anterior**:
+    ```javascript
+    if (appState.linksExtras && window.LinksExtras) {
+        window.LinksExtras.restore(appState.linksExtras);
+    }
+    ```
+*   **Código novo**:
+    ```javascript
+    if (appState.linksExtras && window.AutoBuilderLinksExtras && window.AutoBuilderLinksExtras.populateLinks) {
+        window.AutoBuilderLinksExtras.populateLinks(appState.linksExtras);
+        console.log('[Restore] Links extras restored:', appState.linksExtras.length);
+    }
+    ```
+
+---
+
+## [20/01/2026 - 19:37] - v4.3.36 - Unificação Campo RSVP
+
+### Alteração:
+*   Unificados os campos `numero_whatsapp` e `link_confirmacao` em um único campo `confirmacao`.
+*   Detecção automática: se começa com `http` → abre link direto; se são números → popup WhatsApp.
+*   Mantida retrocompatibilidade para convites antigos.
+
+### Arquivos Modificados:
+
+#### `index.html` (linhas 564-586):
+*   **Antes**: Dois campos separados (`form-numero_whatsapp` e `form-link_confirmacao`)
+*   **Depois**: Um único campo `form-confirmacao` com placeholder explicativo
+
+#### `templates/builder.html` (linhas 399-420):
+*   Mesma alteração do `index.html`
+
+#### `static/js/windows.js`:
+*   **Linhas 1514-1529**: Alterada lógica para usar campo unificado
+*   **Linhas 3102-3118**: Idem para publish
+*   **Código anterior**:
+    ```javascript
+    const linkConfirmacao = (formData.link_confirmacao || formData.confirmation_link || '').trim();
+    const numeroWhatsapp = (formData.numero_whatsapp || formData.whatsapp_number || '').replace(/\D/g, '');
+    if (linkConfirmacao) { ... } else if (numeroWhatsapp) { ... }
+    ```
+*   **Código novo**:
+    ```javascript
+    const confirmacao = (formData.confirmacao || formData.link_confirmacao || formData.numero_whatsapp || '').trim();
+    if (confirmacao) {
+        const isUrl = confirmacao.startsWith('http');
+        if (isUrl) { /* abre link */ }
+        else { /* popup whatsapp */ }
+    }
+    ```
+
+#### `static/js/build-system.js` (linhas 268-293):
+*   Mesma lógica unificada aplicada
+
+#### `static/js/preview.js`:
+*   **Linha 20**: `stateKey` alterado para `confirmacao`
+*   **Linhas 40-43**: Adicionado `confirmacao` com campos legacy marcados
+*   **Linhas 85-98**: Lógica handler atualizada
+*   **Linhas 183-186**: `isButtonVisible` usa campo unificado
+
+#### `static/js/form.js` (linhas 90-107):
+*   **Adicionado**: Mapeamento de campos legados para retrocompatibilidade:
+    ```javascript
+    const fieldMappings = {
+        'link_confirmacao': 'confirmacao',
+        'numero_whatsapp': 'confirmacao'
+    };
+    ```
+
+#### `final_template.html` (linhas 458-468):
+*   **Simplificada**: Qualquer URL (`http*`) abre diretamente, apenas números puros usam popup
+
+---
+
 ## [20/01/2026 - 19:00] - v4.3.35 - Fix: Prioridade Link vs WhatsApp (RSVP)
 ### Problema:
 *   O campo de link de confirmação (`link_confirmacao`) deveria desativar o popup de WhatsApp quando preenchido, mas o botão continuava gerando popup mesmo com o WhatsApp vazio.
