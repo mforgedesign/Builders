@@ -88,6 +88,24 @@
             return;
         }
 
+        // =============================================
+        // LEGACY FIELD MAPPING (Retrocompatibilidade)
+        // Maps old fields to new unified fields for imported invitations
+        // =============================================
+        const fieldMappings = {
+            // Campos RSVP antigos → novo campo unificado
+            'link_confirmacao': 'confirmacao',
+            'numero_whatsapp': 'confirmacao'
+        };
+
+        // Apply mappings: if old field exists and new field is empty, copy value
+        for (const [oldField, newField] of Object.entries(fieldMappings)) {
+            if (state[oldField] && !state[newField]) {
+                state[newField] = state[oldField];
+                console.log(`[Form] Legacy mapping: ${oldField} → ${newField}`);
+            }
+        }
+
         const inputs = document.querySelectorAll('.form-input[data-field]');
         inputs.forEach(input => {
             const fieldName = input.getAttribute('data-field');
