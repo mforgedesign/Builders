@@ -265,26 +265,32 @@
             });
         }
 
-        // RSVP: Link tem prioridade sobre WhatsApp
-        const linkConfirmacao = (formData.link_confirmacao || formData.confirmation_link || '').trim();
-        const whatsappNumber = (formData.numero_whatsapp || formData.whatsapp_number || '').replace(/\D/g, '');
+        // RSVP: Campo Unificado com Auto-Detecção
+        // Retrocompatibilidade: suporta campos antigos
+        const confirmacao = (formData.confirmacao || formData.link_confirmacao || formData.numero_whatsapp || '').trim();
 
-        if (linkConfirmacao) {
-            // Link tem prioridade - abre diretamente sem popup
-            config.push({
-                titulo: 'Confirmar Presença',
-                icone: 'fa-solid fa-check',
-                link: linkConfirmacao,
-                id: 'rsvp'
-            });
-        } else if (whatsappNumber) {
-            // WhatsApp - usa popup de confirmação
-            config.push({
-                titulo: 'Confirmar Presença',
-                icone: 'fa-brands fa-whatsapp',
-                link: `https://wa.me/${whatsappNumber}`,
-                id: 'rsvp'
-            });
+        if (confirmacao) {
+            const isUrl = confirmacao.startsWith('http');
+            if (isUrl) {
+                // É um link - abre diretamente
+                config.push({
+                    titulo: 'Confirmar Presença',
+                    icone: 'fa-solid fa-check',
+                    link: confirmacao,
+                    id: 'rsvp'
+                });
+            } else {
+                // É um número de telefone - usa popup WhatsApp
+                const cleanNum = confirmacao.replace(/\D/g, '');
+                if (cleanNum) {
+                    config.push({
+                        titulo: 'Confirmar Presença',
+                        icone: 'fa-brands fa-whatsapp',
+                        link: `https://wa.me/${cleanNum}`,
+                        id: 'rsvp'
+                    });
+                }
+            }
         }
 
         // Extra Links
