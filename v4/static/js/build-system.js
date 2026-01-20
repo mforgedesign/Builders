@@ -265,24 +265,24 @@
             });
         }
 
-        // RSVP (WhatsApp)
-        const whatsappNumber = formData.numero_whatsapp || formData.whatsapp_number;
-        if (whatsappNumber) {
-            // ✅ Clean number and format WhatsApp URL
-            const cleanNumber = whatsappNumber.replace(/\D/g, '');
+        // RSVP: Link tem prioridade sobre WhatsApp
+        const linkConfirmacao = (formData.link_confirmacao || formData.confirmation_link || '').trim();
+        const whatsappNumber = (formData.numero_whatsapp || formData.whatsapp_number || '').replace(/\D/g, '');
+
+        if (linkConfirmacao) {
+            // Link tem prioridade - abre diretamente sem popup
             config.push({
                 titulo: 'Confirmar Presença',
                 icone: 'fa-solid fa-check',
-                link: `https://wa.me/${cleanNumber}`,  // ✅ Proper WhatsApp link
+                link: linkConfirmacao,
                 id: 'rsvp'
             });
-        }
-        // RSVP (External link)
-        else if (formData.link_confirmacao || formData.confirmation_link) {
+        } else if (whatsappNumber) {
+            // WhatsApp - usa popup de confirmação
             config.push({
                 titulo: 'Confirmar Presença',
-                icone: 'fa-solid fa-check',
-                link: formData.link_confirmacao || formData.confirmation_link,
+                icone: 'fa-brands fa-whatsapp',
+                link: `https://wa.me/${whatsappNumber}`,
                 id: 'rsvp'
             });
         }
