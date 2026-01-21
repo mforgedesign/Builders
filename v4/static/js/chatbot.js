@@ -37,8 +37,8 @@
 
         const bubble = document.createElement('div');
         bubble.className = `max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm ${isUser
-                ? 'bg-brand-600 text-white rounded-tr-none'
-                : 'bg-white border border-gray-200 text-gray-700 rounded-tl-none'
+            ? 'bg-brand-600 text-white rounded-tr-none'
+            : 'bg-white border border-gray-200 text-gray-700 rounded-tl-none'
             }`;
         bubble.innerHTML = content;
 
@@ -80,8 +80,72 @@
     // API Communication
     // ========================================
 
+    // OpenAI API Key REVOVED - Implementing Secure Backend Call
+    // The System Prompt remains here to define behavior, but execution happens server-side
+
+    // System Prompt with ALL Fields Mapped
+    const SYSTEM_PROMPT = `
+You are AutoBuilder AI, an expert invitation designer.
+Your goal is to help the user build their digital invitation by extracting information and filling the form fields.
+
+RESPONSE FORMAT:
+You must ALWAYS return a JSON object with this structure (no markdown code blocks, just raw JSON):
+{
+  "response": "Your friendly and helpful text response here...",
+  "form_updates": {
+    "field_name": "value",
+    ...
+  }
+}
+
+MAPPED FIELDS (Use these exact keys in form_updates):
+
+1. IDENTITY:
+- "nome": Name of the person/event (e.g., "Julia", "Casamento Ana e Beto")
+- "tipo_evento": One of: "Aniversário", "Casamento", "Formatura", "Chá de Bebê", "Corporativo", "Outro"
+- "tipo_evento_custom": If type is "Outro", specify here
+- "data": Date in YYYY-MM-DD format
+- "hora": Time in HH:MM format
+- "idade": Age (number, for birthdays)
+- "tema_evento": Theme description (e.g., "Tropical", "Minimalist")
+- "local_evento": Address or name of the venue
+- "paleta_cores": Color palette (e.g., "Gold and White")
+- "frase_convite": Optional phrase (e.g., "Join us for this special moment")
+
+2. STYLE & UI:
+- "cor_botoes": Hex color (e.g., "#4f46e5")
+- "sombra_gradiente": Hex color (e.g., "#000000")
+- "posicao_botoes": Number 0-200 (default 50)
+- "tamanho_botoes": "pequeno", "medio", or "grande"
+
+3. LINKS & FEATURES:
+- "link_google_maps": URL for map
+- "link_presentes": URL for gift registry (main button)
+- "confirmacao": WhatsApp number or global RSVP URL
+- "permitir_acompanhante": boolean (true/false)
+- "timer_contagem": boolean (true/false) - Countdown timer
+- "watermark_enabled": boolean (true/false) - "Aguardando Pagamento" watermark
+
+4. MANUAL (Guest Guide):
+- "manual_instrucoes": Raw text of instructions
+- "manual_html": HTML formatted instructions (e.g., "<p><strong>Traje:</strong> Esporte Fino</p>"). Generate this if user provides rules.
+
+5. GIFTS (Lista de Presentes):
+- "lista_presentes_link": URL for external gift list (alternate)
+- "lista_presentes_texto": List of suggestions (one item per line)
+
+6. PUBLISH:
+- "slug": The URL slug (e.g., "julia-15", "casamento-ana"). Must be kebab-case.
+
+BEHAVIOR:
+- If the user gives a description, extract as much as possible.
+- If data is implicit (e.g., "my 15th birthday"), infer "idade": 15 and "tipo_evento": "Aniversário".
+- Only include fields in "form_updates" that are being changed.
+- Keep "response" short, encouraging, and ask for missing details.
+`;
+
     /**
-     * Sends message to ChatBot API.
+     * Sends message to ChatBot API (Supabase Edge Function via Adapter).
      * @param {string} message - User's message
      */
     async function sendMessage(message) {
@@ -96,36 +160,64 @@
         showTypingIndicator();
 
         try {
+            // Using /api/chat which is intercepted by supabase-adapter.js
+            // or handled by backend proxy.
             const response = await fetch('/api/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({
                     message,
-                    history: chatHistory.slice(-10)
+                    history: chatHistory.slice(-10),
+                    system_prompt: SYSTEM_PROMPT // Pass prompt to backend
                 })
             });
 
+            if (!response.ok) {
+                let err = {};
+                try { err = await response.json(); } catch (e) { }
+                throw new Error(err.error || `HTTP ${response.status}`);
+            }
+
             const data = await response.json();
+
+            // The Edge Function should return { response: "...", form_updates: {...} } directly
+            // or { status: "ok", ... } depending on adapter.
+
+            let aiContent = data;
+
+            // Normalize response structure
+            if (data.status === 'ok' && data.response) {
+                // If it's a string containing JSON (common in some raw proxies)
+                if (typeof data.response === 'string' && data.response.trim().startsWith('{')) {
+                    try {
+                        aiContent = JSON.parse(data.response);
+                    } catch (e) {
+                        aiContent = { response: data.response };
+                    }
+                } else {
+                    aiContent = data; // Assumes data.response is the text and data.form_updates exists
+                }
+            }
 
             hideTypingIndicator();
 
-            if (data.status === 'ok') {
-                // Format response with markdown-like parsing
-                const formatted = formatResponse(data.response);
-                addMessage(formatted, 'assistant');
+            // Format response
+            const responseText = aiContent.response || aiContent.message || "Sem resposta.";
+            const formatted = formatResponse(responseText);
+            addMessage(formatted, 'assistant');
 
-                // Apply form updates if any
-                if (data.form_updates && Object.keys(data.form_updates).length > 0) {
-                    applyFormUpdates(data.form_updates);
-                }
-            } else {
-                addMessage(`<span class="text-red-500">Erro: ${data.message || 'Falha na comunicação'}</span>`, 'assistant');
+            // Apply form updates
+            if (aiContent.form_updates && Object.keys(aiContent.form_updates).length > 0) {
+                console.log('[Chatbot] Applying updates:', aiContent.form_updates);
+                applyFormUpdates(aiContent.form_updates);
             }
 
         } catch (error) {
             hideTypingIndicator();
             console.error('Chat error:', error);
-            addMessage(`<span class="text-red-500">Erro de conexão. Tente novamente.</span>`, 'assistant');
+            addMessage(`<span class="text-red-500">Erro: ${error.message}</span>`, 'assistant');
         } finally {
             chatInput.disabled = false;
             chatSend.disabled = false;
