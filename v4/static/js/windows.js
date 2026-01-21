@@ -3230,6 +3230,35 @@
                     htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, buttonSize || '1.0');
                     htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, companionHideClass || '');
 
+
+                    // =============================================
+                    // DETERMINE RENDER MODE (Scenarios)
+                    // =============================================
+                    let renderMode = 'standard';
+                    const hasCapa = !!appState.assetsMap['capa'];
+                    const hasAbertura = !!appState.assetsMap['vid_abertura'];
+
+                    if (!hasCapa && !hasAbertura) {
+                        // Scenario A: No Cover, No Intro -> Direct to Content (Music Hint)
+                        renderMode = 'direct';
+                        console.log('[Publish] Mode Detected: DIRECT (No Cover/Intro)');
+                    } else if (!hasCapa && hasAbertura) {
+                        // Scenario C: Intro as Cover (Paused)
+                        renderMode = 'transparent-cover';
+                        console.log('[Publish] Mode Detected: TRANSPARENT COVER (Intro as Cover)');
+                    } else {
+                        console.log('[Publish] Mode Detected: STANDARD');
+                    }
+
+                    htmlContent = htmlContent.replace(/\[\[RENDER_MODE\]\]/g, renderMode);
+
+                    // Clean up unused tokens to be safe (optional, but good practice)
+                    if (renderMode === 'direct') {
+                        // Remove tokens to avoid broken URLs in DOM
+                        htmlContent = htmlContent.replace(/\[\[CAPA_URL\]\]/g, '');
+                        htmlContent = htmlContent.replace(/\[\[VIDEO_ABERTURA_URL\]\]/g, '');
+                    }
+
                     filesMap['index.html'] = utf8_to_b64(htmlContent);
 
                     // DIAGNOSTICS
