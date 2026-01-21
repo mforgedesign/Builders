@@ -2870,13 +2870,59 @@
                     return;
                 }
 
-                // IMPORTANT: Show Confirmation Modal First
-                const confirmed = await showConfirmModal(
-                    'Publicar Convite',
-                    `Seu convite será publicado em:<br><strong class="text-brand-600">convites.mforge.com.br/${slug}</strong><br><br>Deseja continuar?`,
-                    'Publicar',
-                    'Cancelar'
-                );
+                // ===================================================
+                // CHECK IF SLUG ALREADY EXISTS ON GITHUB
+                // ===================================================
+                publishBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando...';
+                publishBtn.disabled = true;
+
+                let slugExists = false;
+                try {
+                    // Check if slug folder exists in GitHub repo
+                    const checkUrl = `https://api.github.com/repos/mforgedesign/Convites/contents/${slug}`;
+                    const checkResp = await fetch(checkUrl, {
+                        headers: { 'Accept': 'application/vnd.github.v3+json' }
+                    });
+                    slugExists = checkResp.ok; // 200 = exists, 404 = doesn't exist
+                    console.log('[Publish] Slug check:', slug, slugExists ? 'EXISTS' : 'NEW');
+                } catch (e) {
+                    console.warn('[Publish] Could not check slug existence:', e);
+                    // Continue anyway - better UX than blocking on network error
+                }
+
+                publishBtn.innerHTML = '<i class="fa-solid fa-rocket"></i> Publicar';
+                publishBtn.disabled = false;
+
+                // SHOW APPROPRIATE CONFIRMATION MODAL
+                let confirmed = false;
+
+                if (slugExists) {
+                    // WARNING: Slug already exists - show prominent warning
+                    confirmed = await showConfirmModal(
+                        '⚠️ Slug já existe!',
+                        `<div class="text-left space-y-3">
+                            <p>O slug <strong class="text-red-600">${slug}</strong> já está em uso.</p>
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <p class="text-red-800 text-sm">
+                                    Ao <strong>confirmar</strong>, o convite que estiver nesse slug será 
+                                    <strong>apagado</strong> e <strong>sobrescrito</strong> pelo convite atual no builder.
+                                </p>
+                            </div>
+                            <p class="text-sm text-gray-600">URL: <strong>convites.mforge.com.br/${slug}</strong></p>
+                        </div>`,
+                        '⚠️ Sobrescrever',
+                        'Cancelar'
+                    );
+                } else {
+                    // Normal flow for new slug
+                    confirmed = await showConfirmModal(
+                        'Publicar Convite',
+                        `Seu convite será publicado em:<br><strong class="text-brand-600">convites.mforge.com.br/${slug}</strong><br><br>Deseja continuar?`,
+                        'Publicar',
+                        'Cancelar'
+                    );
+                }
+
                 if (!confirmed) return;
 
                 const originalText = publishBtn.innerHTML;
