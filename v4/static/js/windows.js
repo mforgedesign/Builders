@@ -1167,6 +1167,17 @@
         if (linksContainer) linksContainer.innerHTML = '';
         document.getElementById('no-links-message')?.classList.remove('hidden');
 
+        // Reset Manual HTML Preview
+        const manualPreview = document.getElementById('manual-preview');
+        if (manualPreview) {
+            manualPreview.innerHTML = `
+                <div class="text-center text-gray-400">
+                    <i class="fa-solid fa-eye-slash text-3xl mb-2"></i>
+                    <p class="text-sm">Digite o texto e clique em "Otimizar" para ver a prévia</p>
+                </div>
+            `;
+        }
+
         // 5. Reset Toggles
         document.getElementById('manual-mode-text')?.click();
         document.getElementById('gifts-mode-link')?.click();
