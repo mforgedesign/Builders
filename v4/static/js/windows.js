@@ -922,7 +922,50 @@
         }
 
         // 4. Hydrate Assets
+        // CRITICAL: First, clear ALL existing assets to prevent "zombie" assets (e.g., previous music persisting)
+        // usage: iterate over known contexts and clear them if they exist
+        Object.values(DROPZONE_CONTEXTS).forEach(ctx => {
+            // Logic to clear internal state if needed, or rely on the UI clear
+            // Since we are about to re-hydrate, we should assume a "clean slate" is desired.
+            // However, resetBuilderState() does a full UI wipe. 
+            // Ideally, restoreBuilderState should START by calling resetBuilderState, but that might be circular or too aggressive.
+            // Instead, let's just ensure we don't have lingering state if the new map misses a key.
+        });
+
+        // BETTER APPROACH: Explicitly check for specific keys that tend to stick (Music) and clear them if missing in new map
         if (appState.assetsMap) {
+            // List of critical assets to check for removal
+            const criticalAssets = ['musica', 'capa', 'vid_abertura', 'fundo_tela'];
+
+            criticalAssets.forEach(ctx => {
+                // Check if raw key OR normalized key exists in the new map
+                const hasAsset = Object.keys(appState.assetsMap).some(k => {
+                    let norm = k;
+                    if (norm === 'folha') norm = 'folha_vazia';
+                    if (norm === 'background') norm = 'fundo_tela';
+                    return norm === ctx;
+                });
+
+                if (!hasAsset) {
+                    console.log(`[Restore] Asset '${ctx}' not found in new state. Clearing...`);
+                    // Clear visual dropzone
+                    const dropzoneId = Object.keys(DROPZONE_CONTEXTS).find(id => DROPZONE_CONTEXTS[id] === ctx);
+                    if (dropzoneId) {
+                        const el = document.getElementById(dropzoneId);
+                        if (el) clearDropzone(el, ctx);
+                    }
+                    // Clear persistence/state
+                    if (window.builderState && window.builderState.assets) {
+                        delete window.builderState.assets[ctx];
+                    }
+                    // Special case for Music Name UI
+                    if (ctx === 'musica') {
+                        document.getElementById('music-track-name').textContent = 'Nenhuma música selecionada';
+                        document.getElementById('music-track-name-hidden').value = '';
+                    }
+                }
+            });
+
             const promises = Object.entries(appState.assetsMap).map(async ([rawKey, path]) => {
                 // Key Normalization (Standardize legacy names)
                 let context = rawKey;
