@@ -4,6 +4,21 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [21/01/2026 - 19:55] - v4.3.42 - Fix: Persistência de Música na Importação
+
+### Problema:
+*   Ao importar um convite **sem música** sobre um convite que **já tinha música**, a música anterior permanecia no builder ao invés de ser removida.
+
+### Solução:
+*   **Limpeza Explícita**: O processo de restauração (`restoreBuilderState`) agora verifica se assets críticos (`musica`, `capa`, `vid_abertura`, `fundo_tela`) estão ausentes no novo arquivo importado.
+*   **Ação**: Se o asset não existir no novo arquivo, o sistema **limpa** explicitamente o dropzone visual, o estado interno e a UI correspondente (ex: nome da faixa de música).
+*   Isso garante que a importação reflita fielmente o estado do arquivo, sem "lixo" da sessão anterior.
+
+### Arquivos Modificados:
+*   `static/js/windows.js`: Inserida lógica de "Asset Pruning" antes do loop de hidratação.
+
+---
+
 ## [21/01/2026 - 19:50] - v4.3.41 - Feature: Smart Publish (Capa/Abertura)
 
 ### Funcionalidade:
