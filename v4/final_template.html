@@ -96,6 +96,44 @@
         .texto-sombra {
             text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.8);
         }
+
+        /* =========================================
+           SCENARIOS CSS (Injected via Render Mode)
+           ========================================= */
+
+        /* Scenario A: Direct Mode (No Cover, No Intro) */
+        .mode-direct #capaInicial {
+            background-image: none !important;
+            background-color: rgba(0, 0, 0, 0.4);
+            /* Slight darken for text readability */
+        }
+
+        .mode-direct #capaInicial .bg-black\/20 {
+            display: none;
+        }
+
+        /* Show content immediately behind */
+        .mode-direct #fundoTelaImg,
+        .mode-direct #fundoTelaVideo,
+        .mode-direct #containerBotoes,
+        .mode-direct #containerShadow {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+
+        .mode-direct #videoAbertura {
+            display: none !important;
+        }
+
+        /* Scenario C: Transparent Cover (Intro as Cover) */
+        .mode-transparent #capaInicial {
+            background-image: none !important;
+            background-color: transparent !important;
+        }
+
+        .mode-transparent #capaInicial .bg-black\/20 {
+            display: none;
+        }
     </style>
 </head>
 
@@ -320,6 +358,23 @@
 
     <script>
         // ==================================================================
+        // 0. RENDER MODE & SCENARIO LOGIC
+        // ==================================================================
+        const renderMode = '[[RENDER_MODE]]'; // standard, direct, transparent-cover
+        console.log('[AutoBuilder] Render Mode:', renderMode);
+
+        if (renderMode === 'direct') {
+            document.body.classList.add('mode-direct');
+            const icon = document.querySelector('#dicaInteractionContainer i');
+            const text = document.querySelector('#dicaInteractionContainer h1');
+            // Change to Music Hint
+            if (icon) icon.className = "fa-solid fa-music text-5xl text-white drop-shadow-lg animar-clique";
+            if (text) text.innerText = "Clique para tocar a música!";
+        } else if (renderMode === 'transparent-cover') {
+            document.body.classList.add('mode-transparent');
+        }
+
+        // ==================================================================
         // 1. CONFIGURAÇÃO DOS BOTÕES (Injetado pelo AutoBuilder)
         // ==================================================================
         const menuConfig = [[MENU_CONFIG]];
@@ -460,7 +515,7 @@
 
             // SIMPLIFIED LOGIC: Any URL opens directly, only raw phone numbers use popup
             const isUrl = link.startsWith("http");
-            
+
             if (isUrl) {
                 // ANY URL (forms, group chats, wedding sites, etc) opens directly
                 window.open(link, '_blank');
@@ -680,10 +735,17 @@
                 fundoTelaVideo.play().catch(function (e) { console.log("Fundo video not used or play failed"); });
             }
 
-            // Vídeo de abertura na camada da frente
-            if (videoAbertura) {
-                videoAbertura.currentTime = 0;
-                videoAbertura.play().catch(function (e) { console.error("Intro play failed:", e); });
+            // SCENARIO SPECIFIC LOGIC
+            if (renderMode === 'direct') {
+                // Skip Intro entirely -> Go to Loop State directly
+                irParaLoop();
+            } else {
+                // Standard or Transparent-Cover Mode -> Play Intro
+                // Vídeo de abertura na camada da frente
+                if (videoAbertura) {
+                    videoAbertura.currentTime = 0;
+                    videoAbertura.play().catch(function (e) { console.error("Intro play failed:", e); });
+                }
             }
 
             // Mostra controles
