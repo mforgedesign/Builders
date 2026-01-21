@@ -4,6 +4,36 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [20/01/2026 - 22:25] - v4.3.40 - Feature: Chatbot "Mestre dos Campos"
+
+### Funcionalidade:
+*   **Auto-Preenchimento Exaustivo**: O Chatbot agora é capaz de entender e preencher **TODOS** os 23 campos do formulário.
+*   **Integração OpenAI Direta**: Implementada chamada direta à API para controle total do prompt de sistema e maior agilidade (chave configurada para ambiente de desenvolvimento).
+
+### Arquivos Modificados:
+#### `templates/builder.html`:
+*   Adicionados atributos `data-field` faltantes para permitir vínculo com a IA:
+    *   `manual-raw-text` -> `data-field="manual_instrucoes"`
+    *   `manual-html-editor` -> `data-field="manual_html"`
+    *   `gifts-suggestions` -> `data-field="lista_presentes_texto"`
+    *   `gifts-link-input` -> `data-field="lista_presentes_link"`
+
+#### `static/js/chatbot.js`:
+*   **Novo System Prompt**: Prompt massivo detalhando cada campo e regra de inferência.
+*   **Novo Response Format**: JSON estrito `{ response, form_updates }`.
+*   **Mapeamento de Campos**:
+    1.  `nome`, `tipo_evento` (+custom), `data`, `hora`, `idade`
+    2.  `tema_evento`, `local_evento`, `paleta_cores`, `frase_convite`
+    3.  `cor_botoes`, `sombra_gradiente`, `posicao_botoes`, `tamanho_botoes`
+    4.  `link_google_maps`, `link_presentes`
+    5.  `confirmacao` (WhatsApp/Link), `permitir_acompanhante`, `timer_contagem`
+    6.  `watermark_enabled`
+    7.  `manual_instrucoes`, `manual_html`
+    8.  `lista_presentes_link`, `lista_presentes_texto`
+    9.  `slug`
+
+---
+
 ## [20/01/2026 - 21:10] - v4.3.39 - Feature: Aviso de Slug Existente
 
 ### Funcionalidade:
