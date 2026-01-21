@@ -4,6 +4,27 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [20/01/2026 - 21:02] - v4.3.38 - Fix: Importação de Vídeos/Assets mais robusta
+
+### Problema:
+*   Vídeos (especialmente folha preenchida) às vezes não eram importados do histórico.
+
+### Correções:
+
+#### `static/js/history.js` (linhas 550-561):
+*   **Adicionados padrões faltando** ao `assetContexts`:
+    ```javascript
+    'fundo_tela': ['fundo', 'background', 'bg', 'loop', 'preenchida', 'fill', 'folha_preenchida', 'video']
+    'musica': ['musica', 'music', 'audio', 'som']
+    'presentes': ['presentes', 'gifts', 'lista']
+    ```
+
+#### `static/js/windows.js` (linhas 858-882, 960-971):
+*   **Adicionada função `fetchWithRetry`** com retry (2 tentativas) e timeout (15s)
+*   **Atualizado fetch de assets** para usar a nova função, garantindo resiliência a falhas de rede
+
+---
+
 ## [20/01/2026 - 19:41] - v4.3.37 - Fix: Extra Links não importavam
 
 ### Problema:
