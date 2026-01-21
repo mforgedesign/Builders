@@ -4,11 +4,42 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [21/01/2026 - 19:50] - v4.3.41 - Feature: Smart Publish (Capa/Abertura)
+
+### Funcionalidade:
+*   **Lógica Condicional de Publicação**: O sistema agora adapta o convite final baseando-se na presença ou ausência de assets (Capa/Abertura).
+*   **Cenário A (No Capa / No Intro)**: 
+    *   Se não houver capa nem vídeo de abertura, o convite abre **direto no conteúdo** (loop/fundo).
+    *   Visual: A tela inicial torna-se transparente e exibe o conteúdo de fundo.
+    *   Interação: O ícone muda para **Música/Fones** (`fa-music`) e o texto para **"Clique para tocar a música!"**.
+    *   Comportamento: Ao clicar, a música inicia e a animação de entrada é pulada instantaneamente.
+*   **Cenário C (No Capa / Has Intro)**:
+    *   Se houver abertura mas não houver capa estática.
+    *   Visual: O vídeo de abertura aparece pausado no frame 0 (agindo como capa).
+    *   Interação: Texto padrão "Clique para interagir".
+    *   Comportamento: Ao clicar, o vídeo despausa e segue o fluxo normal.
+
+### Arquivos Modificados:
+#### `static/js/windows.js`:
+*   **Detecção de Modo**: Adicionada lógica para calcular `renderMode` ('standard', 'direct', 'transparent-cover') antes de gerar o HTML.
+*   **Injeção**: Substituição do token `[[RENDER_MODE]]` no template final.
+*   **Cleanup**: Remoção de tokens `[[CAPA_URL]]` e `[[VIDEO_ABERTURA_URL]]` no modo 'direct' para evitar links quebrados.
+
+#### `final_template.html`:
+*   **CSS Dinâmico**: Classes `.mode-direct` e `.mode-transparent` para manipular a visibilidade de `capaInicial` e `videoAbertura`.
+*   **JS Logic**: 
+    *   Leitura de `const renderMode`.
+    *   Hook de inicialização para alterar ícone/texto no modo 'direct'.
+    *   Lógica no `capa.addEventListener('click')` para pular intro (`irParaLoop()`) se estiver no modo 'direct'.
+
+---
+
 ## [20/01/2026 - 22:25] - v4.3.40 - Feature: Chatbot "Mestre dos Campos"
 
 ### Funcionalidade:
-*   **Auto-Preenchimento Exaustivo**: O Chatbot agora é capaz de entender e preencher **TODOS** os 23 campos do formulário.
-*   **Integração OpenAI Direta**: Implementada chamada direta à API para controle total do prompt de sistema e maior agilidade (chave configurada para ambiente de desenvolvimento).
+*   **Auto-Preenchimento Exaustivo**: O Chatbot agora mapeia e preenche TODOS os 23 campos (incluindo manuais e slug) via System Prompt.
+*   **Arquitetura Segura**: Migração da lógica do Chatbot para Supabase Edge Functions (`chatbot-intent`), removendo a chave de API do frontend.
+*   **Segurança no Frontend**: Reversão da exposição da chave no `chatbot.js`; agora envia apenas o prompt e mensagem para o backend seguro.
 
 ### Arquivos Modificados:
 #### `templates/builder.html`:
