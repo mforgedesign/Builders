@@ -4,6 +4,20 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [21/01/2026 - 20:00] - v4.3.43 - Fix Definitive: Limpeza Total de Assets na Importação
+
+### Problema:
+*   A correção anterior limpava apenas ativos críticos (Música, Capa), deixando brechas para persistência de imagens secundárias (Manual, Presentes) que poderiam gerar conflitos lógicos (ex: botão de presentes abrindo imagem antiga em vez de link).
+
+### Solução:
+*   **Abrangência Total**: A rotina de limpeza agora itera sobre `Object.values(DROPZONE_CONTEXTS)`, cobrindo **todos** os tipos de arquivos possíveis.
+*   **Segurança de Estado**: Garante que qualquer convite importado comece com um estado visual "limpo", contendo estritamente o que está no arquivo ZIP/JSON, sem heranças invisíveis.
+
+### Arquivos Modificados:
+*   `static/js/windows.js`: Atualizada lista `criticalAssets` para `allContexts`.
+
+---
+
 ## [21/01/2026 - 19:55] - v4.3.42 - Fix: Persistência de Música na Importação
 
 ### Problema:
