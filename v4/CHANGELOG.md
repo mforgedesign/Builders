@@ -4,6 +4,19 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [21/01/2026 - 20:15] - v4.3.45 - Fix: Reset do Preview do Manual
+
+### Problema:
+*   O painel de prévia HTML do Manual (`#manual-preview`) não estava sendo limpo ao resetar/importar um novo convite, mantendo o conteúdo anterior visível na aba de edição.
+
+### Solução:
+*   **Limpeza de UI**: Adicionada instrução explícita no `resetBuilderState` para restaurar o estado inicial ("Digite o texto...") da div de preview.
+
+### Arquivos Modificados:
+*   `static/js/windows.js`: Adicionado reset para `#manual-preview`.
+
+---
+
 ## [21/01/2026 - 20:10] - v4.3.44 - Fix: Persistência de Preview (Manual/Presentes)
 
 ### Problema:
