@@ -935,9 +935,10 @@
         // BETTER APPROACH: Explicitly check for specific keys that tend to stick (Music) and clear them if missing in new map
         if (appState.assetsMap) {
             // List of critical assets to check for removal
-            const criticalAssets = ['musica', 'capa', 'vid_abertura', 'fundo_tela'];
+            // V4.3.43 FIX: Scan ALL potential contexts to prevent ANY zombie asset (like gifts/manual images)
+            const allContexts = Object.values(DROPZONE_CONTEXTS);
 
-            criticalAssets.forEach(ctx => {
+            allContexts.forEach(ctx => {
                 // Check if raw key OR normalized key exists in the new map
                 const hasAsset = Object.keys(appState.assetsMap).some(k => {
                     let norm = k;
