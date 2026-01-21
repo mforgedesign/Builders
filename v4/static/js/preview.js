@@ -477,6 +477,16 @@
         document.addEventListener('stateUpdated', (e) => {
             if ((e.detail.source === 'persistence' || e.detail.source === 'restore') && e.detail.data && e.detail.data.formData) {
                 console.log('[Preview] Bulk Update from', e.detail.source);
+
+                // CRITICAL FIX: Explicitly reset optional fields that might be missing in the new state.
+                // Object.assign does NOT clear keys that are missing in the source.
+                currentState.manual = null;
+                currentState.media_manual = null;
+                currentState.presentes = null;
+                currentState.media_presentes = null;
+                currentState.link_presentes = '';
+                currentState.manual_content = '';
+
                 Object.assign(currentState, e.detail.data.formData);
                 updateBackground();
                 renderButtons();
