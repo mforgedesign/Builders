@@ -4,6 +4,22 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [20/01/2026 - 21:10] - v4.3.39 - Feature: Aviso de Slug Existente
+
+### Funcionalidade:
+*   Ao clicar em **Publicar**, o sistema verifica se o slug já existe no GitHub.
+*   **Se existe**: Exibe modal de aviso proeminente informando que o convite anterior será apagado e sobrescrito.
+*   **Se não existe**: Exibe modal padrão de confirmação.
+
+### Arquivo Modificado:
+
+#### `static/js/windows.js` (linhas 2873-2925):
+*   Adicionada verificação via GitHub API (`/repos/mforgedesign/Convites/contents/{slug}`)
+*   Feedback visual durante verificação: "Verificando..."
+*   Modal de aviso com texto: "Ao **confirmar**, o convite que estiver nesse slug será **apagado** e **sobrescrito** pelo convite atual no builder."
+
+---
+
 ## [20/01/2026 - 21:02] - v4.3.38 - Fix: Importação de Vídeos/Assets mais robusta
 
 ### Problema:
