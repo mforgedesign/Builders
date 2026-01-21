@@ -856,6 +856,33 @@
     };
 
     /**
+     * Fetch with retry and timeout for reliable asset loading
+     * @param {string} url - URL to fetch
+     * @param {number} retries - Number of retry attempts
+     * @param {number} timeout - Timeout in ms per attempt
+     */
+    async function fetchWithRetry(url, retries = 2, timeout = 15000) {
+        for (let i = 0; i <= retries; i++) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+                const resp = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                if (resp.ok) return resp;
+                console.warn(`[Restore] HTTP ${resp.status} for ${url}`);
+            } catch (e) {
+                if (i === retries) {
+                    console.error(`[Restore] Failed after ${retries + 1} attempts: ${url}`);
+                    return null;
+                }
+                console.warn(`[Restore] Retry ${i + 1}/${retries} for ${url}`);
+                await new Promise(r => setTimeout(r, 500)); // Wait before retry
+            }
+        }
+        return null;
+    }
+
+    /**
      * Restores the builder state from a state object
      * @param {object} appState - The loaded data.json
      * @param {JSZip} zipContext - Optional: JSZip object to load assets from (for ZIP import)
@@ -930,21 +957,17 @@
 
                         if (file) blob = await file.async("blob");
                     }
-                    // Source B: Absolute URL
+                    // Source B: Absolute URL (with retry)
                     else if (path.startsWith('http')) {
-                        try {
-                            const resp = await fetch(path);
-                            if (resp.ok) blob = await resp.blob();
-                        } catch (e) { console.warn('Fetch failed for', path); }
+                        const resp = await fetchWithRetry(path);
+                        if (resp) blob = await resp.blob();
                     }
-                    // Source C: Web URL (Relative)
+                    // Source C: Web URL (Relative) (with retry)
                     else if (baseUrl) {
                         // constructs url: baseUrl + path (path is likely 'assets/filename')
                         const fullUrl = baseUrl.endsWith('/') ? baseUrl + path : baseUrl + '/' + path;
-                        try {
-                            const resp = await fetch(fullUrl);
-                            if (resp.ok) blob = await resp.blob();
-                        } catch (e) { console.warn('Fetch failed for', fullUrl); }
+                        const resp = await fetchWithRetry(fullUrl);
+                        if (resp) blob = await resp.blob();
                     }
 
                     if (blob) {
