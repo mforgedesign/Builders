@@ -4,6 +4,21 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [21/01/2026 - 20:10] - v4.3.44 - Fix: Persistência de Preview (Manual/Presentes)
+
+### Problema:
+*   Ao importar um convite, se o novo arquivo não contivesse campos opcionais (ex: manual, imagem de presentes), o **preview** continuava exibindo os dados do convite anterior.
+*   Isso ocorria porque o `Object.assign` usado na atualização em massa não apaga chaves ausentes no novo objeto.
+
+### Solução:
+*   **Reset Prévio no Preview**: Antes de aplicar os dados de um novo convite (`bulk update`), o `preview.js` agora força o reset dos campos `manual`, `media_manual`, `presentes`, `media_presentes`, etc.
+*   Isso garante que o Smartphone de Preview reflita exatamente o estado atual, sem "memória fantasma".
+
+### Arquivos Modificados:
+*   `static/js/preview.js`: Adicionada limpeza explícita antes de `Object.assign`.
+
+---
+
 ## [21/01/2026 - 20:00] - v4.3.43 - Fix Definitive: Limpeza Total de Assets na Importação
 
 ### Problema:
