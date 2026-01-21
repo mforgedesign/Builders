@@ -548,14 +548,15 @@
             if (!appState.assetsMap) appState.assetsMap = {};
 
             // Legacy Fallback for Assets (Check both files and subdirectories)
+            // IMPROVED: Added more patterns for robust matching
             const assetContexts = {
                 'capa': ['capa', 'cover'],
-                'folha_vazia': ['folha', 'sheet', 'leaf', 'background'],
-                'fundo_tela': ['fundo', 'background', 'bg', 'loop'], // Unified
+                'folha_vazia': ['folha', 'sheet', 'leaf'],
+                'fundo_tela': ['fundo', 'background', 'bg', 'loop', 'preenchida', 'fill', 'folha_preenchida', 'video'], // Added preenchida/fill patterns
                 'vid_abertura': ['intro', 'abertura', 'opening'],
-                'musica': ['musica', 'music'],
+                'musica': ['musica', 'music', 'audio', 'som'],
                 'manual': ['manual'],
-                'presentes': ['presentes', 'gifts']
+                'presentes': ['presentes', 'gifts', 'lista']
             };
 
             for (const [context, patterns] of Object.entries(assetContexts)) {
