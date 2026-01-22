@@ -736,10 +736,20 @@ Response:
 
             try {
                 if (action.type === 'setValue') {
+                    // PROTECTION: Skip empty values if element already has content
+                    // This prevents overwriting valid imported data with empty chatbot responses
+                    const isEmptyValue = action.value === null || action.value === undefined || action.value === '';
+                    const hasExistingValue = el.value && el.value.trim() !== '';
+
+                    if (isEmptyValue && hasExistingValue) {
+                        console.log(`[Chatbot] Skipping empty setValue for "${action.id}" (preserving existing value: "${el.value.substring(0, 30)}...")`);
+                        continue;
+                    }
+
                     // Special handling for Color Inputs (ensure format and events)
                     if (el.type === 'color' || el.id.includes('cor') || el.id.includes('sombra')) {
                         // Ensure valid hex
-                        if (action.value.startsWith('#') && (action.value.length === 7 || action.value.length === 4)) {
+                        if (action.value && action.value.startsWith('#') && (action.value.length === 7 || action.value.length === 4)) {
                             el.value = action.value;
                             // Color pickers often need 'input' to update preview and 'change' to commit
                             el.dispatchEvent(new Event('input', { bubbles: true }));
