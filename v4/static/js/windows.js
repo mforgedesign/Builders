@@ -342,33 +342,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Animation Tabs
     // ========================================
 
-    function setupAnimationTabs() {
-        const tabs = document.querySelectorAll('.anim-tab');
+    // Animation Tabs and Toggles removed per user request (Simplified Flow)
+    // function setupAnimationTabs() { ... }
 
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const targetTab = tab.dataset.tab;
-
-                // Deactivate all tabs
-                tabs.forEach(t => {
-                    t.classList.remove('text-brand-600', 'border-b-2', 'border-brand-600');
-                    t.classList.add('text-gray-500');
-                });
-
-                // Hide all content
-                document.getElementById('anim-intro-content')?.classList.add('hidden');
-                document.getElementById('anim-loop-content')?.classList.add('hidden');
-
-                // Activate clicked tab
-                tab.classList.remove('text-gray-500');
-                tab.classList.add('text-brand-600', 'border-b-2', 'border-brand-600');
-
-                // Show target content
-                const content = document.getElementById(`anim-${targetTab}-content`);
-                content?.classList.remove('hidden');
-            });
-        });
-    }
 
     // ========================================
     // Music Player & Client-Side Build Logic
@@ -958,30 +934,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle Switches (Animate Background, etc)
     // ========================================
 
-    function setupToggleSwitches() {
-        // Animate Background Toggle
-        const animateToggle = document.getElementById('animate-background-toggle');
-        const leafLayers = document.getElementById('leaf-layers');
+    // Toggle Switches removed
+    // function setupToggleSwitches() { ... }
 
-        if (animateToggle && leafLayers) {
-            animateToggle.addEventListener('change', () => {
-                if (animateToggle.checked) {
-                    leafLayers.classList.remove('hidden');
-                } else {
-                    leafLayers.classList.add('hidden');
-                }
-            });
-        }
-
-        // Watermark Toggle
-        const watermarkToggle = document.getElementById('watermark-toggle');
-        if (watermarkToggle) {
-            watermarkToggle.addEventListener('change', () => {
-                // Update state when implemented
-                console.log('Watermark:', watermarkToggle.checked);
-            });
-        }
-    }
 
 
     // ========================================
@@ -3601,7 +3556,8 @@ document.addEventListener('DOMContentLoaded', () => {
             try { setupModeToggle('fill', ['overlay', 'flat']); } catch (e) { console.warn('Fill Mode setup failed', e); }
 
             // Animation tabs
-            try { setupAnimationTabs(); } catch (e) { console.warn('Animation Tabs setup failed', e); }
+            // try { setupAnimationTabs(); } catch (e) { console.warn('Animation Tabs setup failed', e); }
+
 
             // Auto-Prompt Listener
             try { setupAutoPromptListener(); } catch (e) { console.warn('AutoPrompt setup failed', e); }
@@ -3610,7 +3566,8 @@ document.addEventListener('DOMContentLoaded', () => {
             try { setupMusicPlayer(); } catch (e) { console.warn('Music Player setup failed', e); }
 
             // Toggle switches
-            try { setupToggleSwitches(); } catch (e) { console.warn('Toggle Switches setup failed', e); }
+            // try { setupToggleSwitches(); } catch (e) { console.warn('Toggle Switches setup failed', e); }
+
 
             // Finalize buttons
             try { setupFinalizeButtons(); } catch (e) { console.warn('Finalize Buttons setup failed', e); }
