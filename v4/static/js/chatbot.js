@@ -469,48 +469,163 @@ Format:
     }
 
     /**
-     * Enhanced Modal Buster - Auto-clica em botões de confirmação com timer de 30s
+     * Enhanced Modal Buster - Fecha popup e mostra confirmação inline no chat
      */
     function initModalBusterEnhanced() {
-        let attempts = 0;
-        const maxAttempts = 60; // 30 seconds (500ms interval)
-        let countdown = 30;
+        let searchAttempts = 0;
+        const maxSearchAttempts = 120; // 60 seconds searching for popup
 
         const busterInterval = setInterval(() => {
-            attempts++;
+            searchAttempts++;
 
-            if (attempts % 2 === 0) countdown--; // Atualiza countdown a cada segundo
-
-            if (attempts > maxAttempts) {
+            if (searchAttempts > maxSearchAttempts) {
                 clearInterval(busterInterval);
-                addMessage("⏱️ Timeout. Nenhum popup de confirmação detectado.", "assistant");
                 return;
             }
 
-            // Procura por botões de confirmação visíveis
+            // Procura por botões de confirmação visíveis (no popup)
             const buttons = Array.from(document.querySelectorAll('button'));
             const confirmBtn = buttons.find(btn => {
-                if (btn.offsetParent === null) return false; // Não visível
+                if (btn.offsetParent === null) return false;
                 const text = btn.innerText.toLowerCase();
                 return text.includes('sobrescrever') ||
-                    text.includes('confirmar') ||
                     text.includes('publicar mesmo assim') ||
                     text.includes('sim, publicar');
             });
 
-            if (confirmBtn) {
-                console.log('[ModalBuster] Popup detectado. Auto-confirmando em 3s...');
-                addMessage(`⚠️ **Slug já existe!** Sobrescrevendo automaticamente...`, "assistant");
+            // Também procura o botão Cancelar do popup
+            const cancelBtn = buttons.find(btn => {
+                if (btn.offsetParent === null) return false;
+                const text = btn.innerText.toLowerCase();
+                return text === 'cancelar' && btn.closest('.fixed');
+            });
 
-                // Pequeno delay para o usuário ver a mensagem
-                setTimeout(() => {
-                    confirmBtn.click();
-                    addMessage("✅ Confirmação automática executada.", "assistant");
-                }, 1500);
-
+            if (confirmBtn && cancelBtn) {
                 clearInterval(busterInterval);
+                console.log('[ModalBuster] Popup detectado! Fechando e mostrando confirmação inline...');
+
+                // Fecha o popup clicando em cancelar
+                cancelBtn.click();
+
+                // Mostra confirmação inline no chat
+                showInlineChatConfirmation(confirmBtn);
             }
         }, 500);
+    }
+
+    /**
+     * Mostra confirmação inline no chat com timer de 30s e botões
+     */
+    function showInlineChatConfirmation(originalConfirmBtn) {
+        let countdown = 30;
+        const confirmId = `confirm-${Date.now()}`;
+
+        // Cria o card de confirmação
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex justify-start';
+        wrapper.id = confirmId;
+        wrapper.innerHTML = `
+            <div class="max-w-[90%] rounded-2xl px-4 py-4 shadow-lg bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-tl-none">
+                <div class="flex items-center gap-2 mb-2">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+                    <strong class="text-amber-800">Slug já existe!</strong>
+                </div>
+                <p class="text-sm text-gray-600 mb-3">O convite será sobrescrito. Confirmar publicação?</p>
+                <div class="flex items-center justify-between">
+                    <div class="flex gap-2">
+                        <button id="${confirmId}-yes" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium text-sm transition-colors">
+                            <i class="fa-solid fa-check mr-1"></i> Sobrescrever
+                        </button>
+                        <button id="${confirmId}-no" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium text-sm transition-colors">
+                            Cancelar
+                        </button>
+                    </div>
+                    <div class="text-right">
+                        <span id="${confirmId}-timer" class="text-2xl font-bold text-amber-600">30</span>
+                        <span class="text-xs text-gray-500 block">segundos</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        chatMessages.appendChild(wrapper);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        const timerEl = document.getElementById(`${confirmId}-timer`);
+        const yesBtn = document.getElementById(`${confirmId}-yes`);
+        const noBtn = document.getElementById(`${confirmId}-no`);
+
+        let confirmed = false;
+        let cancelled = false;
+
+        // Timer de countdown
+        const countdownInterval = setInterval(() => {
+            countdown--;
+            if (timerEl) timerEl.textContent = countdown;
+
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                if (!confirmed && !cancelled) {
+                    // Auto-confirmar
+                    executePublishConfirmation();
+                }
+            }
+
+            // Cor muda quando fica crítico
+            if (countdown <= 10 && timerEl) {
+                timerEl.classList.remove('text-amber-600');
+                timerEl.classList.add('text-red-500');
+            }
+        }, 1000);
+
+        // Ação de confirmar
+        function executePublishConfirmation() {
+            confirmed = true;
+            wrapper.innerHTML = `
+                <div class="max-w-[80%] rounded-2xl px-4 py-3 shadow-sm bg-green-50 border border-green-200 rounded-tl-none">
+                    <i class="fa-solid fa-check text-green-500 mr-2"></i>
+                    <span class="text-green-700">Publicação confirmada! Sobrescrevendo...</span>
+                </div>
+            `;
+            // Clica no botão de publicar novamente para reabrir o popup
+            const publishBtn = document.getElementById('btn-publish');
+            if (publishBtn) {
+                publishBtn.click();
+                // Agora auto-confirma o popup imediatamente
+                setTimeout(() => {
+                    const btns = Array.from(document.querySelectorAll('button'));
+                    const realConfirm = btns.find(b => b.innerText.toLowerCase().includes('sobrescrever'));
+                    if (realConfirm) realConfirm.click();
+                }, 500);
+            }
+        }
+
+        // Ação de cancelar
+        function executeCancellation() {
+            cancelled = true;
+            clearInterval(countdownInterval);
+            wrapper.innerHTML = `
+                <div class="max-w-[80%] rounded-2xl px-4 py-3 shadow-sm bg-gray-50 border border-gray-200 rounded-tl-none">
+                    <i class="fa-solid fa-xmark text-gray-400 mr-2"></i>
+                    <span class="text-gray-600">Publicação cancelada pelo usuário.</span>
+                </div>
+            `;
+        }
+
+        // Event listeners
+        yesBtn?.addEventListener('click', executePublishConfirmation);
+        noBtn?.addEventListener('click', executeCancellation);
+
+        // Auto-cancelar se usuário modificar algo no builder
+        const formInputs = document.querySelectorAll('input, textarea, select');
+        const cancelOnChange = () => {
+            if (!confirmed && !cancelled) {
+                executeCancellation();
+                addMessage("↩️ Confirmação cancelada automaticamente (você modificou algo no builder).", "assistant");
+            }
+            formInputs.forEach(el => el.removeEventListener('input', cancelOnChange));
+        };
+        formInputs.forEach(el => el.addEventListener('input', cancelOnChange, { once: true }));
     }
 
     // Listeners initialization
