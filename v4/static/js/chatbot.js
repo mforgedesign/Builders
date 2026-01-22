@@ -361,7 +361,8 @@ Format:
                 body: JSON.stringify({
                     message,
                     history: chatHistory.slice(-10),
-                    system_prompt: SYSTEM_PROMPT,
+                    // Let Edge Function use its own updated System Prompt
+                    // system_prompt: SYSTEM_PROMPT, 
                     // Inject Current Context
                     context: contextManager.getSnapshot()
                 })
