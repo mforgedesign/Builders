@@ -3868,4 +3868,5 @@
         };
 
         console.log('[Windows] Init Complete.');
-    })();
+    } // End IIFE
+    )();
