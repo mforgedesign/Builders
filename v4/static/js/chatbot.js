@@ -394,24 +394,61 @@ Format:
             }
             const data = await response.json();
 
-            // Parse JSON Actions
+            // Parse response - handles both direct JSON and wrapper
             let aiContent = typeof data === 'string' ? JSON.parse(data) : data;
-            let responseText = aiContent.response || aiContent.message || "Olá!";
 
-            const jsonBlock = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+            // The Edge Function returns { status: 'ok', response: '...' }
+            // The 'response' field contains the AI's JSON output as a string
+            let rawAiResponse = aiContent.response || aiContent.message || aiContent;
+
+            // If it's a string, try to parse it as JSON
+            let parsedResponse;
+            if (typeof rawAiResponse === 'string') {
+                try {
+                    parsedResponse = JSON.parse(rawAiResponse);
+                } catch (e) {
+                    // Not valid JSON, treat as plain text
+                    parsedResponse = { message: rawAiResponse };
+                }
+            } else {
+                parsedResponse = rawAiResponse;
+            }
+
+            console.log("[Chatbot] Parsed AI Response:", parsedResponse);
+
+            // Execute actions if present
+            let actionsExecuted = 0;
+            if (parsedResponse.actions && Array.isArray(parsedResponse.actions)) {
+                console.log("[Chatbot] Executing Actions:", parsedResponse.actions);
+                actionsExecuted = parsedResponse.actions.length;
+                executeBuilderActions(parsedResponse.actions);
+            }
+
+            // Also check for markdown-wrapped JSON (legacy support)
+            let displayText = parsedResponse.message || parsedResponse.reply || "";
+            const jsonBlock = displayText.match(/```json\s*([\s\S]*?)\s*```/);
             if (jsonBlock && jsonBlock[1]) {
                 try {
                     const commandData = JSON.parse(jsonBlock[1]);
                     if (commandData.actions) {
-                        console.log("[Chatbot] Executing Actions:", commandData.actions);
+                        console.log("[Chatbot] Executing Markdown Actions:", commandData.actions);
                         executeBuilderActions(commandData.actions);
+                        actionsExecuted += commandData.actions.length;
                     }
-                    responseText = responseText.replace(jsonBlock[0], '').trim();
+                    displayText = displayText.replace(jsonBlock[0], '').trim();
                 } catch (e) { console.error("JSON Parse Error", e); }
             }
 
             hideTypingIndicator();
-            addMessage(formatResponse(responseText), 'assistant');
+
+            // Show user-friendly message
+            if (actionsExecuted > 0) {
+                addMessage(`✅ <strong>Entendido!</strong> Preenchendo ${actionsExecuted} campos...`, 'assistant');
+            } else if (displayText) {
+                addMessage(formatResponse(displayText), 'assistant');
+            } else {
+                addMessage("✅ Comando processado!", 'assistant');
+            }
 
         } catch (error) {
             clearTimeout(timeoutId);
