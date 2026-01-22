@@ -4,6 +4,20 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [21/01/2026 - 21:35] - v4.3.46 - Fix/Melhoria: Cronômetro com Segundos (Descongelamento)
+
+### Problema:
+*   O cronômetro parecia "congelado" porque só exibia até os minutos. O usuário não via atividade imediata, dando a sensação de travamento.
+
+### Solução:
+*   **Adição de Segundos**: Implementada a lógica de cálculo e exibição dos segundos (`#contadorSegundos`) no script do template final.
+*   **UI Update**: Adicionado o bloco HTML correspondente no componente de timer.
+
+### Arquivos Modificados:
+*   `final_template.html`: Adicionado HTML e JS para segundos.
+
+---
+
 ## [21/01/2026 - 20:15] - v4.3.45 - Fix: Reset do Preview do Manual
 
 ### Problema:
