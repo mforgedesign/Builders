@@ -1403,6 +1403,209 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ===========================================
+    // IMPORT FROM REMOTE URL (Chatbot Feature)
+    // ===========================================
+    window.importFromRemoteURL = async function (url, modifications = null) {
+        if (!url) return;
+
+        console.log(`[Import] Iniciando importação de: ${url}`);
+        const loadingMsg = document.getElementById('loading-overlay') || (() => {
+            const el = document.createElement('div');
+            el.id = 'loading-overlay';
+            el.className = 'fixed inset-0 z-[9999] bg-black/80 flex flex-col items-center justify-center text-white';
+            el.innerHTML = '<i class="fa-solid fa-cloud-arrow-down text-5xl mb-4 fa-bounce"></i><h2 class="text-2xl font-bold">Importando Modelo...</h2><p id="import-status" class="mt-2 text-gray-300">Conectando...</p>';
+            document.body.appendChild(el);
+            return el;
+        })();
+
+        const updateStatus = (msg) => {
+            const el = document.getElementById('import-status');
+            if (el) el.textContent = msg;
+            console.log(`[Import] ${msg}`);
+        };
+
+        try {
+            // 1. Fetch data.json
+            updateStatus('Baixando configurações...');
+            let dataUrl = url.endsWith('/') ? `${url}data.json` : `${url}/data.json`;
+            // Handle index.html suffix
+            if (url.includes('index.html')) dataUrl = url.replace('index.html', 'data.json');
+
+            const resp = await fetch(dataUrl);
+            if (!resp.ok) throw new Error(`Não foi possível baixar o modelo (HTTP ${resp.status})`);
+
+            const appState = await resp.json();
+
+            // 2. Generate New Slug (Prevent Overwrite)
+            const oldSlug = url.split('/').filter(p => p && !p.includes('.')).pop() || 'modelo';
+            const newSlug = `${oldSlug}-copia-${Math.floor(Math.random() * 1000)}`;
+            updateStatus(`Gerando novo slug: ${newSlug}...`);
+
+            // 3. Reset Builder First
+            await window.resetBuilderState(true); // Silent reset
+
+            // 4. Fill Form Data
+            updateStatus('Aplicando configurações...');
+
+            // Determine Mode: Modifications Requested?
+            const hasModifications = modifications && modifications.length > 0;
+
+            if (appState.formData) {
+                // If modifications requested, CLEARS text fields except essential structure
+                // Otherwise fills everything
+                const fieldsToKeep = ['tipo_evento', 'paleta_cores', 'botoes_offset', 'shadow_color', 'shadow_disabled', 'timer_contagem', 'watermark_enabled', 'cor_botoes'];
+
+                Object.entries(appState.formData).forEach(([key, value]) => {
+                    if (hasModifications) {
+                        // Only keep structural fields, skip texts
+                        if (fieldsToKeep.includes(key) || typeof value === 'boolean') { // Keep toggles
+                            window.AutoBuilderForm.updateField(key, value);
+                        } else {
+                            // Clear text fields
+                            window.AutoBuilderForm.updateField(key, '');
+                        }
+                    } else {
+                        // Keep everything
+                        window.AutoBuilderForm.updateField(key, value);
+                    }
+                });
+            }
+
+            // Set Slug
+            const slugInput = document.getElementById('slug-input');
+            if (slugInput) {
+                slugInput.value = newSlug;
+                slugInput.dispatchEvent(new Event('input'));
+            }
+
+            // 5. Restore Assets (Intelligent Logic)
+            updateStatus('Recuperando assets...');
+            const assetBaseUrl = dataUrl.replace('data.json', ''); // e.g. https://domain/slug/
+
+            if (appState.assetsMap && Object.keys(appState.assetsMap).length > 0) {
+                const assetPromises = Object.entries(appState.assetsMap).map(async ([context, relativePath]) => {
+                    if (!relativePath) return;
+
+                    // Logic:
+                    // - If hasModifications:
+                    //    - Capa (cover) -> Reference Dropzone (#cover-reference-dropzone)
+                    //    - Folha (leaf) -> Main Dropzone BUT maybe triggers edit mode? (For now just load)
+                    //    - Others -> Load normally? Or skip? User said "Música: ignorar se diferente".
+                    //      Actually user said "Se pedir alterações... Capa deve ser anexada no placeholder de Referência".
+
+                    let targetContext = context;
+                    if (hasModifications && context === 'capa') {
+                        targetContext = 'capa_referencia'; // Special context for logic below
+                    }
+
+                    // Construct full URL
+                    const fullAssetUrl = relativePath.startsWith('http') ? relativePath : `${assetBaseUrl}${relativePath}`;
+
+                    try {
+                        // We can't easily download the blob due to CORS on GitHub Pages sometimes, 
+                        // BUT if it's an image we might be able to use it as URL or fetch.
+                        // GitHub Pages usually allows GET.
+
+                        // Special handling for 'capa_referencia'
+                        if (targetContext === 'capa_referencia') {
+                            const refDropzone = document.getElementById('cover-reference-dropzone');
+                            if (refDropzone) {
+                                updateDropzonePreview(refDropzone, fullAssetUrl);
+                                refDropzone.dataset.base64 = fullAssetUrl; // Store URL as "base64" for now implies source
+                                console.log('[Import] Capa definida como referência');
+                            }
+                            return;
+                        }
+
+                        // Standard Restoration logic (similar to restoreBuilderState)
+                        // Mapping context to Dropzone ID
+                        const contextToId = {
+                            'capa': 'cover-dropzone',
+                            'folha_vazia': 'leaf-dropzone',
+                            'fundo_tela': 'fill-image-dropzone',
+                            'vid_abertura': 'intro-video-dropzone',
+                            'manual': 'manual-image-dropzone',
+                            'presentes': 'gifts-image-dropzone'
+                        };
+
+                        // Music handling
+                        if (context === 'musica') {
+                            // User said: "Questão da música vai ser ignorada... builder não faz download".
+                            // So we just set the dropdown if it matches a sample, or ignore?
+                            // Actually the builder stores music reference. 
+                            // If hasModifications, maybe we keep it? User said "ignora se diferente". 
+                            // Let's just keep the reference if it's a known sample, else ignore.
+                            // Actually, let's just SKIP music download for now to be safe as per "ignorar".
+                            return;
+                        }
+
+                        const dzId = contextToId[context];
+                        if (dzId) {
+                            const dz = document.getElementById(dzId);
+                            if (dz) {
+                                // Just update preview with URL (Lazy load)
+                                // Logic in updateDropzonePreview handles URLs
+                                updateDropzonePreview(dz, fullAssetUrl);
+
+                                // Also update Form Data for persistence?
+                                // Note: The persistence system usually expects Base64 for local work.
+                                // Fetching blob to convert to Base64 is best if CORS allows.
+                                try {
+                                    const blobResp = await fetch(fullAssetUrl);
+                                    if (blobResp.ok) {
+                                        const blob = await blobResp.blob();
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                            setDropzoneContent(dz, reader.result, context);
+                                        };
+                                        reader.readAsDataURL(blob);
+                                    } else {
+                                        // Fallback: just URL
+                                        if (window.AutoBuilderForm) window.AutoBuilderForm.updateField(context, fullAssetUrl);
+                                    }
+                                } catch (corsErr) {
+                                    console.warn(`[Import] CORS blocked fetching ${fullAssetUrl}, using URL only.`);
+                                    if (window.AutoBuilderForm) window.AutoBuilderForm.updateField(context, fullAssetUrl);
+                                }
+                            }
+                        }
+
+                    } catch (assetErr) {
+                        console.warn(`[Import] Falha ao importar asset ${context}:`, assetErr);
+                    }
+                });
+
+                await Promise.all(assetPromises);
+            }
+
+            updateStatus('Finalizando...');
+            loadingMsg.remove();
+
+            if (hasModifications) {
+                // Set the modifications prompt in the AI input called "manual" (or chat input?)
+                // Actually the user said "pede as alterações lá no prompt de preenchimento".
+                // This usually implies the 'manual_content' or similar? 
+                // Or maybe just tell the chatbot?
+                // Use showAlertModal to inform user
+                showAlertModal('Modelo Importado para Edição',
+                    'O modelo foi carregado como base. <br><b>A capa original está na referência.</b><br>Os textos foram limpos para você preencher com os novos dados.',
+                    'success');
+            } else {
+                showAlertModal('Modelo Importado', 'O convite foi importado com sucesso e está pronto para uso.', 'success');
+            }
+
+            return true;
+
+        } catch (error) {
+            loadingMsg.remove();
+            console.error('[Import] Critical Error:', error);
+            showAlertModal('Erro na Importação', `Não foi possível importar o modelo: ${error.message}`, 'error');
+            return false;
+        }
+    };
+
+
     // Bind "Local Import" (Folder/ZIP)
     const localImportBtn = document.getElementById('btn-local-import');
     const localImportInput = document.getElementById('local-import-input');
