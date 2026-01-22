@@ -148,6 +148,18 @@
                                 class="fa-solid fa-paperclip"></i></button>
                         <input type="text" id="chat-input" placeholder="Descreva o convite ou anexe arquivos..."
                             class="flex-1 bg-gray-100 border-0 rounded-full px-4 py-2 focus:ring-2 focus:ring-brand-500 outline-none text-sm">
+                        class="flex-1 bg-gray-100 border-0 rounded-full px-4 py-2 focus:ring-2 focus:ring-brand-500
+                        outline-none text-sm">
+
+                        <!-- Hidden File Input -->
+                        <input type="file" id="chat-file-input" multiple class="hidden"
+                            accept="image/*,video/*,audio/*">
+
+                        <!-- Attach Button -->
+                        <button id="chat-attach-btn" class="text-gray-400 hover:text-brand-600 transition px-2">
+                            <i class="fa-solid fa-paperclip"></i>
+                        </button>
+
                         <button id="chat-send"
                             class="bg-brand-600 hover:bg-brand-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition shadow-lg">
                             <i class="fa-solid fa-paper-plane"></i>
