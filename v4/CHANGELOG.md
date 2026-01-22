@@ -4,6 +4,22 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [21/01/2026 - 21:50] - v4.3.47 - Fix: Preview Manual e Timer Simulator
+
+### Problema:
+*   **Manual Preview**: O preview do manual só aparecia após editar o campo, ficando vazio após importação.
+*   **Timer Seconds**: O contador de segundos não aparecia no Simulador (Builder) nem no convite final (possível cache/CSS).
+
+### Solução:
+*   **Windows.js**: Adicionado gatilho automático (`dispatchEvent`) para atualizar os previews de Manual e Presentes logo após restaurar o estado (importação/load).
+*   **Builder.html**: Adicionado HTML explícito para a coluna de Segundos no simulador mobile/desktop, garantindo paridade visual com o template final.
+
+### Arquivos Modificados:
+*   `static/js/windows.js`: Trigger para inputs de manual/presentes.
+*   `templates/builder.html`: Adição da coluna "Seg" no timer preview.
+
+---
+
 ## [21/01/2026 - 21:35] - v4.3.46 - Fix/Melhoria: Cronômetro com Segundos (Descongelamento)
 
 ### Problema:
