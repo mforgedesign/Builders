@@ -1118,6 +1118,17 @@
             // Otherwise, ensure it's saved in persistence.
         }
 
+        // 6. Force Trigger Input Events for Dynamic Previews (Manual & Gifts)
+        setTimeout(() => {
+            ['manual-html-editor', 'manual-raw-text', 'gifts-suggestions', 'gifts-image-prompt', 'gifts-link-input'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.value) {
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        }, 300);
+
         console.log('✅ State Restored Successfully');
     };
 
