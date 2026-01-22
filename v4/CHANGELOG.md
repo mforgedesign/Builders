@@ -4,6 +4,12 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [4.1.3] - 2026-01-22
+### Changed
+- **Import Logic**: Restored the behavior where importing a model with modifications moves the original cover to the "Reference" dropzone. This prevents the "old" cover from occupying the main slot when the user intends to create a new one.
+- **Chatbot Feedback**: Enhanced `importModel` feedback in the chat. Now explicitly informs the user if the cover was moved to the reference area ("A capa original foi movida para 'Referência'").
+- **Internal**: Updated `importFromRemoteURL` in `windows.js` to return a detailed status object instead of a boolean.
+
 ## [4.1.2] - 2026-01-21
 ### Added
 - **Success Alert**: Added audio confirmation (Major Triad Arpeggio) upon successful invitation publication.
