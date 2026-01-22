@@ -460,6 +460,12 @@ Format:
                     const result = await window.importFromRemoteURL(action.url, action.modifications);
 
                     if (result && result.success) {
+                        // Push context to history so LLM "sees" it occurred
+                        chatHistory.push({
+                            role: 'system',
+                            content: `[SYSTEM] Model imported successfully. Cover redirected: ${result.coverRedirected}. Modifications applied.`
+                        });
+
                         if (result.coverRedirected) {
                             addMessage('✅ <strong>Modelo Carregado!</strong><br>A capa original foi movida para "Referência" para não sobrescrever sua nova criação.', "assistant");
                         } else if (action.modifications) {
@@ -487,8 +493,23 @@ Format:
 
             try {
                 if (action.type === 'setValue') {
-                    el.value = action.value;
-                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    // Special handling for Color Inputs (ensure format and events)
+                    if (el.type === 'color' || el.id.includes('cor') || el.id.includes('sombra')) {
+                        // Ensure valid hex
+                        if (action.value.startsWith('#') && (action.value.length === 7 || action.value.length === 4)) {
+                            el.value = action.value;
+                            // Color pickers often need 'input' to update preview and 'change' to commit
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        } else {
+                            console.warn(`[Chatbot] Invalid color value: ${action.value} for ${action.id}`);
+                        }
+                    } else {
+                        el.value = action.value;
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        // Text inputs might need 'change' for verify/formatting logic
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
                     fieldCount++;
                 } else if (action.type === 'toggle') {
                     if (el.type === 'checkbox') {
