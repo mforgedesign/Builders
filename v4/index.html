@@ -785,23 +785,8 @@
                                         </div>
                                     </div>
 
-                                    <!-- Background Animation Toggle -->
-                                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <h4 class="text-sm font-medium text-purple-800">Animar Background</h4>
-                                                <p class="text-xs text-purple-600 mt-1">Separar camadas para animação
-                                                </p>
-                                            </div>
-                                            <div class="relative inline-block w-12 mr-2 align-middle select-none">
-                                                <input type="checkbox" id="animate-background-toggle"
-                                                    data-field="animate_background"
-                                                    class="form-input toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-purple-300" />
-                                                <label for="animate-background-toggle"
-                                                    class="toggle-label block overflow-hidden h-6 rounded-full bg-purple-300 cursor-pointer"></label>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <!-- Background Animation Toggle Removed -->
+
                                 </div>
 
                                 <!-- Right: Dropzone and Layers -->
@@ -822,34 +807,8 @@
                                         </div>
                                     </div>
 
-                                    <!-- Layer Previews (shown when animate is enabled) -->
-                                    <div id="leaf-layers" class="hidden space-y-3">
-                                        <div class="grid grid-cols-2 gap-3">
-                                            <div class="text-center">
-                                                <div id="dropzone-leaf-only"
-                                                    class="w-full aspect-square bg-gray-50 rounded border border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 text-xs hover:border-brand-300 cursor-pointer relative overflow-hidden">
-                                                    <input type="file" accept="image/*"
-                                                        class="absolute inset-0 opacity-0 cursor-pointer">
-                                                    <i class="fa-solid fa-layer-group mb-1"></i>
-                                                    <span class="text-[10px]">Folha (PNG)</span>
-                                                </div>
-                                            </div>
-                                            <div class="text-center">
-                                                <div id="dropzone-background-only"
-                                                    class="w-full aspect-square bg-gray-50 rounded border border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 text-xs hover:border-brand-300 cursor-pointer relative overflow-hidden">
-                                                    <input type="file" accept="image/*"
-                                                        class="absolute inset-0 opacity-0 cursor-pointer">
-                                                    <i class="fa-solid fa-panorama mb-1"></i>
-                                                    <span class="text-[10px]">Background (JPG)</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <!-- Layer Previews Removed -->
 
-                                        <button id="btn-process-layers"
-                                            class="w-full bg-purple-100 text-purple-700 py-2 rounded-md text-xs font-bold hover:bg-purple-200 transition flex items-center justify-center gap-2">
-                                            <i class="fa-solid fa-wand-sparkles"></i> Separar Camadas com IA
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -868,20 +827,9 @@
                         </div>
 
                         <div class="p-6">
-                            <!-- Tabs -->
-                            <div class="flex border-b border-gray-200 mb-6">
-                                <button
-                                    class="anim-tab px-4 py-2 text-sm font-medium text-brand-600 border-b-2 border-brand-600"
-                                    data-tab="intro">
-                                    <i class="fa-solid fa-play mr-2"></i>Abertura
-                                </button>
-                                <button class="anim-tab px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700"
-                                    data-tab="loop">
-                                    <i class="fa-solid fa-repeat mr-2"></i>Loop Background
-                                </button>
-                            </div>
+                            <!-- Tabs Removed (Only Intro available) -->
+                            <!-- Intro Content -->
 
-                            <!-- Intro Tab -->
                             <div id="anim-intro-content" class="space-y-6">
                                 <div class="flex flex-col lg:flex-row gap-8">
                                     <div class="flex-1 space-y-4">
@@ -944,67 +892,8 @@
                                 </div>
                             </div>
 
-                            <!-- Loop Tab (hidden by default) -->
-                            <div id="anim-loop-content" class="hidden space-y-6">
-                                <div class="flex flex-col lg:flex-row gap-8">
-                                    <div class="flex-1 space-y-4">
-                                        <div
-                                            class="bg-purple-50 border border-purple-100 rounded-md p-4 text-sm text-purple-800 flex gap-2 items-start">
-                                            <i class="fa-solid fa-repeat mt-0.5"></i>
-                                            <div>
-                                                <strong>Loop de Background:</strong> Vídeo que toca em loop atrás dos
-                                                botões.
-                                                <br><span class="text-xs">Usa o background separado da Folha
-                                                    Vazia.</span>
-                                            </div>
-                                        </div>
+                            <!-- Loop Tab Content Removed -->
 
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
-                                                Movimento</label>
-                                            <textarea id="loop-motion-prompt" data-field="loop_motion_prompt" rows="3"
-                                                class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
-                                                placeholder="Ex: Movimento suave das flores, brilho pulsante"></textarea>
-                                        </div>
-
-                                        <button id="btn-generate-loop"
-                                            class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-md font-medium shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
-                                            <i class="fa-solid fa-wand-magic-sparkles"></i>
-                                            Gerar Loop
-                                        </button>
-
-                                        <div class="mt-4 pt-4 border-t border-gray-100">
-                                            <p class="text-xs text-gray-500 font-medium mb-2">Ferramentas Externas:</p>
-                                            <div class="flex flex-wrap gap-2">
-                                                <a href="https://hailuoai.video" target="_blank"
-                                                    class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Hailuo</a>
-                                                <a href="https://kling.kuaishou.com" target="_blank"
-                                                    class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Kling</a>
-                                                <a href="https://deepmind.google/technologies/veo/veo-2/"
-                                                    target="_blank"
-                                                    class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Veo
-                                                    2</a>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="w-full lg:w-80 shrink-0">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Vídeo Loop</label>
-                                        <div id="loop-video-dropzone"
-                                            class="w-full aspect-[9/16] bg-gray-900 rounded-lg border-2 border-dashed border-gray-600 flex flex-col items-center justify-center text-gray-400 cursor-pointer relative overflow-hidden">
-                                            <input type="file" accept="video/*"
-                                                class="absolute inset-0 opacity-0 cursor-pointer">
-                                            <button
-                                                class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
-                                                title="Remover">
-                                                <i class="fa-solid fa-times text-xs"></i>
-                                            </button>
-                                            <i class="fa-solid fa-film text-3xl mb-2"></i>
-                                            <span class="text-xs">MP4 (Loop)</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
