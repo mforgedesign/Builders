@@ -4,6 +4,19 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [21/01/2026 - 22:00] - v4.3.48 - Fix: Layout Timer Simulator
+
+### Problema:
+*   Os segundos do timer não apareciam no Simulador do Builder (desktop/mobile) devido à falta de espaço horizontal (overflow) com 4 colunas.
+
+### Solução:
+*   **CSS Update**: Reduzido o espaçamento (`gap-3` -> `gap-2`) e o tamanho da fonte (`text-xl` -> `text-lg/text-base`) no simulador para garantir que os 4 contadores caibam na largura do dispositivo simulado.
+
+### Arquivos Modificados:
+*   `templates/builder.html`: Ajuste de classes Tailwind no timer preview.
+
+---
+
 ## [21/01/2026 - 21:50] - v4.3.47 - Fix: Preview Manual e Timer Simulator
 
 ### Problema:
