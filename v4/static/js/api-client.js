@@ -20,57 +20,54 @@
     };
 
     /**
-     * Uploads a base64/blob to the local server to get a Public URL.
-     * Kie AI requires public URLs for input images.
+     * Uploads a base64/blob to Supabase Storage to get a Public URL.
+     * Required for GitHub Pages compatibility (no local /api/upload).
      */
     async function uploadToPublicUrl(data) {
-        // Function to convert base64/blob to a file and upload to /api/upload
-        // Assuming /api/upload returns { url: "https://..." }
-        try {
-            const formData = new FormData();
+        if (!window.supabaseClient) throw new Error("Supabase Client not initialized");
 
+        try {
+            // 1. Convert Data to Blob
             let blob;
             if (typeof data === 'string' && data.startsWith('data:')) {
                 const res = await fetch(data);
                 blob = await res.blob();
             } else if (data instanceof Blob) {
                 blob = data;
+            } else if (typeof data === 'string' && data.startsWith('http')) {
+                return data; // Already a URL
             } else {
-                // Assume it's already a URL
-                if (typeof data === 'string' && data.startsWith('http')) return data;
                 throw new Error('Invalid data for upload');
             }
 
-            formData.append('file', blob, 'upload.png');
+            // 2. Prepare Filename
+            const timestamp = Date.now();
+            const filename = `temp_uploads/${timestamp}_upload.png`;
 
-            // Using the existing upload endpoint
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData
-            });
+            // 3. Upload to Supabase Storage ('invitation-assets' bucket)
+            const { data: uploadData, error: uploadError } = await window.supabaseClient.storage
+                .from('invitation-assets') // Public bucket
+                .upload(filename, blob, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
 
-            if (!response.ok) throw new Error('Upload failed');
-            const result = await response.json();
-            return result.url; // Must be a public URL
+            if (uploadError) throw uploadError;
+
+            // 4. Get Public URL
+            const { data: urlData } = window.supabaseClient.storage
+                .from('invitation-assets')
+                .getPublicUrl(filename);
+
+            if (!urlData || !urlData.publicUrl) throw new Error("Failed to get public URL");
+
+            console.log(`[API] Uploaded to Supabase: ${urlData.publicUrl}`);
+            return urlData.publicUrl;
+
         } catch (error) {
             console.error('[API] Upload error:', error);
-            throw new Error('Falha ao obter URL pública da imagem. Verifique se o servidor suporta uploads.');
+            throw new Error('Falha ao fazer upload da imagem para o Supabase Storage.');
         }
-    }
-
-    /**
-     * Creates a Task via Proxy
-     */
-    async function createTask(model, input) {
-        const result = await callProxy('createTask', {
-            model: model,
-            input: input
-        });
-
-        if (!result.data || !result.data.taskId) {
-            throw new Error('No Task ID returned from API');
-        }
-        return result.data.taskId;
     }
 
     /**
@@ -91,6 +88,21 @@
         if (data.error) throw new Error(data.error);
 
         return data; // Returns the raw Kie AI response data (e.g. { code: 200, data: { taskId: ... } })
+    }
+
+    /**
+     * Creates a Task via Proxy
+     */
+    async function createTask(model, input) {
+        const result = await callProxy('createTask', {
+            model: model,
+            input: input
+        });
+
+        if (!result.data || !result.data.taskId) {
+            throw new Error('No Task ID returned from API');
+        }
+        return result.data.taskId;
     }
 
     /**
@@ -161,19 +173,6 @@
                 const publicUrl = await uploadToPublicUrl(referenceBase64);
                 input.image_urls = [publicUrl];
             } else {
-                // Seedream Edit requires an image usually? Docs say "image_urls" is Required.
-                // If the user wants Text-to-Image, maybe we need a different model or provide a logic?
-                // Docs provided: "Require: Yes" for image_urls.
-                // WORKAROUND: If no reference, sending a "noise" or "blank" might be needed, 
-                // BUT better to throw error or ask user if this model supports pure T2I.
-                // Assuming for now user ALWAYS provides reference or we fail.
-                // Actually, let's try to use a placeholder "noise" image if needed, or check if array can be empty.
-                // Docs say "Required: Yes". 
-                // User request says: "The builder sends the prompt written... together with the reference image (if any)".
-                // If NO reference image? 
-                // I will assume for now that if no reference is provided, we default to a standard placeholder or fail.
-                // Or we use a generic T2I model? KIE AI docs only showed "4.5 Edit".
-                // I will assume Reference is MANDATORY for "Edit" model.
                 if (!referenceBase64) throw new Error("Imagem de referência é obrigatória para este modelo (Seedream Edit).");
             }
 
@@ -188,21 +187,7 @@
         },
 
         /**
-         * Remove Background (Using Bria via Fal or Kie?)
-         * User didn't provide RMBG API docs for Kie. 
-         * Falling back to previous logic or throwing error?
-         * Previous logic used 'fal.run/fal-ai/bria/rmbg'.
-         * I'll KEEP the Fal logic for RMBG if I can't find Kie equivalent.
-         * But I'm rewriting the whole file. I'll include the OLD Fal logic just for RMBG, 
-         * assuming the old proxy / endpoint still works OR fail if not.
-         * User request implied replacing everything. 
-         * "Resolva o bug...".
-         * I will assume we skip RMBG for now or implement a placeholder.
-         * ACTUALLY, I can use the same API Client structure but include the old Fal call if needed.
-         * BUT I don't have the Fal key (it was hidden in backend).
-         * I will leave RMBG as "Not Implemented" or try to find a public/free alternative if needed.
-         * Wait, User request mentioned "Janela de folha vazia...".
-         * I will implement `removeBackground` as a pass-through or error for now unless I find a key.
+         * Remove Background
          */
         removeBackground: async function (imageBase64) {
             // Placeholder: Returning original or throwing error
@@ -227,8 +212,6 @@
 
             // 2. Handle "Loop" / End Frame
             if (isLoop) {
-                // User wants "blank.jpg" as end frame. 
-                // I need to fetch "blank.jpg" from the server and upload it to get a URL.
                 try {
                     // Fetch local blank.jpg
                     const res = await fetch('blank.jpg');
@@ -244,7 +227,7 @@
         },
 
         // Helper for Inpaint
-        inpaint: async function () { return null; } // Not requested
+        inpaint: async function () { return null; }
     };
 
     window.APIClient = APIClient;
