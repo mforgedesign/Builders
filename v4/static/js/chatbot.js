@@ -457,8 +457,12 @@ Format:
             if (action.type === 'importModel') {
                 if (window.importFromRemoteURL) {
                     addMessage(`📦 <strong>Baixando modelo...</strong><br>${action.url}`, "assistant");
-                    if (await window.importFromRemoteURL(action.url, action.modifications)) {
-                        if (action.modifications) {
+                    const result = await window.importFromRemoteURL(action.url, action.modifications);
+
+                    if (result && result.success) {
+                        if (result.coverRedirected) {
+                            addMessage('✅ <strong>Modelo Carregado!</strong><br>A capa original foi movida para "Referência" para não sobrescrever sua nova criação.', "assistant");
+                        } else if (action.modifications) {
                             addMessage('✅ Modelo base importado. Editando...', "assistant");
                         } else {
                             addMessage('✅ Importado com sucesso!', "assistant");
