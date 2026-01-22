@@ -1190,8 +1190,26 @@
         }
 
         // 5. Reset Toggles
+        // 5. Reset Toggles
         document.getElementById('manual-mode-text')?.click();
         document.getElementById('gifts-mode-link')?.click();
+
+        // 6. Force Update Simulator (Clear Buttons)
+        // Dispatches input events so preview.js detects empty fields
+        setTimeout(() => {
+            document.querySelectorAll('.form-input').forEach(input => {
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+            // Triggers specifically for the persistent ones
+            ['manual-html-editor', 'manual-raw-text', 'gifts-suggestions', 'gifts-image-prompt', 'gifts-link-input'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        }, 100);
 
         // 6. Reset AI Prompts
         if (window.AIPrompts) {
