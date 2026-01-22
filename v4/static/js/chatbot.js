@@ -455,11 +455,62 @@ Format:
                     } else el.click();
                 } else if (action.type === 'click') {
                     el.click();
+
+                    // Se clicou em btn-publish, ativar Modal Buster para auto-confirmar popups
+                    if (action.id === 'btn-publish') {
+                        addMessage("🚀 Publicando convite...", "assistant");
+                        initModalBusterEnhanced();
+                    }
                 }
                 actionCount++;
             } catch (e) { console.error(e); }
         });
         if (actionCount > 0) showFormUpdateNotification(actionCount);
+    }
+
+    /**
+     * Enhanced Modal Buster - Auto-clica em botões de confirmação com timer de 30s
+     */
+    function initModalBusterEnhanced() {
+        let attempts = 0;
+        const maxAttempts = 60; // 30 seconds (500ms interval)
+        let countdown = 30;
+
+        const busterInterval = setInterval(() => {
+            attempts++;
+
+            if (attempts % 2 === 0) countdown--; // Atualiza countdown a cada segundo
+
+            if (attempts > maxAttempts) {
+                clearInterval(busterInterval);
+                addMessage("⏱️ Timeout. Nenhum popup de confirmação detectado.", "assistant");
+                return;
+            }
+
+            // Procura por botões de confirmação visíveis
+            const buttons = Array.from(document.querySelectorAll('button'));
+            const confirmBtn = buttons.find(btn => {
+                if (btn.offsetParent === null) return false; // Não visível
+                const text = btn.innerText.toLowerCase();
+                return text.includes('sobrescrever') ||
+                    text.includes('confirmar') ||
+                    text.includes('publicar mesmo assim') ||
+                    text.includes('sim, publicar');
+            });
+
+            if (confirmBtn) {
+                console.log('[ModalBuster] Popup detectado. Auto-confirmando em 3s...');
+                addMessage(`⚠️ **Slug já existe!** Sobrescrevendo automaticamente...`, "assistant");
+
+                // Pequeno delay para o usuário ver a mensagem
+                setTimeout(() => {
+                    confirmBtn.click();
+                    addMessage("✅ Confirmação automática executada.", "assistant");
+                }, 1500);
+
+                clearInterval(busterInterval);
+            }
+        }, 500);
     }
 
     // Listeners initialization
