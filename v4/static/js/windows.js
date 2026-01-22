@@ -2594,6 +2594,9 @@
                 } = options;
 
                 try {
+                    // Check Supabase
+                    if (!window.supabaseClient) throw new Error("Supabase client not initialized");
+
                     // Step 1: Build payload using ai-prompts module
                     if (onProgress) onProgress('Preparando prompt...');
 
@@ -2613,31 +2616,49 @@
                         payload.image_url = imageUrl;
                     }
 
-                    // Step 3: Call API
-                    if (onProgress) onProgress('Gerando...');
+                    // Step 3: Call Supabase Edge Function to Create Task
+                    if (onProgress) onProgress('Iniciando geração na nuvem...');
 
                     const isVideo = payload.mode === 'image-to-video';
-                    const endpoint = isVideo ? '/api/generate/video' : '/api/generate/image';
 
-                    const response = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+                    // Map payload to Kie.ai API format
+                    const edgeInput = {
+                        prompt: payload.prompt,
+                        // Hailuo (Video)
+                        image_url: isVideo ? payload.image_url : undefined,
+                        end_image_url: isVideo ? payload.end_image_url : undefined,
+                        // Seedream (Image) - needs array
+                        image_urls: (!isVideo && payload.image_url) ? [payload.image_url] : undefined
+                        // Add duration/quality if present in payload config
+                    };
+
+                    const { data: taskData, error: taskError } = await window.supabaseClient.functions.invoke('generate-asset', {
+                        body: {
+                            model: payload.model, // e.g. hailuo/02-image-to-video-standard
+                            input: edgeInput
+                        }
                     });
 
-                    const data = await response.json();
-
-                    // Step 4: Extract URL
-                    let generatedUrl;
-                    if (isVideo) {
-                        generatedUrl = data.data?.video?.url || data.video_url || data.url;
-                    } else {
-                        generatedUrl = data.data?.images?.[0]?.url || data.image_url || data.url;
+                    if (taskError) {
+                        console.error('Edge Function Error:', taskError);
+                        throw new Error(taskError.message || "Erro na conexão com API");
                     }
 
-                    if (!generatedUrl) {
-                        throw new Error('API não retornou URL válida');
+                    if (!taskData || !taskData.data || !taskData.data.taskId) {
+                        console.error("Task creation failed:", taskData);
+                        throw new Error(taskData?.msg || "Falha ao criar tarefa de geração");
                     }
+
+                    const taskId = taskData.data.taskId;
+
+                    // Step 4: Polling
+                    if (onProgress) onProgress('Processando (isso pode levar alguns minutos)...');
+
+                    // Wait up to 10 mins for video, 3 mins for image
+                    const resultUrls = await this.pollTask(taskId, isVideo ? 600 : 180, onProgress);
+                    const generatedUrl = resultUrls[0];
+
+                    if (!generatedUrl) throw new Error('API não retornou URL do resultado');
 
                     // Step 5: Update dropzone preview
                     const dropzoneId = AI_TYPE_TO_DROPZONE[type];
@@ -2652,7 +2673,7 @@
                     // Success callback
                     if (onSuccess) onSuccess(generatedUrl);
 
-                    // Dispatch Event for Chatbot (Autonomous Flow)
+                    // Dispatch Event for Chatbot
                     document.dispatchEvent(new CustomEvent('builder:asset_ready', {
                         detail: { type: type, url: generatedUrl, method: 'ai' }
                     }));
@@ -2665,6 +2686,48 @@
                     if (onError) onError(error.message);
                     throw error;
                 }
+            },
+
+            /**
+             * Poll Supabase Edge Function for task status
+             */
+            async pollTask(taskId, maxWaitSeconds, onProgress) {
+                const startTime = Date.now();
+                const interval = 5000; // 5s poll interval
+
+                while ((Date.now() - startTime) / 1000 < maxWaitSeconds) {
+                    const { data: pollData, error: pollError } = await window.supabaseClient.functions.invoke('generate-asset', {
+                        body: { taskId }
+                    });
+
+                    if (pollError) throw new Error(pollError.message);
+
+                    // Kie.ai response structure via our Edge Function proxy
+                    const state = pollData.data?.state;
+
+                    if (state === 'success') {
+                        if (onProgress) onProgress('Concluído!');
+                        try {
+                            const result = JSON.parse(pollData.data.resultJson);
+                            return result.resultUrls || [result.url] || [];
+                        } catch (e) {
+                            console.error("Erro parsing resultJson", e);
+                            throw new Error("Erro ao processar resultado da IA");
+                        }
+                    } else if (state === 'fail') {
+                        throw new Error(pollData.data.failMsg || 'Falha desconhecida na geração');
+                    } else {
+                        // 'waiting' or 'generating'
+                        if (onProgress) {
+                            const elapsed = Math.round((Date.now() - startTime) / 1000);
+                            const progress = pollData.data?.progress || 0;
+                            onProgress(`Gerando... ${progress}% (${elapsed}s)`);
+                        }
+                    }
+
+                    await new Promise(r => setTimeout(r, interval));
+                }
+                throw new Error("Timeout: A geração demorou muito.");
             },
 
             /**
@@ -2897,8 +2960,8 @@
             updateButtonState(); // init
 
             generateBtn.addEventListener('click', async () => {
-                if (!window.APIClient) {
-                    alert('Erro: API Client não carregado.');
+                if (!window.AIGeneration) {
+                    alert('Erro: Módulo de IA não carregado.');
                     return;
                 }
 
@@ -2909,14 +2972,13 @@
                     return;
                 }
 
-                // Get Reference Image if available (data-base64 stored on element or we read input)
-                // Easier: read the file input directly if file was dragged, OR read the background image data uri
+                // Get Reference Image if available
                 let referenceImageBase64 = null;
-                const refInput = refDropzone?.querySelector('input[type="file"]');
+                // const refInput = refDropzone?.querySelector('input[type="file"]');
 
                 if (refDropzone && refDropzone.dataset.base64) {
                     referenceImageBase64 = refDropzone.dataset.base64;
-                    console.log('Using reference image from cache');
+                    console.log('Using reference image for cover generation');
                 }
 
                 // UI Loading State
@@ -2925,17 +2987,17 @@
                 generateBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Gerando...';
 
                 try {
-                    console.log('Calling APIClient.generateCover...');
-                    const imageUrl = await window.APIClient.generateCover(prompt, referenceImageBase64);
+                    console.log('Calling AIGeneration.generate(cover)...');
+                    // Use new unified API
+                    const imageUrl = await window.AIGeneration.generate('cover', {
+                        customPrompt: prompt,
+                        referenceImage: referenceImageBase64
+                    });
 
-                    // Update Main Dropzone
-                    updateDropzonePreview(coverDropzone, imageUrl, 'image');
+                    // Update Main Dropzone happens inside generate, but we ensure field update here if needed
+                    // (generate updates window.builderState.assets['cover'])
 
-                    // Persist (assuming updateDropzonePreview handles UI, we need to trigger state update)
-                    // Since updateDropzonePreview is purely UI in some versions, let's ensure we call updateField
                     if (window.AutoBuilderForm && window.AutoBuilderForm.updateField) {
-                        // We might need to upload this remote URL to our server or save it?
-                        // For now, we set it as the value. The build system handles URLs.
                         window.AutoBuilderForm.updateField('capa', imageUrl);
                     }
 
@@ -2969,8 +3031,8 @@
 
             // 1. Leaf Generation (Text-to-Image)
             generateBtn.addEventListener('click', async () => {
-                if (!window.APIClient) {
-                    alert('Erro: API Client não carregado.');
+                if (!window.AIGeneration) {
+                    alert('Erro: Módulo de IA não carregado.');
                     return;
                 }
 
@@ -2987,14 +3049,15 @@
                 generateBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Gerando...';
 
                 try {
-                    // Call API
-                    const imageUrl = await window.APIClient.generateLeaf(prompt);
+                    // Call API via Unified Interface
+                    const imageUrl = await window.AIGeneration.generate('leaf', {
+                        customPrompt: prompt
+                    });
 
-                    // Update UI
+                    // Update UI (handled in generate, but reinforced here)
                     updateDropzonePreview(leafDropzone, imageUrl);
 
                     // Update Form Logic
-                    // Assuming AutoBuilderForm is global and handles 'calda' or 'folha'
                     if (window.AutoBuilderForm) {
                         window.AutoBuilderForm.updateField('folha', imageUrl);
                     }
