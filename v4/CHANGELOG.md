@@ -12,6 +12,7 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 - **Prompts sem Texto**: Adicionada instrução "NO TEXT" nos prompts de capa e folha vazia. Apenas a idade no selo é permitida.
 - **AutoBuild Timeout**: Adicionado timeout de 3 minutos por asset. Se não concluir, fluxo continua automaticamente.
 - **Publicação Automática**: Fluxo autoBuild agora publica mesmo se alguns assets falharem (após timeout).
+- **Empty Values Overwriting Data**: Chatbot agora ignora valores vazios quando o campo já tem conteúdo (`chatbot.js:740-747`). Corrige bug onde dados importados eram apagados.
 
 ### Added
 - **Seleção Automática de Música**: Chatbot/AutoBuild agora sempre seleciona "Perfect (Violin)" automaticamente.
