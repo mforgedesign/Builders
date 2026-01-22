@@ -28,7 +28,7 @@ serve(async (req) => {
         }
 
         // Use provided system prompt or fallback
-        const promptToUse = system_prompt || "You are a helpful assistant.";
+        const promptToUse = system_prompt || "You are a helpful assistant. You must output JSON.";
 
         // Construct Context Message
         let contextMessage = "";
