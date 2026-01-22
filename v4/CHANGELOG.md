@@ -9,10 +9,20 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 - **Hailuo Duration Error**: Corrigido erro "duration is not within range" alterando de 5 para 6 segundos em `ai-prompts.js:191,196`. (Hailuo aceita apenas 6 ou 10 segundos)
 - **Selo na Folha Vazia**: Removida linha "Selo: {{SEAL}}" do prompt da folha vazia (`ai-prompts.js:92`). Selo deve aparecer apenas na capa do envelope.
 - **Alert de Sucesso**: Removido `alert('Capa gerada com sucesso!')` em `windows.js:3032`, substituído por `console.log` para não interromper o fluxo do usuário.
+- **Prompts sem Texto**: Adicionada instrução "NO TEXT" nos prompts de capa e folha vazia. Apenas a idade no selo é permitida.
+- **AutoBuild Timeout**: Adicionado timeout de 3 minutos por asset. Se não concluir, fluxo continua automaticamente.
+- **Publicação Automática**: Fluxo autoBuild agora publica mesmo se alguns assets falharem (após timeout).
 
 ### Added
-- **Seleção Automática de Música**: Chatbot agora sempre seleciona "Perfect (Violin)" via nova ação `selectMusic` em `chatbot.js:694-704`.
-- **Regra de Negócio para Música**: Atualizado System Prompt do chatbot para ignorar músicas solicitadas pelo cliente e usar sempre "Perfect (Violin)".
+- **Seleção Automática de Música**: Chatbot/AutoBuild agora sempre seleciona "Perfect (Violin)" automaticamente.
+- **Watermark ON por Padrão**: Toggle de marca d'água agora vem ativado por padrão.
+- **Image Edit Mode**: Quando modelo é importado com alterações de tema/cores, usa prompts de edição (image-to-image).
+  - `getCoverEditPrompt()` e `getBlankSheetEditPrompt()` para modificar imagens existentes
+  - Detecta automaticamente se há imagem no dropzone
+- **Refinement Commands**: Usuário pode pedir ajustes após geração (ex: "adicione mais azul", "mude para verde").
+  - `getRefinePrompt(instruction, assetType)` gera prompt de refinamento
+  - Ação `refineAsset` no chatbot para aplicar modificações via image-to-image
+  - Exemplos: "Coloque mais flores", "Troque rosa por roxo", "Deixe mais claro"
 
 ### Backups
 - `ai-prompts_bkp_20260122_precorrecao.js`
