@@ -3303,9 +3303,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     htmlContent = htmlContent.replace(/\[\[EVENT_DATETIME\]\]/g, eventDateTime);
 
                     // BUTTONS_OFFSET: Ensure 'px' unit is present
-                    let buttonsOffsetRaw = formData.botoes_offset || formData.posicao_botoes || formData.buttons_offset || '-90';
-                    // If it's a number without unit, add 'px'
-                    const buttonsOffset = String(buttonsOffsetRaw).includes('px') ? buttonsOffsetRaw : `${buttonsOffsetRaw}px`;
+                    // Apply /2 factor so slider is more effective (100 in slider = 50px real)
+                    let buttonsOffsetRaw = formData.botoes_offset || formData.posicao_botoes || formData.buttons_offset || '0';
+                    // Parse number, divide by 2, and ensure 'px' unit
+                    let offsetNum = parseFloat(String(buttonsOffsetRaw).replace('px', '')) || 0;
+                    offsetNum = Math.round(offsetNum / 2);
+                    const buttonsOffset = `${offsetNum}px`;
                     htmlContent = htmlContent.replace(/\[\[BUTTONS_OFFSET\]\]/g, buttonsOffset);
 
                     // SHADOW_STYLE: Generate gradient based on shadow settings
