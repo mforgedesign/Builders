@@ -2542,9 +2542,25 @@
                     const promptEl = document.getElementById(promptId);
                     const customPrompt = promptEl?.value; // User can override AI prompt
 
+                    // [PATCH] Extract content for Gifts and Manual
+                    let listContent = undefined;
+                    let rulesContent = undefined;
+
+                    if (type === 'gifts') {
+                        // Try to get from gifts-suggestions (textarea)
+                        const el = document.getElementById('gifts-suggestions');
+                        listContent = el ? el.value : '';
+                    } else if (type === 'manual') {
+                        // Try to get from manual-raw-text (textarea)
+                        const el = document.getElementById('manual-raw-text');
+                        rulesContent = el ? el.value : '';
+                    }
+
                     try {
                         await window.AIGeneration.generate(type, {
                             customPrompt,
+                            listContent,
+                            rulesContent,
                             onProgress: (step) => {
                                 btn.disabled = true;
                                 btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i>${step}`;
@@ -2564,6 +2580,9 @@
                         });
                     } catch (err) {
                         console.error('AI generation error:', err);
+                        alert('Erro técnico: ' + err.message);
+                        btn.disabled = false;
+                        btn.innerHTML = btn.dataset.originalText || 'Gerar';
                     }
                 });
 
