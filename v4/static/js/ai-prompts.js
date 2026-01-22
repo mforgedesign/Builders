@@ -33,12 +33,18 @@
         // Helper to safely get string values
         const val = (v, fallback = '') => (v ? String(v).trim() : fallback);
 
-        // Core fields
-        const theme = val(formData.tema_evento) || val(formData.tema) || 'Elegant';
-        const colors = val(formData.paleta_cores) || val(formData.colors) || 'Gold and White';
-        const eventType = val(formData.tipo_evento) || val(formData.event_type) || 'Special Event';
-        const name = val(formData.nome) || val(formData.event_name) || '';
-        const age = val(formData.idade) || val(formData.age) || '';
+        // Core fields - Prioritize DOM value if formData is empty (stale state protection)
+        const getFieldVal = (fieldId, stateKey) => {
+            const el = document.querySelector(`[data-field="${fieldId}"]`) || document.getElementById(fieldId);
+            const domVal = el ? el.value : '';
+            return val(formData[stateKey || fieldId]) || val(domVal);
+        };
+
+        const theme = getFieldVal('tema_evento') || getFieldVal('tema') || 'Elegant';
+        const colors = getFieldVal('paleta_cores') || 'Gold and White';
+        const eventType = getFieldVal('tipo_evento') || 'Special Event';
+        const name = getFieldVal('nome') || '';
+        const age = getFieldVal('idade') || '';
 
         // "Selo" logic (Initials or Age)
         let seal = age; // Default to age (e.g., 15)
@@ -161,8 +167,11 @@ Manual do convidado:
         return `The animation begins with a focus on the closed envelope. As the wax seal gracefully detaches and falls, the envelope's flap uplifts slowly. From its interior, a spectacular eruption of glittering sparkles and smoke, shimmering dust, and glowing light trails emerges, cascading outward in a mesmerizing display. These vibrant particles swirl dynamically, increasing in density and brightness around the envelope. The radiant light and swirling glitter intensify, rapidly expanding to fill the entire scene. CRITICAL: The Color of glow, light and smoke need to be the same of the image color pallete. The overwhelming brilliance transitions the frame to a solid, blinding white screen in the very final frame, achieved through a dramatic zoom-in effect.`;
     }
 
+    /**
+     * 7. LOOP (Background Animation)
+     */
     function getLoopVideoPrompt() {
-        return "";
+        return `The animation displays smooth, looping movements of the shimmering effect based on the provided image. Dramatic sparkles and shining smokes flying in the background, cinematic lighting with volumetric effects (divine rays) filters through shimmering particles, creating a magical atmosphere with highlights. Rendered in a photorealistic and hyper-detailed style, the animation flows perfectly with a cinematic approach, captivating the viewer's attention with its fluid movement and mesmerizing 4K quality. IMPORTANT: Static Camera / No Camera Movement, only environmental motion.`;
     }
 
     // ==================== CONFIG & BUILDER ====================
@@ -325,6 +334,7 @@ Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16`;
         getBlankSheetPrompt,
         getFilledSheetPrompt,
         getOpeningVideoPrompt,
+        getLoopVideoPrompt,
         getGiftListPrompt,
         getGuestManualPrompt,
         getDefaultCoverPrompt, // Alias
