@@ -253,6 +253,72 @@ Manual do convidado:
     function getDefaultCoverPrompt() { return getCoverPrompt(); }
     function getDefaultFillPrompt() { return getFilledSheetPrompt(); }
 
+    // ==================== IMAGE EDIT PROMPTS (for modifying existing models) ====================
+
+    /**
+     * Cover Edit Prompt - Used when user has an existing cover image and wants to change theme/colors
+     * Uses Seedream v4.5 Edit mode (image-to-image)
+     */
+    function getCoverEditPrompt() {
+        const vars = getContextVariables();
+
+        const template = `Recrie essa composição com os seguintes detalhes técnicos:
+Tema: {{THEME}}
+Paleta de cores: {{COLORS}}
+Faça o selo e o número "{{SEAL}}" embossed na cor principal da paleta.
+Mantenha a composição e elementos visuais, apenas alterando as cores e o tema conforme especificado.
+CRÍTICO: NÃO inclua nenhum texto ou palavras na imagem, exceto o número "{{SEAL}}" no selo de cera.
+Style: Photorealistic, hyper-detailed, cinematic, and elegant.
+Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field`;
+
+        return injectVariables(template, vars);
+    }
+
+    /**
+     * Blank Sheet Edit Prompt - Used when user has an existing blank sheet and wants to change theme/colors
+     */
+    function getBlankSheetEditPrompt() {
+        const vars = getContextVariables();
+
+        const template = `Recrie essa composição com os seguintes detalhes técnicos:
+Tema: {{THEME}}
+Paleta de cores: {{COLORS}}
+Mantenha a composição, o formato da folha e os adornos nas bordas, apenas alterando as cores e o tema conforme especificado.
+CRÍTICO: NÃO inclua NENHUM texto, letra, número ou palavra na imagem - a folha deve permanecer completamente em branco.
+Style: Photorealistic, hyper-detailed, cinematic, and elegant.
+Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field`;
+
+        return injectVariables(template, vars);
+    }
+
+    /**
+     * Refine Prompt - Used when user wants to adjust specific aspects of an existing image
+     * E.g., "Add more blue", "Change to green", "Make it brighter"
+     * @param {string} refinementInstruction - The user's specific refinement request
+     * @param {string} assetType - 'cover' or 'leaf' to determine NO TEXT rules
+     */
+    function getRefinePrompt(refinementInstruction, assetType = 'cover') {
+        const vars = getContextVariables();
+        vars.REFINEMENT = refinementInstruction || 'Refine the colors';
+
+        let noTextRule = '';
+        if (assetType === 'cover') {
+            noTextRule = `CRÍTICO: NÃO inclua nenhum texto ou palavras na imagem, exceto o número "${vars.SEAL}" no selo de cera.`;
+        } else if (assetType === 'leaf') {
+            noTextRule = 'CRÍTICO: NÃO inclua NENHUM texto, letra, número ou palavra na imagem - a folha deve permanecer completamente em branco.';
+        }
+
+        const template = `Aplique a seguinte modificação nesta imagem:
+{{REFINEMENT}}
+
+Mantenha todos os outros elementos da composição intactos.
+${noTextRule}
+Style: Photorealistic, hyper-detailed, cinematic, and elegant.
+Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16`;
+
+        return injectVariables(template, vars);
+    }
+
     // Public API
     window.AIPrompts = {
         getCoverPrompt,
@@ -264,12 +330,19 @@ Manual do convidado:
         getDefaultCoverPrompt, // Alias
         getDefaultFillPrompt, // Alias
 
+        // Image Edit Prompts (for modifying existing models)
+        getCoverEditPrompt,
+        getBlankSheetEditPrompt,
+
+        // Refinement Prompt (for "add more blue", "change to green" commands)
+        getRefinePrompt,
+
         getContextVariables,
         getModelConfig,
         buildGenerationPayload,
         injectVariables
     };
 
-    console.log('[AI Prompts] Module loaded (v4.1.9 - User Defined Templates)');
+    console.log('[AI Prompts] Module loaded (v4.2.1 - Refinement Mode)');
 
 })();
