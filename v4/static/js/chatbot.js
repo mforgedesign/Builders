@@ -777,12 +777,17 @@ Response:
 
             try {
                 if (action.type === 'setValue') {
-                    // PROTECTION: Skip empty values if element already has content
-                    // This prevents overwriting valid imported data with empty chatbot responses
+                    // PROTECTION REFINEMENT:
+                    // Skip empty values if element already has content, 
+                    // UNLESS the chat history suggests we are starting over or an import just happened.
                     const isEmptyValue = action.value === null || action.value === undefined || action.value === '';
                     const hasExistingValue = el.value && el.value.trim() !== '';
 
-                    if (isEmptyValue && hasExistingValue) {
+                    // Check if there was a recent 'importModel' or 'autoBuild' action in the queue
+                    // or if the assistant message explicitly mentioned a "new" creation.
+                    const isNewCreation = actions.some(a => a.type === 'importModel' || a.type === 'autoBuild');
+
+                    if (isEmptyValue && hasExistingValue && !isNewCreation) {
                         console.log(`[Chatbot] Skipping empty setValue for "${action.id}" (preserving existing value: "${el.value.substring(0, 30)}...")`);
                         continue;
                     }
