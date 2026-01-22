@@ -4,6 +4,40 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [4.1.8] - 2026-01-22
+### Added
+- **Integração Kie.ai (Native)**: Suporte completo para geração de assets via Kie.ai (Seedream 4.5 Edit + Hailuo 02 Video).
+- **Supabase Edge Function (`generate-asset`)**: Nova função server-side para mascarar a API Key e gerenciar uploads/polling.
+    - Upload automático de imagens para Kie.ai (resolvendo erro "Image fetch failed").
+    - Proxy seguro para criação de tasks.
+- **Polling System**: Implementado polling robusto no frontend via Edge Function.
+
+### Changed
+- **`windows.js`**: Refatoração completa de `window.AIGeneration.generate` para usar a nova arquitetura server-less.
+- **`ai-prompts.js`**: Correção de bug onde a configuração do modelo (`config`) não estava sendo carregada no payload `buildGenerationPayload`.
+
+## [4.1.7] - 2026-01-22
+### Added
+- **Master System Prompt (v4.2)**: Reescrita completa do prompt do chatbot com:
+    - Mapeamento EXAUSTIVO de 23+ campos do formulário (incluindo manual, presentes, slug)
+    - Detecção automática de URLs de modelos → ação `importModel`
+    - Parser de "Input Padrão" (orçamento do site) com extração automática de dados
+    - Regras de negócio claras (Form > WhatsApp, ignorar música, etc.)
+    - Fluxo `autoBuild` documentado para criação completa até publicação
+    - Formato de resposta JSON `{ message, actions }` estruturado
+
+### Changed
+- **Edge Function v21**: Prompt de fallback atualizado para exigir JSON, contexto do builder injetado no prompt
+- **Frontend (chatbot.js)**: Lógica de parsing de resposta refatorada para suportar JSON direto (sem markdown)
+- **Timeout de 45s**: Adicionado AbortController para evitar "digitando infinito"
+
+### Fixed
+- **CORS**: Headers `Access-Control-Allow-Headers: *` na Edge Function para evitar bloqueio de browser
+- **Execução de Actions**: Actions são executadas silenciosamente e mensagem amigável é exibida (não mostra JSON cru)
+
+### Backup
+- `chatbot_backup_20260122_0417.js`: Versão anterior do chatbot.js
+
 ## [4.1.5] - 2026-01-22
 ### Fixed
 - **Chatbot Context Amnesia**: Fixed an issue where the chatbot would lose context (e.g., about imported data) after performing actions.
