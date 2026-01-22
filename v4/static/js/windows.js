@@ -3029,11 +3029,11 @@
                         window.AutoBuilderForm.updateField('capa', imageUrl);
                     }
 
-                    alert('Capa gerada com sucesso!');
+                    console.log('✅ Capa gerada com sucesso!');
 
                 } catch (error) {
                     console.error('Generation failed:', error);
-                    alert(`Erro na geração: ${error.message}`);
+                    // Error shown in button UI, not blocking alert
                 } finally {
                     generateBtn.disabled = false;
                     generateBtn.innerHTML = originalText;
