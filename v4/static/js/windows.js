@@ -1502,7 +1502,9 @@
                             if (targetContext === 'capa_referencia') {
                                 const refDropzone = document.getElementById('cover-reference-dropzone');
                                 if (refDropzone) {
-                                    updateDropzonePreview(refDropzone, fullAssetUrl);
+                                    const isVideo = fullAssetUrl.toLowerCase().match(/\.(mp4|webm|ogg|mov)$/);
+                                    const type = isVideo ? 'video' : 'image';
+                                    updateDropzonePreview(refDropzone, fullAssetUrl, type);
                                     refDropzone.dataset.base64 = fullAssetUrl;
                                     console.log('[Import] Capa definida como referência');
                                 }
