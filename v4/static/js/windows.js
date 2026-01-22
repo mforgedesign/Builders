@@ -1491,9 +1491,7 @@
                         //      Actually user said "Se pedir alterações... Capa deve ser anexada no placeholder de Referência".
 
                         let targetContext = context;
-                        if (hasModifications && context === 'capa') {
-                            targetContext = 'capa_referencia'; // Special context for logic below
-                        }
+                        // Removed forced redirection to 'capa_referencia' so user sees the cover immediately.
 
                         // Construct full URL
                         const fullAssetUrl = relativePath.startsWith('http') ? relativePath : `${assetBaseUrl}${relativePath}`;
