@@ -639,6 +639,140 @@ Format:
         formInputs.forEach(el => el.addEventListener('input', cancelOnChange, { once: true }));
     }
 
+    // ========================================
+    // 4. FILE UPLOAD HANDLING
+    // ========================================
+    function handleFiles(files) {
+        if (!files || files.length === 0) return;
+
+        addMessage(`📂 Processando ${files.length} arquivo(s)...`, 'assistant');
+
+        // Separate by type
+        const audios = files.filter(f => f.type.startsWith('audio/'));
+        const videos = files.filter(f => f.type.startsWith('video/'));
+        const images = files.filter(f => f.type.startsWith('image/'));
+
+        // 1. Handle Audios (Auto)
+        audios.forEach(file => {
+            if (window.updateDropzonePreview) {
+                // Use a dedicated context or logic. 'musica' context.
+                // We need to pass the file object. 
+                // Assuming updateDropzonePreview handles URLs mostly, but we can pass object URL.
+                const url = URL.createObjectURL(file);
+                // Find dropzone
+                const musicDz = document.getElementById('music-dropzone');
+                if (musicDz) {
+                    window.updateDropzonePreview(musicDz, url, 'audio');
+                    // Set name in input if exists
+                    const musicInput = document.getElementById('music-name-display');
+                    if (musicInput) musicInput.value = file.name;
+                    addMessage(`🎵 Música definida: <strong>${file.name}</strong>`, 'assistant');
+                }
+            }
+        });
+
+        // 2. Handle Videos (Decision Queue)
+        if (videos.length > 0) {
+            processVideoQueue(videos);
+        }
+
+        // 3. Handle Images (Decision Queue)
+        if (images.length > 0) {
+            processImageQueue(images);
+        }
+    }
+
+    function processVideoQueue(videos) {
+        // Smart Logic: If 2 videos, ask for first, auto-assign second.
+        let remaining = [...videos];
+
+        const askNext = () => {
+            if (remaining.length === 0) return;
+
+            const current = remaining.shift();
+            const url = URL.createObjectURL(current);
+
+            // Check if we can smart-assign the last one
+            // (Not implemented fully for simplicity, just ask all for now unless requested)
+
+            const msgId = 'vid-' + Date.now();
+            const html = `
+                <div class="chat-upload-card" id="${msgId}">
+                    <video src="${url}" class="w-full rounded mb-2" autoplay muted loop></video>
+                    <p class="text-xs mb-2">Onde usar este vídeo?</p>
+                    <div class="flex gap-2">
+                        <button class="btn-xs bg-brand-100 text-brand-700" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'vid_abertura')">Abertura</button>
+                        <button class="btn-xs bg-brand-100 text-brand-700" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'fundo_tela')">Fundo</button>
+                    </div>
+                </div>
+             `;
+            addMessage(html, 'assistant', true); // true = raw HTML
+        };
+
+        askNext(); // Start with first. 
+        // Note: Logic to show next needs a callback.
+        // We can expose assignAsset to handle the next step.
+    }
+
+    function processImageQueue(images) {
+        let remaining = [...images];
+
+        // We attach the queue to window to persist state across clicks
+        window.AutoBuilderChatbot.imageQueue = remaining;
+        window.AutoBuilderChatbot.processNextImage();
+    }
+
+    // Expose helpers
+    window.AutoBuilderChatbot.assignAsset = (msgId, url, context) => {
+        // Find Dropzone
+        let dzId = '';
+        if (context === 'vid_abertura') dzId = 'intro-video-dropzone';
+        if (context === 'fundo_tela') dzId = 'fill-image-dropzone'; // Can be video too
+        if (context === 'capa') dzId = 'cover-dropzone';
+        if (context === 'folha_vazia') dzId = 'leaf-dropzone';
+        if (context === 'presentes') dzId = 'gifts-image-dropzone';
+        if (context === 'manual') dzId = 'manual-image-dropzone';
+
+        const dz = document.getElementById(dzId);
+        if (dz && window.updateDropzonePreview) {
+            window.updateDropzonePreview(dz, url);
+        }
+
+        // Remove card buttons or whole card
+        const card = document.getElementById(msgId);
+        if (card) {
+            card.innerHTML = `<div class="text-green-600 text-xs"><i class="fa-solid fa-check"></i> Definido como ${context}</div>`;
+        }
+
+        // Trigger next if any
+        if (window.AutoBuilderChatbot.imageQueue && window.AutoBuilderChatbot.imageQueue.length > 0) {
+            setTimeout(() => window.AutoBuilderChatbot.processNextImage(), 500);
+        }
+    };
+
+    window.AutoBuilderChatbot.processNextImage = () => {
+        const queue = window.AutoBuilderChatbot.imageQueue;
+        if (!queue || queue.length === 0) return;
+
+        const current = queue.shift();
+        const url = URL.createObjectURL(current);
+        const msgId = 'img-' + Date.now();
+
+        const html = `
+            <div class="chat-upload-card" id="${msgId}">
+                <img src="${url}" class="w-full h-32 object-cover rounded mb-2">
+                <p class="text-xs mb-2">Onde usar esta imagem?</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="btn-xs bg-gray-100 hover:bg-brand-100" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'capa')">Capa</button>
+                    <button class="btn-xs bg-gray-100 hover:bg-brand-100" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'folha_vazia')">Folha</button>
+                    <button class="btn-xs bg-gray-100 hover:bg-brand-100" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'presentes')">Presentes</button>
+                    <button class="btn-xs bg-gray-100 hover:bg-brand-100" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'manual')">Manual</button>
+                </div>
+            </div>
+         `;
+        addMessage(html, 'assistant', true);
+    };
+
     // Listeners initialization
     function init() {
         if (chatSend) chatSend.addEventListener('click', () => sendMessage(chatInput.value));
@@ -646,7 +780,33 @@ Format:
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(chatInput.value); }
         });
 
+
+        // Attach Button Handler
+        const attachBtn = document.getElementById('chat-attach-btn');
+        const fileInput = document.getElementById('chat-file-input');
+
+        if (attachBtn && fileInput) {
+            attachBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => handleFiles(Array.from(e.target.files)));
+        }
+
+        // Drag & Drop Handler
+        const chatContainer = document.querySelector('.chat-window') || document.body;
+        chatContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            chatContainer.classList.add('drag-over');
+        });
+        chatContainer.addEventListener('dragleave', () => chatContainer.classList.remove('drag-over'));
+        chatContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            chatContainer.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) {
+                handleFiles(Array.from(e.dataTransfer.files));
+            }
+        });
+
         // Initialize Managers
+
         // autoFlow.startMonitoring();
 
         // Expose API for external control (like Context Reset)
