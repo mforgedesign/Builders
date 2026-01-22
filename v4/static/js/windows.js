@@ -2624,6 +2624,15 @@
                     // Map payload to Kie.ai API format
                     const edgeInput = {
                         prompt: payload.prompt,
+
+                        // Common (Required for TTI/Edit)
+                        aspect_ratio: payload.aspect_ratio,
+                        quality: payload.quality || 'basic',
+
+                        // Video Specific
+                        duration: payload.duration ? String(payload.duration) : undefined,
+                        resolution: payload.resolution,
+
                         // Hailuo (Video)
                         image_url: isVideo ? payload.image_url : undefined,
                         end_image_url: isVideo ? payload.end_image_url : undefined,
