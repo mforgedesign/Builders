@@ -361,6 +361,79 @@
     </div>
 
     <script>
+        // ==========================================
+        // ROBUST VIDEO LOADING (Network Resilience)
+        // ==========================================
+        function setupRobustVideo(videoElement) {
+            if (!videoElement) return;
+
+            // Ensure attributes for maximum compatibility
+            videoElement.setAttribute('playsinline', '');
+            videoElement.setAttribute('webkit-playsinline', '');
+            videoElement.setAttribute('preload', 'auto');
+
+            let stuckTimer = null;
+            let lastTime = -1;
+
+            const attemptResume = () => {
+                console.log('[Video] Attempting resume/reload...');
+                if (videoElement.paused) videoElement.play().catch(() => { });
+            };
+
+            // Monitor stalled/waiting states
+            videoElement.addEventListener('waiting', () => {
+                console.log('[Video] Waiting for data...');
+                // If waiting too long (e.g. 5s), try to nudge it
+                clearTimeout(stuckTimer);
+                stuckTimer = setTimeout(attemptResume, 5000);
+            });
+
+            videoElement.addEventListener('stalled', () => {
+                console.log('[Video] Stalled (Low bandwidth).');
+            });
+
+            videoElement.addEventListener('playing', () => {
+                clearTimeout(stuckTimer);
+                console.log('[Video] Playing.');
+            });
+
+            videoElement.addEventListener('error', (e) => {
+                console.error('[Video] Error:', videoElement.error);
+                // Fatal error prevention
+                setTimeout(() => {
+                    console.log('[Video] Retrying load...');
+                    videoElement.load();
+                    videoElement.play().catch(e => console.log('Retry play failed', e));
+                }, 3000);
+            });
+
+            // Watchdog for Frozen Video
+            setInterval(() => {
+                if (!videoElement.paused && !videoElement.ended && videoElement.readyState > 2) {
+                    if (videoElement.currentTime === lastTime) {
+                        console.log('[Video] Freeze detected. Nudging...');
+                    }
+                    lastTime = videoElement.currentTime;
+                }
+            }, 2000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const videos = document.querySelectorAll('video');
+            videos.forEach(setupRobustVideo);
+
+            // Also watch for dynamic videos
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach(m => {
+                    m.addedNodes.forEach(node => {
+                        if (node.nodeName === 'VIDEO') setupRobustVideo(node);
+                        if (node.querySelectorAll) node.querySelectorAll('video').forEach(setupRobustVideo);
+                    });
+                });
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+        });
+
         // ==================================================================
         // 0. RENDER MODE & SCENARIO LOGIC
         // ==================================================================
