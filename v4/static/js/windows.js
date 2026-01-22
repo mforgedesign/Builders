@@ -616,7 +616,35 @@
         // Show remove button
         const removeBtn = dropzone.querySelector('.btn-remove-media');
         if (removeBtn) removeBtn.classList.remove('hidden');
+
+        // Add Download Button
+        addDownloadButton(dropzone, url);
     }
+
+    /**
+     * Adds a generic download button to a dropzone
+     */
+    function addDownloadButton(dropzone, url) {
+        // Check if button already exists
+        let downloadBtn = dropzone.querySelector('.btn-download-asset');
+        if (!downloadBtn) {
+            downloadBtn = document.createElement('a');
+            downloadBtn.className = 'btn-download-asset absolute bottom-2 right-12 bg-white/90 text-gray-700 hover:text-blue-600 p-1.5 rounded-full shadow-sm transition-all z-10 flex items-center justify-center w-8 h-8';
+            downloadBtn.innerHTML = '<i class="fa-solid fa-download text-xs"></i>';
+            downloadBtn.title = "Baixar Arquivo";
+            downloadBtn.target = "_blank";
+            dropzone.appendChild(downloadBtn);
+
+            // Prevent click propagation for the link
+            downloadBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
+
+        downloadBtn.href = url;
+        downloadBtn.download = `asset-${Date.now()}`; // Hint filename
+    }
+
     // Expose for Persistence module
     window.updateDropzonePreview = updateDropzonePreview;
 
@@ -662,9 +690,14 @@
 
             // Click to upload
             dropzone.addEventListener('click', (e) => {
-                if (e.target !== removeBtn && !removeBtn.contains(e.target)) {
-                    input.click();
+                // Fix: Don't trigger click if the user clicked the input itself (native behavior)
+                // or if they clicked the remove button or the new download button
+                if (e.target === input ||
+                    (removeBtn && (e.target === removeBtn || removeBtn.contains(e.target))) ||
+                    e.target.closest('.btn-download-asset')) {
+                    return;
                 }
+                input.click();
             });
 
             // Handle file selection
