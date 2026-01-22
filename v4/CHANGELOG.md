@@ -4,6 +4,17 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [4.2.1] - 2026-01-22
+### Fixed
+- **Manual Guest Interface**: Corrigido mismatch de campos `manual_content` (legado) vs `manual_html` (novo) para garantir restauração correta do Histórico.
+- **Import Logic**: Refinada proteção contra valores vazios para permitir limpeza intencional durante adaptação de modelos (Novo Convite / Mudar Tema).
+- **AI Context**: `ai-prompts.js` agora lê diretamente do DOM como fallback para garantir prompts corretos mesmo em transições de estado.
+- **Automation**: Adicionado countdown de 30s para confirmação automática de publicação no modo AutoBuilder.
+- **Bug Fixes**: Removidos alertas de sucesso intrusivos (`alert`) e corrigido crash de console em `windows.js`.
+- **Media**: Corrigida duração da animação Hailuo de 5s para 6s.
+
+---
+
 ## [4.2.0] - 2026-01-22
 ### Fixed
 - **Hailuo Duration Error**: Corrigido erro "duration is not within range" alterando de 5 para 6 segundos em `ai-prompts.js:191,196`. (Hailuo aceita apenas 6 ou 10 segundos)
