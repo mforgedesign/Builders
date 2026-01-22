@@ -21,6 +21,9 @@
     // Chat history for context
     let chatHistory = [];
 
+    // Ensure Global Namespace Exists
+    window.AutoBuilderChatbot = window.AutoBuilderChatbot || {};
+
     // ========================================
     // 1. CONTEXT MANAGER (PASSIVE AWARENESS)
     // ========================================
