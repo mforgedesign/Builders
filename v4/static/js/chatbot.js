@@ -433,12 +433,12 @@ Format:
         chatMessages.appendChild(note);
     }
 
-    function executeBuilderActions(actions) {
+    async function executeBuilderActions(actions) {
         let fieldCount = 0; // Apenas campos modificados (setValue, toggle)
-        actions.forEach(action => {
+        for (const action of actions) {
             if (action.type === 'autoBuild') {
                 autoFlow.startAutoCreation(action.eventName || 'Evento');
-                return;
+                continue;
             }
 
             const el = document.getElementById(action.id) || document.querySelector(`[data-field="${action.id}"]`);
@@ -464,9 +464,16 @@ Format:
                         initModalBusterEnhanced();
                     }
                     // Cliques não contam como campos atualizados
+                } else if (action.type === 'importModel') {
+                    if (window.importFromRemoteURL) {
+                        addMessage(`📦 <strong>Baixando modelo...</strong><br>${action.url}`, "assistant");
+                        await window.importFromRemoteURL(action.url, action.modifications);
+                    } else {
+                        addMessage("❌ Erro: Função de importação não carregada.", "assistant");
+                    }
                 }
             } catch (e) { console.error(e); }
-        });
+        }
         // Só mostra notificação se realmente modificou campos
         if (fieldCount > 0) showFormUpdateNotification(fieldCount);
     }
