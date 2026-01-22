@@ -434,7 +434,7 @@ Format:
     }
 
     function executeBuilderActions(actions) {
-        let actionCount = 0;
+        let fieldCount = 0; // Apenas campos modificados (setValue, toggle)
         actions.forEach(action => {
             if (action.type === 'autoBuild') {
                 autoFlow.startAutoCreation(action.eventName || 'Evento');
@@ -448,11 +448,13 @@ Format:
                 if (action.type === 'setValue') {
                     el.value = action.value;
                     el.dispatchEvent(new Event('input', { bubbles: true }));
+                    fieldCount++;
                 } else if (action.type === 'toggle') {
                     if (el.type === 'checkbox') {
                         el.checked = (action.value === true);
                         el.dispatchEvent(new Event('change', { bubbles: true }));
                     } else el.click();
+                    fieldCount++;
                 } else if (action.type === 'click') {
                     el.click();
 
@@ -461,11 +463,12 @@ Format:
                         addMessage("🚀 Publicando convite...", "assistant");
                         initModalBusterEnhanced();
                     }
+                    // Cliques não contam como campos atualizados
                 }
-                actionCount++;
             } catch (e) { console.error(e); }
         });
-        if (actionCount > 0) showFormUpdateNotification(actionCount);
+        // Só mostra notificação se realmente modificou campos
+        if (fieldCount > 0) showFormUpdateNotification(fieldCount);
     }
 
     /**
