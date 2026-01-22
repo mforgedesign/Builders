@@ -4,6 +4,21 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [4.2.0] - 2026-01-22
+### Fixed
+- **Hailuo Duration Error**: Corrigido erro "duration is not within range" alterando de 5 para 6 segundos em `ai-prompts.js:191,196`. (Hailuo aceita apenas 6 ou 10 segundos)
+- **Selo na Folha Vazia**: Removida linha "Selo: {{SEAL}}" do prompt da folha vazia (`ai-prompts.js:92`). Selo deve aparecer apenas na capa do envelope.
+- **Alert de Sucesso**: Removido `alert('Capa gerada com sucesso!')` em `windows.js:3032`, substituído por `console.log` para não interromper o fluxo do usuário.
+
+### Added
+- **Seleção Automática de Música**: Chatbot agora sempre seleciona "Perfect (Violin)" via nova ação `selectMusic` em `chatbot.js:694-704`.
+- **Regra de Negócio para Música**: Atualizado System Prompt do chatbot para ignorar músicas solicitadas pelo cliente e usar sempre "Perfect (Violin)".
+
+### Backups
+- `ai-prompts_bkp_20260122_precorrecao.js`
+- `windows_bkp_20260122_precorrecao.js`
+- `chatbot_bkp_20260122_precorrecao.js`
+
 ## [4.1.9] - 2026-01-22
 ### Fixed
 - **Kie.ai Generation Error**: Added missing `aspect_ratio` and `quality` fields to the API payload in `windows.js`. This resolves the "This field is required" error for Text-to-Image models.
