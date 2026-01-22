@@ -1,6 +1,20 @@
-# AutoBuilder v4.0 - CHANGELOG
+## [4.2.2] - 2026-01-22
+### Changed
+- **AI Prompts**: Atualizados templates de Capa e Folha Vazia conforme novos padrões de alta fidelidade 3D (Ref: Julia 15).
+- **Video Generation**: Refinada filtragem de parâmetros para modelos Hailuo/Kling em `windows.js` para evitar erros de "invalid parameters" na Kie.ai.
+- **Chatbot Intelligence**: Atualizado System Prompt do Chatbot com template padrão de Manual HTML e unificação de chamadas via Supabase Edge Functions.
+- **Script Management**: Otimizada ordem de carregamento de scripts no `index.html` e removidas duplicatas para garantir estabilidade do módulo `AIPrompts`.
 
-Registro de todas as modificações do projeto, conforme as diretrizes das global rules.
+### Fixed
+- **Manual HTML Import**: Corrigida falha na restauração do campo `manual_html` a partir do histórico/importação, garantindo que o editor e o preview sejam atualizados imediatamente.
+- **Form Mapping**: Melhorada a retrocompatibilidade entre campos `manual_content` e `manual_html` durante a hidratação do formulário.
+
+### Backups
+- `ai-prompts_backup_20260122_fix_prompts.js`
+- `windows_backup_20260122_fix_hailuo.js`
+- `chatbot_backup_20260122_fix_manual.js`
+- `form_backup_20260122_fix_import.js`
+- `index_backup_20260122_fix_scripts.html`
 
 ---
 
