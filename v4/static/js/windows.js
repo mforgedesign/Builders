@@ -1767,6 +1767,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Inject default values for remaining placeholders
+                htmlContent = htmlContent.replace(/\[\[BUTTONS_OFFSET\]\]/g, formData.buttons_offset || '0px');
                 htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, formData.button_size || '1.0');
                 htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, '');
                 htmlContent = htmlContent.replace(/\[\[MANUAL_CONTENT\]\]/g, formData.manual_html || '');
@@ -3437,6 +3438,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const menuConfig = generatedMenu;
 
                     htmlContent = htmlContent.replace(/\[\[MENU_CONFIG\]\]/g, JSON.stringify(menuConfig));
+                    htmlContent = htmlContent.replace(/\[\[BUTTONS_OFFSET\]\]/g, formData.buttons_offset || '0px');
                     htmlContent = htmlContent.replace(/\[\[BUTTON_SIZE\]\]/g, buttonSize || '1.0');
                     htmlContent = htmlContent.replace(/\[\[COMPANION_HIDE_CLASS\]\]/g, companionHideClass || '');
 
