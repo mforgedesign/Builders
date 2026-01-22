@@ -637,6 +637,66 @@ Format:
         if (chatInput) chatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(chatInput.value); }
         });
+
+        // Initialize Managers
+        autoFlow.startMonitoring();
+
+        // Expose API for external control (like Context Reset)
+        window.AutoBuilderChatbot = {
+            resetContext: () => {
+                contextManager.clearContext();
+                addMessage("🧹 Contexto do chat limpo para novo convite.", "assistant");
+                console.log("[Chatbot] Contexto limpo via AutoBuilderChatbot.");
+            }
+        };
+
+        // Listen for GitHub Deploy Status Events (from GitHubAdapter)
+        window.addEventListener('gh-deploy-status', (e) => {
+            const { status, message, url, slug, progress } = e.detail;
+
+            if (status === 'start') {
+                addMessage(`🚀 <strong>Iniciando publicação...</strong><br><span class="text-xs text-gray-500">Preparando arquivos...</span>`, "assistant");
+            } else if (status === 'progress') {
+                // Optional: Update ephemeral progress if needed
+                // console.log(`[Deploy Progress] ${message}`);
+            } else if (status === 'success') {
+                const whatsappText = encodeURIComponent(`Veja meu convite especial: ${url}`);
+                const adminUrl = `https://github.com/mforgedesign/Convites/tree/main/${slug}`;
+
+                const successHtml = `
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-4 mt-2 shadow-sm animate-fade-in">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="fa-solid fa-check text-green-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-green-800 text-sm">Convite Publicado!</h3>
+                                <p class="text-xs text-green-600">Pronto para compartilhar</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <button onclick="window.open('${url}', '_blank')" class="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-colors text-sm shadow-sm">
+                                <i class="fa-solid fa-up-right-from-square"></i> Abrir Convite
+                            </button>
+                            
+                            <div class="flex gap-2">
+                                <button onclick="window.open('https://wa.me/?text=${whatsappText}', '_blank')" class="flex-1 flex items-center justify-center gap-1 bg-[#25D366] hover:bg-[#128C7E] text-white font-medium py-2 rounded-lg transition-colors text-sm shadow-sm">
+                                    <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                                </button>
+                                <button onclick="window.open('${adminUrl}', '_blank')" class="flex-1 flex items-center justify-center gap-1 bg-gray-800 hover:bg-gray-900 text-white font-medium py-2 rounded-lg transition-colors text-sm shadow-sm">
+                                    <i class="fa-brands fa-github"></i> Admin
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                addMessage(successHtml, "assistant");
+            } else if (status === 'error') {
+                addMessage(`❌ <strong>Erro na publicação:</strong> ${message}`, "assistant");
+            }
+        });
+
         console.log('✅ Chatbot Brain v4.1 Initialized');
     }
 
