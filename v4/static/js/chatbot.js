@@ -458,7 +458,15 @@ Format:
             if (action.type === 'importModel') {
                 if (window.importFromRemoteURL) {
                     addMessage(`📦 <strong>Baixando modelo...</strong><br>${action.url}`, "assistant");
-                    await window.importFromRemoteURL(action.url, action.modifications);
+                    if (await window.importFromRemoteURL(action.url, action.modifications)) {
+                        if (action.modifications) {
+                            addMessage('✅ Modelo base importado. Editando...', "assistant");
+                        } else {
+                            addMessage('✅ Importado com sucesso!', "assistant");
+                        }
+                    } else {
+                        addMessage('❌ Houve um erro na importação.', "assistant");
+                    }
                 } else {
                     addMessage("❌ Erro: Função de importação não carregada.", "assistant");
                 }
