@@ -1561,7 +1561,7 @@
                                             const blob = await blobResp.blob();
                                             const reader = new FileReader();
                                             reader.onloadend = () => {
-                                                const isVideo = filename.toLowerCase().match(/\.(mp4|webm|ogg|mov)$/);
+                                                const isVideo = fullAssetUrl.toLowerCase().match(/\.(mp4|webm|ogg|mov)$/);
                                                 const type = isVideo ? 'video' : 'image';
                                                 updateDropzonePreview(dz, reader.result, type);
                                             };
