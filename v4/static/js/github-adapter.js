@@ -208,6 +208,24 @@
         }
 
         /**
+         * Checks if a folder (slug) exists in the repository
+         * @param {string} slug 
+         * @returns {Promise<boolean>}
+         */
+        async checkFolderExists(slug) {
+            if (!this.token) return false; // Can't check securely without token, assume false or handle upstream
+
+            try {
+                const url = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${slug}`;
+                const res = await fetch(url, { headers: this.getHeaders() });
+                return res.ok; // 200/2xx means it exists
+            } catch (e) {
+                console.warn('Check folder failed', e);
+                return false;
+            }
+        }
+
+        /**
          * Checks the workflow status for a specific commit
          * @param {string} sha - The commit SHA
          */
