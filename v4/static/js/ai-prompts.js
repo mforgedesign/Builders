@@ -150,38 +150,38 @@
     function getModelConfig(type) {
         const configs = {
             'cover': {
-                model: 'seedream-v4',
+                model: 'seedream/v4-base', // Verify correct slug for Text-to-Image
                 mode: 'text-to-image',
                 aspect_ratio: '9:16'
             },
             'leaf': {
-                model: 'seedream-v4',
+                model: 'seedream/v4-base', // Verify correct slug for Text-to-Image
                 mode: 'text-to-image',
                 aspect_ratio: '9:16'
             },
             'fill': {
-                model: 'seedream-v4.5',
+                model: 'seedream/4.5-edit',
                 mode: 'image-to-image',
                 aspect_ratio: '9:16'
             },
             'intro': {
-                model: 'hailuo-02',
+                model: 'hailuo/02-image-to-video-standard',
                 mode: 'image-to-video',
                 duration: 5
             },
             'loop': {
-                model: 'kling-o1',
+                model: 'kling/v1/standard', // Placeholder, verify if available in Kie
                 mode: 'image-to-video',
                 duration: 5,
                 loop: true
             },
             'gifts': {
-                model: 'seedream-v4.5',
+                model: 'seedream/4.5-edit',
                 mode: 'image-to-image',
                 aspect_ratio: '9:16'
             },
             'manual': {
-                model: 'seedream-v4.5',
+                model: 'seedream/4.5-edit',
                 mode: 'image-to-image',
                 aspect_ratio: '9:16'
             }
@@ -194,6 +194,11 @@
      * Build complete generation payload
      */
     function buildGenerationPayload(type, options, config) {
+        // If config not provided, get default for type
+        if (!config) {
+            config = getModelConfig(type);
+        }
+
         let prompt = '';
 
         // Get appropriate prompt
