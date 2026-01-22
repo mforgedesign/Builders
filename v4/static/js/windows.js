@@ -1413,19 +1413,11 @@
         window.importFromRemoteURL = async function (url, modifications = null) {
             if (!url) return;
 
+            if (!url) return;
+
             console.log(`[Import] Iniciando importação de: ${url}`);
-            const loadingMsg = document.getElementById('loading-overlay') || (() => {
-                const el = document.createElement('div');
-                el.id = 'loading-overlay';
-                el.className = 'fixed inset-0 z-[9999] bg-black/80 flex flex-col items-center justify-center text-white';
-                el.innerHTML = '<i class="fa-solid fa-cloud-arrow-down text-5xl mb-4 fa-bounce"></i><h2 class="text-2xl font-bold">Importando Modelo...</h2><p id="import-status" class="mt-2 text-gray-300">Conectando...</p>';
-                document.body.appendChild(el);
-                return el;
-            })();
 
             const updateStatus = (msg) => {
-                const el = document.getElementById('import-status');
-                if (el) el.textContent = msg;
                 console.log(`[Import] ${msg}`);
             };
 
@@ -1586,27 +1578,17 @@
                 }
 
                 updateStatus('Finalizando...');
-                loadingMsg.remove();
 
                 if (hasModifications) {
-                    // Set the modifications prompt in the AI input called "manual" (or chat input?)
-                    // Actually the user said "pede as alterações lá no prompt de preenchimento".
-                    // This usually implies the 'manual_content' or similar? 
-                    // Or maybe just tell the chatbot?
-                    // Use showAlertModal to inform user
-                    showAlertModal('Modelo Importado para Edição',
-                        'O modelo foi carregado como base. <br><b>A capa original está na referência.</b><br>Os textos foram limpos para você preencher com os novos dados.',
-                        'success');
+                    console.log('[Import] Modelo importado para edição.');
                 } else {
-                    showAlertModal('Modelo Importado', 'O convite foi importado com sucesso e está pronto para uso.', 'success');
+                    console.log('[Import] Modelo importado com sucesso.');
                 }
 
                 return true;
 
             } catch (error) {
-                loadingMsg.remove();
                 console.error('[Import] Critical Error:', error);
-                showAlertModal('Erro na Importação', `Não foi possível importar o modelo: ${error.message}`, 'error');
                 return false;
             }
         };
