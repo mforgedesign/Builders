@@ -14,7 +14,7 @@ serve(async (req) => {
     }
 
     try {
-        const { message, history, system_prompt } = await req.json();
+        const { message, history, system_prompt, context } = await req.json();
 
         if (!message) {
             throw new Error("Message is required");
@@ -30,8 +30,14 @@ serve(async (req) => {
         // Use provided system prompt or fallback
         const promptToUse = system_prompt || "You are a helpful assistant.";
 
+        // Construct Context Message
+        let contextMessage = "";
+        if (context) {
+            contextMessage = `\n\n[SYSTEM CONTEXT]\nCurrent Step: ${context.currentStep || 1}\nLast Action: ${context.lastAction || 'None'}\nFormData: ${JSON.stringify(context.formData || {})}\nUploaded Assets: ${JSON.stringify(context.uploadedAssets || {})}`;
+        }
+
         const messages = [
-            { role: "system", content: promptToUse },
+            { role: "system", content: promptToUse + contextMessage },
             ...(history || []).map((msg: any) => ({ role: msg.role, content: msg.content })),
             { role: "user", content: message }
         ];
