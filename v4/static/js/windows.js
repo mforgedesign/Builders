@@ -121,6 +121,14 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function showConfirmModal(title, message, confirmText = 'Confirmar', cancelText = 'Cancelar') {
         return new Promise((resolve) => {
+            // AUTOFLOW OVERRIDE (For Autonomous Chatbot)
+            if (window.AutoFlow && window.AutoFlow.autoConfirmPending) {
+                console.log('[Windows] AutoFlow Auto-Confirming Modal:', title);
+                window.AutoFlow.autoConfirmPending = false; // Reset flag
+                resolve(true);
+                return;
+            }
+
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in';
             modal.innerHTML = `
@@ -3500,6 +3508,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.updateDeployStep('step-live', 'loading');
 
                     publishBtn.innerHTML = '<i class="fa-solid fa-check"></i> Enviado!';
+
+                    // Success Sound
+                    try { playSuccessSound(); } catch (e) { }
+
                     publishBtn.classList.remove('bg-brand-600');
                     publishBtn.classList.add('bg-blue-600');
 
