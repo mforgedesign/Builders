@@ -8,13 +8,87 @@
  * - Dropzones
  */
 
-(function () {
-    'use strict';
-    // alert removed
+// ===========================
+// UI CONTROLS (Shadow & Buttons)
+// ===========================
+const setupUIControls = () => {
+    // --- Shadow Controls ---
+    const shadowPicker = document.getElementById('shadowColorPicker');
+    const shadowToggle = document.getElementById('checkShadowEnabled');
+    const shadowLabel = document.getElementById('labelShadowStatus');
 
-    // ========================================
-    // Toast Notification Utility
-    // ========================================
+    const updateShadow = () => {
+        const color = shadowPicker?.value || '#000000';
+        const enabled = shadowToggle?.checked !== false;
+
+        if (shadowLabel) {
+            shadowLabel.textContent = enabled ? "Sombra Ativada" : "Sombra Desativada";
+            shadowLabel.className = enabled ? "text-xs text-stone-600 cursor-pointer select-none" : "text-xs text-gray-400 cursor-pointer select-none line-through";
+        }
+
+        // Update Preview (Iframe)
+        const iframe = document.getElementById('previewFrame');
+        if (iframe && iframe.contentDocument) {
+            const shadowEl = iframe.contentDocument.getElementById('containerShadow');
+            if (shadowEl) {
+                if (enabled) {
+                    shadowEl.style.display = '';
+                    shadowEl.style.background = `linear-gradient(to top, ${color}E6, ${color}66, transparent)`;
+                } else {
+                    shadowEl.style.display = 'none';
+                }
+            }
+        }
+    };
+
+    if (shadowPicker) shadowPicker.addEventListener('input', updateShadow);
+    if (shadowToggle) shadowToggle.addEventListener('change', updateShadow);
+
+    // --- Button Controls ---
+    const btnColorPicker = document.getElementById('corBotoes');
+    const btnFillToggle = document.getElementById('checkButtonFillEnabled');
+    const btnFillLabel = document.getElementById('labelButtonFillStatus');
+
+    const updateButtons = () => {
+        const color = btnColorPicker?.value || '#4f46e5';
+        const filled = btnFillToggle?.checked !== false;
+
+        if (btnFillLabel) {
+            btnFillLabel.textContent = filled ? "Preenchimento Ativado" : "Apenas Círculo Branco";
+            btnFillLabel.className = filled ? "text-xs text-gray-600 cursor-pointer" : "text-xs text-gray-400 cursor-pointer";
+        }
+
+        // Update Preview (Iframe Buttons)
+        const iframe = document.getElementById('previewFrame');
+        if (iframe && iframe.contentDocument) {
+            const buttons = iframe.contentDocument.querySelectorAll('#containerBotoes > div'); // Assuming divs are buttons
+            buttons.forEach(btn => {
+                if (filled) {
+                    btn.style.backgroundColor = color;
+                    btn.style.color = '#ffffff';
+                } else {
+                    btn.style.backgroundColor = '#ffffff';
+                    btn.style.color = color;
+                }
+                // Update Icon color explicitly if needed
+                const icon = btn.querySelector('i');
+                if (icon) icon.style.color = filled ? '#ffffff' : color;
+            });
+        }
+    };
+
+    if (btnColorPicker) btnColorPicker.addEventListener('input', updateButtons);
+    if (btnFillToggle) btnFillToggle.addEventListener('change', updateButtons);
+
+    // Initial Sync (Wait 1s for iframe load potentially)
+    setTimeout(() => {
+        updateShadow();
+        updateButtons();
+    }, 1500);
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupUIControls(); // Init Controls
     function showToast(message, type = 'info') {
         const toast = document.createElement('div');
         const colors = {
