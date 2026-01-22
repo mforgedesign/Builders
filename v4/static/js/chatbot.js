@@ -71,6 +71,16 @@
                 builderState: window.builderState || {}
             };
         }
+
+        clearContext() {
+            this.context = {
+                currentStep: 1,
+                lastAction: 'Reset',
+                uploadedAssets: {},
+                formData: {}
+            };
+            console.log("[ContextManager] State Reset");
+        }
     }
 
     // ========================================
