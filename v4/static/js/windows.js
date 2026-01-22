@@ -1264,6 +1264,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         console.log('🧹 Cleaning Slate...');
 
+        // Reset Chatbot Context
+        if (window.AutoBuilderChatbot && window.AutoBuilderChatbot.resetContext) {
+            window.AutoBuilderChatbot.resetContext();
+        }
+
         // 1. Reset Global State
         if (window.builderState) {
             window.builderState.assets = {};
