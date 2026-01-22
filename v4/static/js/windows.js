@@ -1024,6 +1024,16 @@
                     const hydrationState = { ...appState.formData, _reset: true };
                     window.AutoBuilderForm.populateForm(hydrationState);
 
+                    // [FIX] Ensure Manual Editor Preview is refreshed
+                    const manualHtml = hydrationState.manual_html || hydrationState.manual_content;
+                    if (manualHtml) {
+                        const editor = document.getElementById('manual-html-editor');
+                        if (editor) {
+                            editor.value = manualHtml;
+                            editor.dispatchEvent(new Event('input'));
+                        }
+                    }
+
                     // Dispatch a SINGLE update event to sync persistence/preview
                     document.dispatchEvent(new CustomEvent('stateUpdated', {
                         detail: {
@@ -2657,22 +2667,37 @@
                     // Map payload to Kie.ai API format
                     const edgeInput = {
                         prompt: payload.prompt,
-
-                        // Common (Required for TTI/Edit)
-                        aspect_ratio: payload.aspect_ratio,
-                        quality: payload.quality || 'basic',
-
-                        // Video Specific
-                        duration: payload.duration ? String(payload.duration) : undefined,
-                        resolution: payload.resolution,
-
-                        // Hailuo (Video)
-                        image_url: isVideo ? payload.image_url : undefined,
-                        end_image_url: isVideo ? payload.end_image_url : undefined,
-                        // Seedream (Image) - needs array
-                        image_urls: (!isVideo && payload.image_url) ? [payload.image_url] : undefined
-                        // Add duration/quality if present in payload config
+                        aspect_ratio: payload.aspect_ratio || '9:16'
                     };
+
+                    // Model-specific parameter filtering
+                    const isHailuo = payload.model?.includes('hailuo');
+                    const isKling = payload.model?.includes('kling');
+                    const isSeedream = payload.model?.includes('seedream');
+
+                    // Video Specific
+                    if (isVideo) {
+                        edgeInput.image_url = payload.image_url;
+                        if (payload.end_image_url) edgeInput.end_image_url = payload.end_image_url;
+
+                        // Only add duration/resolution if model supports it (Hailuo is strict)
+                        if (!isHailuo) {
+                            edgeInput.duration = payload.duration ? String(payload.duration) : undefined;
+                            edgeInput.resolution = payload.resolution;
+                        }
+                    } else {
+                        // Image/Edit Specific
+                        if (isSeedream && payload.image_url) {
+                            edgeInput.image_urls = [payload.image_url];
+                        } else if (payload.image_url) {
+                            edgeInput.image_url = payload.image_url;
+                        }
+
+                        // Seedream doesn't like duration
+                        if (!isSeedream) {
+                            edgeInput.quality = payload.quality || 'basic';
+                        }
+                    }
 
                     const { data: taskData, error: taskError } = await window.supabaseClient.functions.invoke('generate-asset', {
                         body: {
