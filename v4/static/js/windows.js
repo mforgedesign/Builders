@@ -1479,41 +1479,37 @@
                 updateStatus('Recuperando assets...');
                 const assetBaseUrl = dataUrl.replace('data.json', ''); // e.g. https://domain/slug/
 
+                let coverRedirected = false;
+
                 if (appState.assetsMap && Object.keys(appState.assetsMap).length > 0) {
                     const assetPromises = Object.entries(appState.assetsMap).map(async ([context, relativePath]) => {
                         if (!relativePath) return;
 
-                        // Logic:
-                        // - If hasModifications:
-                        //    - Capa (cover) -> Reference Dropzone (#cover-reference-dropzone)
-                        //    - Folha (leaf) -> Main Dropzone BUT maybe triggers edit mode? (For now just load)
-                        //    - Others -> Load normally? Or skip? User said "Música: ignorar se diferente".
-                        //      Actually user said "Se pedir alterações... Capa deve ser anexada no placeholder de Referência".
-
                         let targetContext = context;
-                        // Removed forced redirection to 'capa_referencia' so user sees the cover immediately.
+
+                        // Restore logic: If modifications are requested, move the original cover to reference
+                        // so it doesn't occupy the main slot (which is likely being regenerated)
+                        if (modifications && context === 'capa') {
+                            targetContext = 'capa_referencia';
+                            coverRedirected = true;
+                        }
 
                         // Construct full URL
                         const fullAssetUrl = relativePath.startsWith('http') ? relativePath : `${assetBaseUrl}${relativePath}`;
 
                         try {
-                            // We can't easily download the blob due to CORS on GitHub Pages sometimes, 
-                            // BUT if it's an image we might be able to use it as URL or fetch.
-                            // GitHub Pages usually allows GET.
-
                             // Special handling for 'capa_referencia'
                             if (targetContext === 'capa_referencia') {
                                 const refDropzone = document.getElementById('cover-reference-dropzone');
                                 if (refDropzone) {
                                     updateDropzonePreview(refDropzone, fullAssetUrl);
-                                    refDropzone.dataset.base64 = fullAssetUrl; // Store URL as "base64" for now implies source
+                                    refDropzone.dataset.base64 = fullAssetUrl;
                                     console.log('[Import] Capa definida como referência');
                                 }
                                 return;
                             }
 
-                            // Standard Restoration logic (similar to restoreBuilderState)
-                            // Mapping context to Dropzone ID
+                            // Standard Restoration logic
                             const contextToId = {
                                 'capa': 'cover-dropzone',
                                 'folha_vazia': 'leaf-dropzone',
@@ -1583,7 +1579,7 @@
                     console.log('[Import] Modelo importado com sucesso.');
                 }
 
-                return true;
+                return { success: true, coverRedirected };
 
             } catch (error) {
                 console.error('[Import] Critical Error:', error);
