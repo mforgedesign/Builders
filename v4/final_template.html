@@ -193,6 +193,10 @@
                     <span id="contadorMinutos" class="text-xl sm:text-2xl font-bold leading-none">00</span>
                     <span class="text-[8px] sm:text-[10px] uppercase opacity-80">Min</span>
                 </div>
+                <div class="flex flex-col items-center">
+                    <span id="contadorSegundos" class="text-xl sm:text-2xl font-bold leading-none">00</span>
+                    <span class="text-[8px] sm:text-[10px] uppercase opacity-80">Seg</span>
+                </div>
             </div>
         </div>
 
@@ -845,6 +849,8 @@
             }
             if (meses < 0) { meses += 12; anos--; }
 
+            let segundos = Math.floor((diferenca % (1000 * 60)) / 1000);
+
             const totalMeses = (anos * 12) + meses;
             const fmt = (num) => num < 10 ? `0${num}` : num;
 
@@ -852,6 +858,7 @@
             document.getElementById('contadorDias').innerText = fmt(dias);
             document.getElementById('contadorHoras').innerText = fmt(horas);
             document.getElementById('contadorMinutos').innerText = fmt(minutos);
+            document.getElementById('contadorSegundos').innerText = fmt(segundos);
         }
 
         // Inicia e atualiza a cada segundo
