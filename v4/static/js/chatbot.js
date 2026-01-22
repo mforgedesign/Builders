@@ -367,10 +367,15 @@ Format:
 
         showTypingIndicator();
 
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s Timeout
+
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
                 body: JSON.stringify({
                     message,
                     history: chatHistory.slice(-10),
@@ -380,6 +385,8 @@ Format:
                     context: contextManager.getSnapshot()
                 })
             });
+
+            clearTimeout(timeoutId); // Clear timeout on response
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
@@ -407,9 +414,16 @@ Format:
             addMessage(formatResponse(responseText), 'assistant');
 
         } catch (error) {
+            clearTimeout(timeoutId);
             hideTypingIndicator();
             console.error('Chat error:', error);
-            addMessage(`<span class="text-red-500">Erro: ${error.message}</span>`, 'assistant');
+
+            let userMsg = `Erro: ${error.message}`;
+            if (error.name === 'AbortError') {
+                userMsg = "O servidor demorou muito para responder. Tente novamente.";
+            }
+
+            addMessage(`<span class="text-red-500">${userMsg}</span>`, 'assistant');
         } finally {
             chatInput.disabled = false;
             chatSend.disabled = false;
