@@ -71,6 +71,9 @@
             if (!await this.ensureAuth()) throw new Error('Autenticação falhou');
 
             console.log(`[GitHubAdapter] Starting Atomic Batch Deploy for ${slug}...`);
+            window.dispatchEvent(new CustomEvent('gh-deploy-status', {
+                detail: { status: 'start', slug, message: 'Iniciando deploy...' }
+            }));
 
             if (!filesMap || typeof filesMap !== 'object') {
                 throw new Error('filesMap inválido ou vazio para deploy.');
@@ -80,6 +83,8 @@
             // We want to create a tree structure for the content of "convites/{slug}/"
             // The items in filesMap are relative to that folder (e.g. "index.html", "assets/foo.png")
             const subtreeItems = [];
+            let processed = 0;
+            const total = Object.entries(filesMap).length;
 
             for (const [path, contentBase64] of Object.entries(filesMap)) {
                 const blobSha = await this.createBlob(contentBase64);
@@ -89,6 +94,12 @@
                     type: 'blob',
                     sha: blobSha
                 });
+                processed++;
+                if (processed % 2 === 0 || processed === total) {
+                    window.dispatchEvent(new CustomEvent('gh-deploy-status', {
+                        detail: { status: 'progress', step: 'upload', progress: Math.round((processed / total) * 100), message: `Enviando arquivos (${processed}/${total})...` }
+                    }));
+                }
             }
 
             // 2. Create the New Invitation Tree (Clean Slate)
@@ -177,10 +188,16 @@
 
             console.log('[GitHubAdapter] Atomic Batch Deploy Success! Commit:', newCommitSha);
 
+            const deployUrl = `https://convites.mforge.com.br/${slug}/`;
+
+            window.dispatchEvent(new CustomEvent('gh-deploy-status', {
+                detail: { status: 'success', slug, url: deployUrl, sha: newCommitSha }
+            }));
+
             return {
                 success: true,
                 sha: newCommitSha,
-                url: `https://convites.mforge.com.br/${slug}/`
+                url: deployUrl
             };
         }
 
