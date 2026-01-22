@@ -2139,6 +2139,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     checkBtn.classList.add('bg-green-600');
 
                     if (statusText) statusText.innerText = 'Disponível Online!';
+                    playSuccessSound(); // 🔔 Success Sound
                     finalizeSuccessUI(liveUrl, slug);
                     resolve();
                 } else {
