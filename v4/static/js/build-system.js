@@ -404,6 +404,18 @@
         const eventDatetime = eventDate && eventTime ? `${eventDate}T${eventTime}:00` : '';
         html = html.replace(/\[\[EVENT_DATETIME\]\]/g, eventDatetime);
 
+        // New: Button Color & Fill Mode
+        const buttonColor = formData.cor_botoes || formData.button_color || '#4f46e5';
+        // Need to read the checkbox from DOM if not in formData yet, OR rely on builderState update
+        // windows.js should update formData on change. 
+        // But for safety, let's look at the DOM element if we are in builder context
+        const btnFillCheckbox = document.getElementById('checkButtonFillEnabled');
+        // Default to true if checkbox missing (legacy)
+        const buttonFillEnabled = btnFillCheckbox ? btnFillCheckbox.checked : (state.formData.button_fill !== false);
+
+        html = html.replace(/\[\[BUTTON_COLOR\]\]/g, buttonColor);
+        html = html.replace(/\[\[BUTTON_FILL_ENABLED\]\]/g, buttonFillEnabled.toString()); // "true" or "false"
+
         // ✅ 9. MENU_CONFIG (inject as JSON array, not object)
         html = html.replace(/\[\[MENU_CONFIG\]\]/g, JSON.stringify(menuConfig));
 
