@@ -192,6 +192,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
+     * Plays a success chime (AudioContext)
+     */
+    function playSuccessSound() {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            // Nice major triad arpeggio (C5 - E5 - G5)
+            const now = ctx.currentTime;
+
+            // Note 1: C5 (523.25 Hz)
+            osc.frequency.setValueAtTime(523.25, now);
+            gain.gain.setValueAtTime(0.1, now);
+
+            // Note 2: E5 (659.25 Hz)
+            osc.frequency.setValueAtTime(659.25, now + 0.1);
+
+            // Note 3: G5 (783.99 Hz)
+            osc.frequency.setValueAtTime(783.99, now + 0.2);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+
+            osc.start(now);
+            osc.stop(now + 0.6);
+        } catch (e) {
+            console.warn('Success sound failed', e);
+        }
+    }
+
+    /**
      * Shows an elegant alert modal (replaces native alert)
      * @param {string} title - Modal title
      * @param {string} message - Modal message
