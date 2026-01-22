@@ -613,7 +613,7 @@ Response:
         try {
             if (!window.supabaseClient) throw new Error("Supabase client not initialized");
 
-            const { data, error } = await window.supabaseClient.functions.invoke('chat', {
+            const { data, error } = await window.supabaseClient.functions.invoke('chatbot-intent', {
                 body: {
                     message,
                     history: chatHistory.slice(-10),
