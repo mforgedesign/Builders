@@ -109,11 +109,13 @@
      * /api/chat - Chatbot interactions
      */
     async function handleChatAPI(body) {
+        // Forward the entire body from chatbot.js (which includes system_prompt, history, message, context)
+        // We act as a transparent proxy now, trusting chatbot.js to form the correct payload
         const { data, error } = await supabase.functions.invoke('chatbot-intent', {
             body: {
-                message: body.message,
-                context: window.builderState,
-                conversation_history: window.builderState.conversationHistory
+                ...body,
+                // Fallback to global state only if missing (optional, but safer to trust chatbot.js)
+                context: body.context || window.builderState,
             }
         });
 
