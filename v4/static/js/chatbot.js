@@ -374,14 +374,17 @@ Format:
                 body: JSON.stringify({
                     message,
                     history: chatHistory.slice(-10),
-                    // Let Edge Function use its own updated System Prompt
-                    // system_prompt: SYSTEM_PROMPT, 
+                    // Let Edge Function use its own updated System Prompt, BUT passing ours is safer for now as it contains the JSON schema instructions
+                    system_prompt: SYSTEM_PROMPT,
                     // Inject Current Context
                     context: contextManager.getSnapshot()
                 })
             });
 
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `HTTP ${response.status}`);
+            }
             const data = await response.json();
 
             // Parse JSON Actions
