@@ -86,10 +86,13 @@
     // ========================================
     // 2. AUTO FLOW MANAGER (THE BRAIN)
     // ========================================
+    const ASSET_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes per asset
+
     class AutoFlowManager {
         constructor() {
             this.isAutoBuilding = false;
             this.waitingFor = new Set(); // Assets we are waiting for
+            this.assetTimeouts = new Map(); // Timeout IDs for each asset
             this.slugConfig = null;
         }
 
@@ -118,9 +121,42 @@
             }
             addMessage(`✅ Slug definido: <strong>${slug}</strong>`, "assistant");
 
-            // Step 2: Trigger Initial Assets (Cover & Leaf)
+            // Step 2: Select Music (Perfect Violin)
+            const perfectSample = document.querySelector('[data-name="Perfect (Violin Cover)"]');
+            if (perfectSample) {
+                const selectBtn = perfectSample.querySelector('.sample-select-btn');
+                if (selectBtn) {
+                    selectBtn.click();
+                    addMessage(`🎵 Música selecionada: Perfect (Violin)`, "assistant");
+                }
+            }
+
+            // Step 3: Trigger Initial Assets (Cover & Leaf)
             this.triggerAssetGeneration('cover');
             this.triggerAssetGeneration('leaf');
+        }
+
+        /**
+         * Checks if an asset type already has an existing image (e.g., from imported model)
+         * Used to decide between generation prompt vs edit prompt
+         */
+        checkExistingAsset(type) {
+            const dropzoneIdMap = {
+                'cover': 'cover-dropzone',
+                'leaf': 'leaf-dropzone',
+                'fill': 'fill-image-dropzone',
+                'gifts': 'gifts-image-dropzone'
+            };
+
+            const dropzoneId = dropzoneIdMap[type];
+            if (!dropzoneId) return false;
+
+            const dropzone = document.getElementById(dropzoneId);
+            if (!dropzone) return false;
+
+            // Check if dropzone has background-image set (indicating an existing image)
+            const bgImage = dropzone.style.backgroundImage;
+            return bgImage && bgImage.includes('url(') && bgImage !== 'none';
         }
 
         /**
@@ -150,23 +186,50 @@
             const btnEl = document.getElementById(btnIdMap[type]);
 
             if (promptEl && btnEl) {
+                // Check if there's an existing image (from imported model)
+                const hasExistingImage = this.checkExistingAsset(type);
+
                 // Quality Check: If prompt is empty/short, inject Advanced Prompt
                 if (promptEl.value.length < 20) {
                     let advancedPrompt = '';
-                    if (type === 'cover') advancedPrompt = window.AIPrompts.getCoverPrompt();
-                    if (type === 'leaf') advancedPrompt = window.AIPrompts.getBlankSheetPrompt();
+
+                    if (type === 'cover') {
+                        // Use Edit prompt if we have an existing image, otherwise use generation prompt
+                        advancedPrompt = hasExistingImage
+                            ? window.AIPrompts.getCoverEditPrompt()
+                            : window.AIPrompts.getCoverPrompt();
+                    }
+                    if (type === 'leaf') {
+                        advancedPrompt = hasExistingImage
+                            ? window.AIPrompts.getBlankSheetEditPrompt()
+                            : window.AIPrompts.getBlankSheetPrompt();
+                    }
+
                     // Inject
                     if (advancedPrompt) {
                         promptEl.value = advancedPrompt;
                         promptEl.dispatchEvent(new Event('input'));
-                        console.log(`[AutoFlow] Injected Advanced Prompt for ${type}`);
+                        console.log(`[AutoFlow] Injected ${hasExistingImage ? 'EDIT' : 'GENERATION'} Prompt for ${type}`);
                     }
                 }
 
                 // Click and Wait
                 btnEl.click();
                 this.waitingFor.add(type);
-                addMessage(`⏳ Gerando ${type}... aguardando conclusão.`, "assistant");
+                addMessage(`⏳ Gerando ${type}... (timeout: 3min)`, "assistant");
+
+                // Set timeout for this asset
+                const timeoutId = setTimeout(() => {
+                    if (this.waitingFor.has(type)) {
+                        this.waitingFor.delete(type);
+                        addMessage(`⚠️ Timeout: ${type} não concluído em 3 minutos. Continuando...`, "assistant");
+                        // Trigger next steps anyway
+                        if (type === 'cover') setTimeout(() => this.triggerAssetGeneration('intro'), 500);
+                        if (type === 'leaf') setTimeout(() => this.triggerLoopGeneration(), 500);
+                        this.checkCompletion();
+                    }
+                }, ASSET_TIMEOUT_MS);
+                this.assetTimeouts.set(type, timeoutId);
             }
         }
 
@@ -177,6 +240,11 @@
             if (!this.isAutoBuilding) return;
 
             if (this.waitingFor.has(type)) {
+                // Clear timeout since asset completed
+                if (this.assetTimeouts.has(type)) {
+                    clearTimeout(this.assetTimeouts.get(type));
+                    this.assetTimeouts.delete(type);
+                }
                 this.waitingFor.delete(type);
                 addMessage(`✨ ${type} concluído!`, "assistant");
 
@@ -411,6 +479,19 @@ You MUST:
    - "Sugestão de Presentes" → Gifts image/list
    - "Confirmação pelo WhatsApp" → WhatsApp RSVP
    - "Formulário de Confirmação" → Form URL RSVP (PRIORITY over WhatsApp)
+
+## REFINEMENT COMMANDS
+When user says things like:
+- "Adicione mais azul"
+- "Mude a cor para verde"  
+- "Coloque mais flores"
+- "Deixe mais claro"
+- "Troque o rosa por roxo"
+
+Use the action:
+{ "type": "refineAsset", "assetType": "cover" OR "leaf", "instruction": "USER'S INSTRUCTION" }
+
+This will take the current image and apply the refinement via image-to-image AI editing.
 
 ## BEHAVIOR GUIDELINES
 - Respond in **Portuguese (Brazil)**, friendly and professional
@@ -704,6 +785,39 @@ Response:
                             selectBtn.click();
                             console.log('[Chatbot] Selected Perfect (Violin) music');
                         }
+                    }
+                } else if (action.type === 'refineAsset') {
+                    // Refine existing asset with user's instruction
+                    const assetType = action.assetType || 'cover';
+                    const instruction = action.instruction || 'Melhore as cores';
+
+                    // Generate refinement prompt
+                    const refinePrompt = window.AIPrompts.getRefinePrompt(instruction, assetType);
+
+                    // Find the prompt textarea and button
+                    const promptIdMap = {
+                        'cover': 'cover-prompt',
+                        'leaf': 'leaf-prompt'
+                    };
+                    const btnIdMap = {
+                        'cover': 'btn-generate-cover',
+                        'leaf': 'btn-generate-leaf'
+                    };
+
+                    const promptEl = document.getElementById(promptIdMap[assetType]);
+                    const btnEl = document.getElementById(btnIdMap[assetType]);
+
+                    if (promptEl && btnEl) {
+                        // Inject the refinement prompt
+                        promptEl.value = refinePrompt;
+                        promptEl.dispatchEvent(new Event('input'));
+
+                        addMessage(`🎨 Aplicando refinamento: "${instruction}"`, "assistant");
+
+                        // Click generate button
+                        btnEl.click();
+                    } else {
+                        addMessage(`❌ Erro: Não foi possível encontrar o asset "${assetType}" para refinar.`, "assistant");
                     }
                 }
             } catch (e) { console.error(e); }
