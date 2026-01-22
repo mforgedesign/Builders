@@ -441,10 +441,9 @@ Format:
     function formatResponse(text) { return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>'); }
 
     function showFormUpdateNotification(count) {
-        const note = document.createElement('div');
-        note.className = 'text-xs text-center text-green-600 mt-2';
-        note.innerText = `✅ ${count} campos atualizados`;
-        chatMessages.appendChild(note);
+        if (count > 0) {
+            addMessage(`✅ <strong>Dados Aplicados!</strong><br>${count} campos do formulário foram preenchidos.`, 'assistant');
+        }
     }
 
     async function executeBuilderActions(actions) {
