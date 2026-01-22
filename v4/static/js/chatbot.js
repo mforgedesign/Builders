@@ -298,11 +298,18 @@
          * SAFETY OVERRIDE: Watches for blocking modals (Slug Exists) and auto-confirms them
          * This is necessary because the Chatbot needs full autonomy.
          */
+        /**
+         * SAFETY OVERRIDE: Watches for blocking modals and auto-confirms them.
+         * For publication confirmation, shows a 30s countdown in the chat.
+         */
         initModalBuster() {
             addMessage("🛡️ Monitorando janelas de confirmação...", "assistant");
 
             let attempts = 0;
-            const maxAttempts = 20; // 10 seconds (500ms interval)
+            const maxAttempts = 120; // 60 seconds (500ms interval)
+            let countdownActive = false;
+            let countdownSeconds = 30;
+            let countdownMsgId = null;
 
             const busterInterval = setInterval(() => {
                 attempts++;
@@ -311,21 +318,55 @@
                     return;
                 }
 
-                // Strategy: Find any button with specific text that is visible
+                // Find modal buttons
                 const buttons = Array.from(document.querySelectorAll('button'));
-                const confirmBtn = buttons.find(btn => {
-                    // Check visibility
-                    if (btn.offsetParent === null) return false;
+                const visibleButtons = buttons.filter(btn => btn.offsetParent !== null);
 
+                // 1. Detect Overwrite/Safety Modals (Immediate confirm)
+                const safetyBtn = visibleButtons.find(btn => {
                     const text = btn.innerText.toLowerCase();
-                    return text.includes('sobrescrever') || text.includes('confirmar') || text.includes('publicar mesmo assim');
+                    return text.includes('sobrescrever') || text.includes('publicar mesmo assim') || text.includes('sim, publicar');
                 });
 
-                if (confirmBtn) {
-                    console.log('[AutoFlow] Blocking Modal detected. Overriding safety...');
-                    confirmBtn.click();
-                    addMessage("⚠️ Alerta de Slug detectado. Auto-confirmação executada.", "assistant");
+                if (safetyBtn) {
+                    console.log('[AutoFlow] Safety Modal detected. Confirming...');
+                    safetyBtn.click();
+                    addMessage("⚠️ Alerta de segurança detectado. Auto-confirmação executada.", "assistant");
                     clearInterval(busterInterval);
+                    return;
+                }
+
+                // 2. Detect Publication Modal (30s Countdown)
+                const publishConfirmBtn = visibleButtons.find(btn => btn.innerText.trim() === 'Publicar' && btn.classList.contains('bg-brand-600') || btn.classList.contains('bg-indigo-600') || btn.classList.contains('bg-blue-600'));
+
+                if (publishConfirmBtn && !countdownActive) {
+                    countdownActive = true;
+                    console.log('[AutoFlow] Publication Modal detected. Starting 30s countdown...');
+
+                    const updateCountdown = () => {
+                        if (countdownSeconds <= 0) {
+                            clearInterval(busterInterval);
+                            publishConfirmBtn.click();
+                            addMessage("🚀 Publicação confirmada automaticamente.", "assistant");
+                            return;
+                        }
+
+                        const msgText = `⏳ Publicação automática em <strong>${countdownSeconds}s</strong>...`;
+                        if (!countdownMsgId) {
+                            countdownMsgId = addMessage(msgText, "assistant");
+                        } else {
+                            // Update existing message if possible (UI limitation: addMessage returns void in this simple impl)
+                            // So we just add a new one every 10s or keep it simple
+                            if (countdownSeconds % 10 === 0) {
+                                addMessage(msgText, "assistant");
+                            }
+                        }
+
+                        countdownSeconds--;
+                        setTimeout(updateCountdown, 1000);
+                    };
+
+                    updateCountdown();
                 }
             }, 500);
         }
