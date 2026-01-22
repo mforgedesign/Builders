@@ -402,7 +402,7 @@ You MUST:
 
 ## BUSINESS RULES
 1. **RSVP Priority**: If both "Formulário de Confirmação" and WhatsApp are mentioned, USE THE FORM URL (link prevails over WhatsApp number)
-2. **Ignore Music**: The builder cannot auto-download music. Do NOT try to set music fields.
+2. **Music Selection**: ALWAYS select "Perfect (Violin)" as the music by adding action: { "type": "selectMusic", "sample": "perfect-violin" }. Ignore any music the client requests in the budget (the builder cannot download external songs).
 3. **Slug Generation**: Create from name + event type, lowercase, no special chars (e.g., "casamento-ana-joao", "15anos-isadora")
 4. **Skip Assets**: If model already has cover/intro/sheet, conserve them unless user explicitly asks for changes
 5. **Tiered Features**:
@@ -694,6 +694,16 @@ Response:
                         await window.importFromRemoteURL(action.url, action.modifications);
                     } else {
                         addMessage("❌ Erro: Função de importação não carregada.", "assistant");
+                    }
+                } else if (action.type === 'selectMusic') {
+                    // Select Perfect (Violin) sample
+                    const perfectSample = document.querySelector('[data-name="Perfect (Violin Cover)"]');
+                    if (perfectSample) {
+                        const selectBtn = perfectSample.querySelector('.sample-select-btn');
+                        if (selectBtn) {
+                            selectBtn.click();
+                            console.log('[Chatbot] Selected Perfect (Violin) music');
+                        }
                     }
                 }
             } catch (e) { console.error(e); }
