@@ -2687,7 +2687,7 @@
                         detail: { type: type, url: generatedUrl, method: 'ai' }
                     }));
 
-                    console.log(`✅ Generated ${type}:`, generatedUrl);
+                    console.log(`✅ Generated ${type} (v4.1.9):`, generatedUrl);
                     return generatedUrl;
 
                 } catch (error) {
