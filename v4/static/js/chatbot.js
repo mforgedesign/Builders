@@ -462,6 +462,7 @@ You MUST return a valid JSON object (no markdown, no code blocks):
 
 ### Manual (Guest Guide):
 - manual-raw-text → Raw text instructions (dress code, parking, etc.)
+- manual-html-editor → The generated HTML code for the manual (Use the "Standard Template" below if needed)
 
 ### Gifts:
 - gifts-suggestions → Gift suggestions text (one per line)
@@ -543,6 +544,14 @@ This will take the current image and apply the refinement via image-to-image AI 
 - Always generate a slug automatically when filling name
 - Keep responses SHORT - focus on actions, not explanations
 
+## MANUAL HTML DRAFT (Standard Template)
+If the user asks to "generate the manual" or if you are creating a complete invitation, use this boilerplate for the manual-html-editor field (adjusting icons to the theme):
+
+<p><i class='fa-solid fa-shirt'></i> <strong>Dress Code:</strong> Traje Esporte Fino</p>
+<p><i class='fa-solid fa-location-dot'></i> <strong>Estacionamento:</strong> No local</p>
+<p><i class='fa-solid fa-clock'></i> <strong>Horário:</strong> Chegar com 15 min de antecedência</p>
+<p><i class='fa-solid fa-gift'></i> <strong>Presentes:</strong> Sugestões na aba "Presentes"</p>
+
 ## FULL AUTO-BUILD (Criação Completa até Publicar)
 When user says things like:
 - "Cria tudo até publicar"
@@ -602,27 +611,22 @@ Response:
         const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s Timeout
 
         try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                signal: controller.signal,
-                body: JSON.stringify({
+            if (!window.supabaseClient) throw new Error("Supabase client not initialized");
+
+            const { data, error } = await window.supabaseClient.functions.invoke('chat', {
+                body: {
                     message,
                     history: chatHistory.slice(-10),
                     // Let Edge Function use its own updated System Prompt, BUT passing ours is safer for now as it contains the JSON schema instructions
                     system_prompt: SYSTEM_PROMPT,
                     // Inject Current Context
                     context: contextManager.getSnapshot()
-                })
+                }
             });
 
             clearTimeout(timeoutId); // Clear timeout on response
 
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.error || `HTTP ${response.status}`);
-            }
-            const data = await response.json();
+            if (error) throw new Error(error.message || "Erro na conexão com API de Chat");
 
             // Parse response - handles both direct JSON and wrapper
             let aiContent = typeof data === 'string' ? JSON.parse(data) : data;
