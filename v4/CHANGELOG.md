@@ -4,6 +4,13 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [4.1.2] - 2026-01-21
+### Added
+- **Success Alert**: Added audio confirmation (Major Triad Arpeggio) upon successful invitation publication.
+- **Safety**: Robust Sound Alert logic using `AudioContext`.
+
+---
+
 ## [4.1.1] - 2026-01-21
 ### Added
 - **Intelligent Chatbot Automation**:
