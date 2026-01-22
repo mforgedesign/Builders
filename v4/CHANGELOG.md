@@ -4,6 +4,10 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [4.1.9] - 2026-01-22
+### Fixed
+- **Kie.ai Generation Error**: Added missing `aspect_ratio` and `quality` fields to the API payload in `windows.js`. This resolves the "This field is required" error for Text-to-Image models.
+
 ## [4.1.8] - 2026-01-22
 ### Added
 - **Integração Kie.ai (Native)**: Suporte completo para geração de assets via Kie.ai (Seedream 4.5 Edit + Hailuo 02 Video).
