@@ -95,7 +95,10 @@
         const fieldMappings = {
             // Campos RSVP antigos → novo campo unificado
             'link_confirmacao': 'confirmacao',
-            'numero_whatsapp': 'confirmacao'
+            'numero_whatsapp': 'confirmacao',
+            // Campos Manual antigos → novo campo unificado
+            'manual_content': 'manual_html',
+            'manual_instrucoes': 'manual_instrucoes'
         };
 
         // Apply mappings: if old field exists and new field is empty, copy value
@@ -112,16 +115,19 @@
             if (state.hasOwnProperty(fieldName)) {
                 const value = state[fieldName];
 
-                // Skip if the value is null/undefined/empty string
-                // This prevents overwriting existing values with empty ones
-                if (value === null || value === undefined || value === '') {
+                // PROTECTION REFINEMENT: 
+                // Skip if the value is null/undefined/empty string UNLESS this is an intentional reset
+                // (detected when state is a full hydration from restoreBuilderState or resetBuilderState)
+                const isIntentionalReset = state._reset === true;
+
+                if (!isIntentionalReset && (value === null || value === undefined || value === '')) {
                     return; // Keep existing value
                 }
 
                 if (input.type === 'checkbox') {
                     input.checked = Boolean(value);
                 } else {
-                    input.value = value;
+                    input.value = value || '';
                 }
             }
         });
