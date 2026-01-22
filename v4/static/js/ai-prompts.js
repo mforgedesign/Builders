@@ -150,12 +150,12 @@
     function getModelConfig(type) {
         const configs = {
             'cover': {
-                model: 'seedream/v4-base', // Verify correct slug for Text-to-Image
+                model: 'seedream/4.5-text-to-image',
                 mode: 'text-to-image',
                 aspect_ratio: '9:16'
             },
             'leaf': {
-                model: 'seedream/v4-base', // Verify correct slug for Text-to-Image
+                model: 'seedream/4.5-text-to-image',
                 mode: 'text-to-image',
                 aspect_ratio: '9:16'
             },
