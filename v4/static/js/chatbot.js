@@ -647,7 +647,7 @@ Format:
         });
 
         // Initialize Managers
-        autoFlow.startMonitoring();
+        // autoFlow.startMonitoring();
 
         // Expose API for external control (like Context Reset)
         window.AutoBuilderChatbot = {
