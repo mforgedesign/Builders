@@ -2,7 +2,7 @@
  * AutoBuilder v4 - AI Prompt Templates
  * =====================================
  * Centralized prompt engineering for all AI generation endpoints
- * Based on spec lines 1298-1396
+ * Updated v4.1.9 - User Specific Templates
  */
 
 (function () {
@@ -15,7 +15,8 @@
         let result = template;
 
         for (const [key, value] of Object.entries(variables)) {
-            const regex = new RegExp(`{{${key}}}`, 'g');
+            // Replace all occurrences case-insensitive
+            const regex = new RegExp(`{{${key}}}`, 'gi');
             result = result.replace(regex, value || '');
         }
 
@@ -29,124 +30,144 @@
         const state = window.builderState || {};
         const formData = state.formData || {};
 
-        // Extract theme and colors
-        const theme = formData.tema || formData.event_theme || 'Elegant classic';
-        const colors = formData.paleta_cores || formData.color_palette || 'Gold and White';
+        // Helper to safely get string values
+        const val = (v, fallback = '') => (v ? String(v).trim() : fallback);
 
-        // Extract initials/age
-        let initialsAge = '';
-        if (formData.tipo_evento === 'casamento' || formData.event_type === 'wedding') {
-            // Try to extract initials from names
-            const name = formData.event_name || formData.nome || '';
+        // Core fields
+        const theme = val(formData.tema_evento) || val(formData.tema) || 'Elegant';
+        const colors = val(formData.paleta_cores) || val(formData.colors) || 'Gold and White';
+        const eventType = val(formData.tipo_evento) || val(formData.event_type) || 'Special Event';
+        const name = val(formData.nome) || val(formData.event_name) || '';
+        const age = val(formData.idade) || val(formData.age) || '';
+
+        // "Selo" logic (Initials or Age)
+        let seal = age; // Default to age (e.g., 15)
+        if (eventType.toLowerCase().includes('casamento') || eventType.toLowerCase().includes('wedding')) {
+            // Extract initials for weddings
             const parts = name.split(' ');
             if (parts.length >= 2) {
-                initialsAge = parts[0][0] + parts[parts.length - 1][0];
+                seal = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            } else if (name) {
+                seal = name[0].toUpperCase();
             }
-        } else {
-            initialsAge = formData.idade || formData.age || '1';
         }
-
-        // Event data concatenation
-        const eventName = formData.event_name || formData.nome || 'Special Event';
-        const eventDate = formData.event_date || formData.data || '';
-        const eventTime = formData.event_time || formData.hora || '';
-        const eventLocation = formData.event_location || formData.local || '';
-
-        let eventData = `${eventName}`;
-        if (eventDate) eventData += ` on ${eventDate}`;
-        if (eventTime) eventData += ` at ${eventTime}`;
-        if (eventLocation) eventData += `, ${eventLocation}`;
+        if (!seal) seal = 'W'; // Fallback symbol
 
         return {
             THEME: theme,
             COLORS: colors,
-            INITIALS_AGE: initialsAge,
-            EVENT_DATA: eventData
+            EVENT_TYPE: eventType,
+            NAME: name,
+            AGE: age,
+            SEAL: seal
         };
     }
 
+    // ==================== GENERATION TEMPLATES ====================
+
     /**
-     * TEMPLATE A: Cover (Capa) - Seedream v4
-     * Text-to-Image
+     * 1. CAPA (Cover)
+     * User-defined template
      */
     function getCoverPrompt() {
         const vars = getContextVariables();
 
-        const template = `Create a vertical image of a hyper-realistic 3D render of a premium invitation envelope infused with a {{THEME}} theme, featuring a palette of {{COLORS}}. The envelope is sealed with an intricately detailed wax seal in matching colors with the number/initials '{{INITIALS_AGE}}'. The paper boasts a high-quality, textured finish, exuding elegance and sophistication. Background: A lush {{THEME}} setting, with highly detailed elements that enhance the luxurious feel of the invitation. The composition is centered, with dramatic lighting casting volumetric light and creating a soft focus and depth of field. Lighting: Dramatic, cinematic lighting with volumetric effects, simulating god rays filtering through {{THEME}} motifs. Highlights on the envelope and wax seal accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, elegant, and romantic. Technical Details: Resolution: 8K, ultra high resolution. Aspect Ratio: 9:16. Rendering Engine: Octane Render, Unreal Engine 5. Camera: Macro lens, f/2.8, shallow depth of field.`;
+        const template = `Tipo de evento: {{EVENT_TYPE}}
+Selo: {{SEAL}}
+Paleta de Cores: {{COLORS}}
+Tema: {{THEME}}
+Task: Create a vertical image of a hyper-realistic 3D render of a premium invitation envelope. The envelope is sealed with an intricately detailed wax seal. The paper boasts a high-quality, textured finish, exuding elegance and sophistication. Background: A setting with elements that enhance the luxurious feel of the invitation without specific thematic details. The composition is centered, with dramatic lighting casting volumetric light and creating a soft focus and depth of field. Lighting: Dramatic, cinematic lighting with volumetric effects. Highlights on the envelope and wax seal accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, and elegant. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field`;
 
         return injectVariables(template, vars);
     }
 
     /**
-     * TEMPLATE B: Blank Sheet (Folha Vazia) - Seedream v4
-     * Text-to-Image
+     * 2. FOLHA VAZIA (Blank Sheet)
+     * User-defined adaptation: "Same as cover but blank sheet, centered, 90% coverage, adorned edges"
      */
     function getBlankSheetPrompt() {
         const vars = getContextVariables();
 
-        const template = `Create a vertical image of a hyper-realistic 3D render of a premium blank sheet adorned with a {{THEME}} theme, featuring a palette of {{COLORS}}. The sheet boasts a high-quality, textured finish, exuding elegance and sophistication, with intricate elegant adornments related to the theme. Background: A lush {{THEME}} setting, with highly detailed elements that enhance the luxurious feel of the composition. The sheet occupies 90% of the image, centered, with dramatic lighting casting volumetric light and creating a soft focus and depth of field. Lighting: Dramatic, cinematic lighting with volumetric effects, simulating god rays filtering through {{THEME}} motifs. Highlights on the sheet accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, elegant, and romantic. Technical Details: Resolution: 8K, ultra high resolution. Aspect Ratio: 9:16. Rendering Engine: Octane Render, Unreal Engine 5. Camera: Macro lens, f/2.8, shallow depth of field.`;
+        const template = `Tipo de evento: {{EVENT_TYPE}}
+Selo: {{SEAL}}
+Paleta de Cores: {{COLORS}}
+Tema: {{THEME}}
+Task: Create a vertical image of a hyper-realistic 3D render of a premium blank sheet. The sheet is centered, vertical, covering 90% of the image, and has its edges adorned. The paper boasts a high-quality, textured finish, exuding elegance and sophistication. Background: A setting with elements that enhance the luxurious feel of the invitation without specific thematic details. The composition is centered, with dramatic lighting casting volumetric light and creating a soft focus and depth of field. Lighting: Dramatic, cinematic lighting with volumetric effects. Highlights on the sheet and adornments accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, and elegant. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field`;
 
         return injectVariables(template, vars);
     }
 
     /**
-     * TEMPLATE C: Filled Sheet (Preenchimento) - Seedream v4.5
-     * Image-to-Image (requires leaf_only.png as input)
+     * 3. FOLHA PREENCHIDA (Filled Sheet)
+     * User-defined template
      */
     function getFilledSheetPrompt() {
         const vars = getContextVariables();
 
-        const template = `Context: You are a professional calligrapher and invitation designer. Task: Fill this blank sheet with the following event details creatively and elegantly. Data to Write: {{EVENT_DATA}}. Style Instructions: Theme {{THEME}} (Palette: {{COLORS}}). Use elegant design elements, dividers, lines, and introductory phrases like 'You are invited to...' based on your creativity. Apply texture and adornments to the text. Use a cursive, sophisticated font style (resembling 'Great Vibes' or 'Pinyon Script'). Ensure high contrast for readability.`;
+        const template = `Nome: {{NAME}}
+Idade (se houver): {{AGE}}
+Tipo de evento: {{EVENT_TYPE}}
+Tema: {{THEME}}
+Task: Preencha essa folha com os dados para convite de forma criativa e elegante.
+Coloque elementos de design de forma elegante no convite, divisórias modernas, hierarquia visual madura e profissional, linhas, e uma frase similar a "Você está convidado para o... (crie a frase conforme o contexto)" conforme sua criatividade.
+Coloque textura, camadas, adornos no texto do nome, letra cursiva (Great Vibes) e efeitos especiais elegantes.`;
 
         return injectVariables(template, vars);
     }
 
     /**
-     * TEMPLATE D: Opening Animation (Abertura) - Hailuo 02 First-Last-Frame
-     * Image-to-Video (requires capa.jpg as input, uses blank.jpg as last frame)
+     * 4. PRESENTES (Gifts)
+     * User-defined template
      */
-    function getOpeningVideoPrompt() {
-        // Fixed prompt - no variables needed
-        return `The animation begins with a focus on the closed envelope. As the wax seal gracefully detaches and falls, the envelope's flap uplifts slowly. From its interior, a spectacular eruption of glittering sparkles and smoke, shimmering dust, and glowing light trails emerges, cascading outward in a mesmerizing display. These vibrant particles swirl dynamically, increasing in density and brightness around the envelope. The radiant light and swirling glitter intensify, rapidly expanding to fill the entire scene. CRITICAL: The Color of glow, light and smoke need to be the same of the image color pallete. The overwhelming brilliance transitions the frame to a solid, blinding white screen in the very final frame, achieved through a dramatic zoom-in effect.`;
+    function getGiftListPrompt(listContent) {
+        const vars = getContextVariables();
+        // IMPORTANT: Fallback to empty string if no list, but user likely wants the content provided in input
+        vars.LIST_CONTENT = listContent || '[Lista de Presentes Vazia - Informe os itens]';
+
+        const template = `Você irá escrever as sugestões de presentes que vou listar a seguir. Use sua criatividade, inserindo elementos do tema e os itens fotorealistas modernos junto dos itens escritos. 
+Tema: {{THEME}}
+Paleta de cores: {{COLORS}}
+Composição madura e realista. Highly detailed 3D render of a luxurious setting, centered composition, dramatic lighting, volumetric light, soft focus, depth of field. Lighting: Dramatic, cinematic lighting. Volumetric lighting effects (god rays) filtering through the floral elements and particles. Highlights on the textured paper to emphasize texture and detail. Style: Photorealistic, hyperdetailed, cinematic, elegant, romantic. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field.
+
+Sugestões de presentes:
+{{LIST_CONTENT}}`;
+
+        return injectVariables(template, vars);
     }
 
     /**
-     * TEMPLATE E: Loop Animation (Background) - REMOVED
+     * 5. MANUAL (Guest Manual)
+     * Adapted from Gifts template as requested
      */
+    function getGuestManualPrompt(rulesContent) {
+        const vars = getContextVariables();
+        vars.LIST_CONTENT = rulesContent || '[Texto do Manual Vazio - Informe as regras]';
+
+        const template = `Você irá escrever o Manual do Convidado/Regras que vou listar a seguir. Use sua criatividade, inserindo elementos do tema e os itens fotorealistas modernos junto dos itens escritos.
+Tema: {{THEME}}
+Paleta de cores: {{COLORS}}
+Composição madura e realista. Highly detailed 3D render of a luxurious setting, centered composition, dramatic lighting, volumetric light, soft focus, depth of field. Lighting: Dramatic, cinematic lighting. Volumetric lighting effects (god rays) filtering through the floral elements and particles. Highlights on the textured paper to emphasize texture and detail. Style: Photorealistic, hyperdetailed, cinematic, elegant, romantic. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field.
+
+Manual do convidado:
+{{LIST_CONTENT}}`;
+
+        return injectVariables(template, vars);
+    }
+
+    /**
+     * 6. INTRO (Hailuo Video)
+     * Fixed prompt
+     */
+    function getOpeningVideoPrompt() {
+        return `The animation begins with a focus on the closed envelope. As the wax seal gracefully detaches and falls, the envelope's flap uplifts slowly. From its interior, a spectacular eruption of glittering sparkles and smoke, shimmering dust, and glowing light trails emerges, cascading outward in a mesmerizing display. These vibrant particles swirl dynamically, increasing in density and brightness around the envelope. The radiant light and swirling glitter intensify, rapidly expanding to fill the entire scene. CRITICAL: The Color of glow, light and smoke need to be the same of the image color pallete. The overwhelming brilliance transitions the frame to a solid, blinding white screen in the very final frame, achieved through a dramatic zoom-in effect.`;
+    }
+
     function getLoopVideoPrompt() {
         return "";
     }
 
+    // ==================== CONFIG & BUILDER ====================
 
-    /**
-     * TEMPLATE F: Gift List (Presentes) - Seedream v4.5
-     * Image-to-Image (requires background_only.jpg as input)
-     */
-    function getGiftListPrompt(listContent) {
-        const vars = getContextVariables();
-        vars.LIST_CONTENT = listContent || 'Kitchen items, Home decor, Gift cards';
-
-        const template = `Create a central parchment sheet containing the Gift List listed below. Use your creativity to insert photorealistic 3D elements related to the {{THEME}} theme (e.g., if Disney theme, insert the character elegantly; if Floral, insert flowers) interacting with the paper. Gift List: {{LIST_CONTENT}}. Visual Style: Mature and realistic composition. Highly detailed 3D render, centered composition, dramatic lighting, volumetric light. Highlights on the textured paper to emphasize texture and detail. Style: Photorealistic, cinematic, elegant. Resolution: 8K. Aspect Ratio: 9:16.`;
-
-        return injectVariables(template, vars);
-    }
-
-    /**
-     * TEMPLATE G: Guest Manual (Manual) - Seedream v4.5
-     * Image-to-Image (requires background_only.jpg as input)
-     */
-    function getGuestManualPrompt(rulesContent) {
-        const vars = getContextVariables();
-        vars.LIST_CONTENT = rulesContent || 'Please arrive on time, Formal dress code, No photography during ceremony';
-
-        const template = `Create a central parchment or elegant card containing the Guest Guide/Rules listed below. Use your creativity to insert photorealistic 3D elements related to the {{THEME}} theme around the text. Guest Guide Rules: {{LIST_CONTENT}}. Visual Style: Clean layout for readability. Highly detailed 3D render, centered composition. Lighting: Soft cinematic lighting, clear focus on the text area. Style: Photorealistic, elegant, formal yet inviting. Resolution: 8K. Aspect Ratio: 9:16.`;
-
-        return injectVariables(template, vars);
-    }
-
-    /**
-     * Get model configuration for each generation type
-     */
     function getModelConfig(type) {
         const configs = {
             'cover': {
@@ -170,7 +191,7 @@
                 duration: 5
             },
             'loop': {
-                model: 'kling/v1/standard', // Placeholder, verify if available in Kie
+                model: 'kling/v1/standard',
                 mode: 'image-to-video',
                 duration: 5,
                 loop: true
@@ -186,192 +207,70 @@
                 aspect_ratio: '9:16'
             }
         };
-
         return configs[type] || {};
     }
 
-    /**
-     * Build complete generation payload
-     */
     function buildGenerationPayload(type, options, config) {
-        // If config not provided, get default for type
-        if (!config) {
-            config = getModelConfig(type);
-        }
+        if (!config) config = getModelConfig(type);
 
         let prompt = '';
+        const opts = options || {};
 
-        // Get appropriate prompt
         switch (type) {
-
-            case 'cover':
-                prompt = getCoverPrompt();
-                break;
-            case 'leaf':
-                prompt = getBlankSheetPrompt();
-                break;
-            case 'fill':
-                prompt = getFilledSheetPrompt();
-                break;
-            case 'intro':
-                prompt = getOpeningVideoPrompt();
-                break;
-            case 'loop':
-                prompt = getLoopVideoPrompt();
-                break;
+            case 'cover': prompt = getCoverPrompt(); break;
+            case 'leaf': prompt = getBlankSheetPrompt(); break;
+            case 'fill': prompt = getFilledSheetPrompt(); break;
+            case 'intro': prompt = getOpeningVideoPrompt(); break;
+            case 'loop': prompt = getLoopVideoPrompt(); break;
             case 'gifts':
-                prompt = getGiftListPrompt(options.listContent);
+                // Ensure listContent is passed from options
+                prompt = getGiftListPrompt(opts.listContent || opts.customPrompt);
                 break;
             case 'manual':
-                prompt = getGuestManualPrompt(options.rulesContent);
+                prompt = getGuestManualPrompt(opts.rulesContent || opts.customPrompt);
                 break;
-            default:
-                prompt = options.customPrompt || '';
+            default: prompt = opts.customPrompt || '';
         }
 
-        // Allow prompt override from UI
-        if (options.customPrompt) {
-            prompt = options.customPrompt;
+        // If user manually edited the prompt box in UI, prefer that (unless it's empty?)
+        // BUT if it's gifts/manual, we prefer the template + list content over the raw prompt, 
+        // unless the raw prompt ALREADY contains the list (which it might if user edited it).
+        // Let's assume if customPrompt is very long, user wants to use it.
+        if (opts.customPrompt && opts.customPrompt.length > 50 && type !== 'gifts' && type !== 'manual') {
+            prompt = opts.customPrompt;
         }
 
         return {
             ...config,
             prompt,
             target_window: type,
-            reference_image: options.referenceImage,
-            image_url: options.imageUrl // For video generation
+            reference_image: opts.referenceImage,
+            image_url: opts.imageUrl,
+            end_image_url: opts.endImageUrl // Pass through if exists
         };
     }
 
-    /**
-     * TEMPLATE A: Cover (Capa) - Hyper-Realistic 8K
-     */
-    function getCoverPrompt() {
-        const vars = getContextVariables();
-        const template = `Create a vertical image of a hyper-realistic 3D render of a premium invitation envelope, themed around {{THEME}} with a palette of {{COLORS}}. The envelope is made of luxurious texture paper with gold and silver filigree accents and is sealed with a detailed wax seal featuring a motif related to the theme. A glowing, translucent element is centered on top. Background: A blurred, dreamlike view of a setting related to {{THEME}}, bathed in soft lighting, with floating magical sparkles. The composition is centered. Lighting: Dramatic, cinematic moonlight with volumetric effects, casting cool and warm tones. Highlights on the envelope and wax seal accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, and elegant. Technical Details: Resolution: 8K, ultra high resolution, Aspect Ratio: 9:16, Rendering Engine: Octane Render, Unreal Engine 5, Camera: Macro lens, f/2.8, shallow depth of field.`;
-        return injectVariables(template, vars);
-    }
+    // Default Prompts (for UI autofill buttons) matches the generators
+    function getDefaultCoverPrompt() { return getCoverPrompt(); }
+    function getDefaultFillPrompt() { return getFilledSheetPrompt(); }
 
-    /**
-     * TEMPLATE B: Blank Sheet (Folha Vazia) - Hyper-Realistic 8K
-     */
-    function getBlankSheetPrompt() {
-        const vars = getContextVariables();
-        const template = `Create a vertical image of a hyper-realistic 3D render of a premium blank invitation parchment, covering 90% of the frame, ready for text. The luxurious, textured paper is adorned with intricate gold and silver filigree borders, featuring subtle pearlescent accents, delicate swirling patterns, and tiny sparkling elements that hint at {{THEME}} magic. Palette: {{COLORS}}. Background: A blurred, dreamlike view of a majestic setting related to {{THEME}}, bathed in soft lighting, with floating magical sparkles. The composition is centered. Lighting: Dramatic, cinematic moonlight with volumetric effects, casting cool and warm tones. Highlights on the paper texture and borders. Style: Photorealistic, hyper-detailed, cinematic, and elegant. Technical Details: Resolution: 8K, ultra high resolution, Aspect Ratio: 9:16, Rendering Engine: Octane Render, Unreal Engine 5, Camera: Macro lens, f/2.8, shallow depth of field.`;
-        return injectVariables(template, vars);
-    }
-
-    /**
-     * TEMPLATE C: Filled Sheet (Preenchimento) - Advanced Typography
-     */
-    function getFilledSheetPrompt() {
-        const vars = getContextVariables();
-        const template = `[Dados Para escrever: {{EVENT_DATA}}]
-Detalhes técnicos: Tema {{THEME}} (Tons de {{COLORS}})
-
-Prompt:
-Preencha essa folha com os dados para convite de forma criativa e elegante.
-Coloque elementos de design de forma elegante no convite, divisórias, linhas e frases como "Você está convidado para ..." (complete) conforme sua criatividade. Coloque textura e adornos no texto do nome, letra cursiva (Great Vibes)`;
-        return injectVariables(template, vars);
-    }
-
-    /**
-     * TEMPLATE F: Gift List (Presentes) - Hyper-Realistic
-     */
-    function getGiftListPrompt(listContent) {
-        const vars = getContextVariables();
-        vars.LIST_CONTENT = listContent || 'Lista de Presentes';
-        const template = `Você irá colocar nessa imagem uma folha de pergaminho elegante e moderna, centralizada contendo as sugestões de presentes que vou listar a seguir. Use sua criatividade, inserindo elementos do tema {{THEME}} e os itens fotorealistas modernos junto dos itens escritos. 
-Tema: {{THEME}}. Cores: {{COLORS}}.
-
-Composição madura e realista. Highly detailed 3D render of a luxurious setting, centered composition, dramatic lighting, volumetric light, soft focus, depth of field. Lighting: Dramatic, cinematic lighting. Volumetric lighting effects (god rays) filtering through the theme elements and particles. Highlights on the textured paper to emphasize texture and detail. Style: Photorealistic, hyperdetailed, cinematic, elegant, romantic. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field.
-
-Sugestões de presentes:
-{{LIST_CONTENT}}`;
-        return injectVariables(template, vars);
-    }
-
-    /**
-     * DEFAULT COVER PROMPT - Base template with auto-populated form data
-     * Used for the "Preenchimento Padrão" button
-     */
-    function getDefaultCoverPrompt() {
-        const state = window.builderState || {};
-        const formData = state.formData || {};
-
-        // Also try to get values directly from DOM (more reliable)
-        const getVal = (id, fallback = '') => {
-            const el = document.getElementById(id);
-            return el?.value || formData[id.replace('form-', '')] || fallback;
-        };
-
-        const tipoEvento = getVal('form-tipo_evento', formData.tipo_evento || '');
-        const selo = getVal('form-idade', formData.idade || ''); // Selo usually refers to age/initials on wax seal
-        const paletaCores = getVal('form-paleta_cores', formData.paleta_cores || '');
-        const tema = getVal('form-tema_evento', formData.tema_evento || '');
-
-        return `Tipo de evento: ${tipoEvento}
-Selo: ${selo}
-Paleta de Cores: ${paletaCores}
-Tema: ${tema}
-Task: Create a vertical image of a hyper-realistic 3D render of a premium invitation envelope. The envelope is sealed with an intricately detailed wax seal. The paper boasts a high-quality, textured finish, exuding elegance and sophistication. Background: A setting with elements that enhance the luxurious feel of the invitation without specific thematic details. The composition is centered, with dramatic lighting casting volumetric light and creating a soft focus and depth of field. Lighting: Dramatic, cinematic lighting with volumetric effects. Highlights on the envelope and wax seal accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, and elegant. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field`;
-    }
-
-    /**
-     * DEFAULT FILL PROMPT - Base template with auto-populated form data
-     * Used for the "Preenchimento Padrão" button on Folha Preenchida
-     */
-    function getDefaultFillPrompt() {
-        const state = window.builderState || {};
-        const formData = state.formData || {};
-
-        // Also try to get values directly from DOM (more reliable)
-        const getVal = (id, fallback = '') => {
-            const el = document.getElementById(id);
-            return el?.value || formData[id.replace('form-', '')] || fallback;
-        };
-
-        const nome = getVal('form-nome', formData.nome || '');
-        const idade = getVal('form-idade', formData.idade || '');
-        const tipoEvento = getVal('form-tipo_evento', formData.tipo_evento || '');
-        const tema = getVal('form-tema_evento', formData.tema_evento || '');
-
-        const idadeStr = idade ? idade : '(não informada)';
-
-        return `Nome: ${nome}
-Idade (se houver): ${idadeStr}
-Tipo de evento: ${tipoEvento}
-Tema: ${tema}
-Task: Preencha essa folha com os dados para convite de forma criativa e elegante.
-Coloque elementos de design de forma elegante no convite, divisórias modernas, hierarquia visual madura e profissional, linhas, e uma frase similar a "Você está convidado para o... (crie a frase conforme o contexto)" conforme sua criatividade.
-Coloque textura, camadas, adornos no texto do nome, letra cursiva (Great Vibes) e efeitos especiais elegantes.`;
-    }
-
-    // ==================== PUBLIC API ====================
-
+    // Public API
     window.AIPrompts = {
-        // Individual prompt getters
         getCoverPrompt,
         getBlankSheetPrompt,
         getFilledSheetPrompt,
         getOpeningVideoPrompt,
-        getLoopVideoPrompt,
         getGiftListPrompt,
         getGuestManualPrompt,
+        getDefaultCoverPrompt, // Alias
+        getDefaultFillPrompt, // Alias
 
-        // NEW: Default prompts with auto-fill from form
-        getDefaultCoverPrompt,
-        getDefaultFillPrompt,
-
-        // Utilities
         getContextVariables,
         getModelConfig,
         buildGenerationPayload,
-
-        // For testing
         injectVariables
     };
 
-    console.log('[AI Prompts] Module loaded - 7 templates available');
+    console.log('[AI Prompts] Module loaded (v4.1.9 - User Defined Templates)');
 
 })();
