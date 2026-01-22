@@ -4,6 +4,19 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [21/01/2026 - 22:15] - v4.3.49 - Fix: Limpeza do Simulador (Reset)
+
+### Problema:
+*   Ao clicar em "Novo Convite", os dados eram limpos, mas os botões de Localização, RSVP e Manual continuavam visíveis no simulador até que o usuário interagisse com os campos.
+
+### Solução:
+*   **Windows.js**: Adicionado gatilho de eventos (`dispatchEvent`) no `resetBuilderState`. Isso força o simulador a reconhecer que os campos estão vazios e esconder os botões imediatamente.
+
+### Arquivos Modificados:
+*   `static/js/windows.js`: Loop de limpeza de eventos no reset.
+
+---
+
 ## [21/01/2026 - 22:00] - v4.3.48 - Fix: Layout Timer Simulator
 
 ### Problema:
