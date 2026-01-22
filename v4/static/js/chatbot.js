@@ -445,8 +445,24 @@ Format:
                 continue;
             }
 
+            if (action.type === 'importModel') {
+                if (window.importFromRemoteURL) {
+                    addMessage(`📦 <strong>Baixando modelo...</strong><br>${action.url}`, "assistant");
+                    await window.importFromRemoteURL(action.url, action.modifications);
+                } else {
+                    addMessage("❌ Erro: Função de importação não carregada.", "assistant");
+                }
+                continue;
+            }
+
             const el = document.getElementById(action.id) || document.querySelector(`[data-field="${action.id}"]`);
-            if (!el) return;
+            if (!el) {
+                // Only warn if action needs ID
+                if (['setValue', 'click', 'toggle'].includes(action.type)) {
+                    console.warn(`[Chatbot] Element not found for action: ${action.id}`);
+                }
+                continue;
+            }
 
             try {
                 if (action.type === 'setValue') {
