@@ -76,7 +76,7 @@
 Selo: {{SEAL}}
 Paleta de Cores: {{COLORS}}
 Tema: {{THEME}}
-Task: Create a vertical image of a hyper-realistic 3D render of a premium invitation envelope. The envelope is sealed with an intricately detailed wax seal. The paper boasts a high-quality, textured finish, exuding elegance and sophistication. Background: A setting with elements that enhance the luxurious feel of the invitation without specific thematic details. The composition is centered, with dramatic lighting casting volumetric light and creating a soft focus and depth of field. Lighting: Dramatic, cinematic lighting with volumetric effects. Highlights on the envelope and wax seal accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, and elegant. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field`;
+Task: Create a vertical image of a hyper-realistic 3D render of a premium invitation envelope. The envelope is sealed with an intricately detailed wax seal. The wax seal may contain ONLY the number "{{SEAL}}" embossed - NO OTHER TEXT OR WORDS ANYWHERE IN THE IMAGE. The paper boasts a high-quality, textured finish, exuding elegance and sophistication. Background: A setting with elements that enhance the luxurious feel of the invitation without specific thematic details. The composition is centered, with dramatic lighting casting volumetric light and creating a soft focus and depth of field. Lighting: Dramatic, cinematic lighting with volumetric effects. Highlights on the envelope and wax seal accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, and elegant. CRITICAL: DO NOT generate any text, letters, or words except the number on the seal. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field`;
 
         return injectVariables(template, vars);
     }
@@ -89,10 +89,9 @@ Task: Create a vertical image of a hyper-realistic 3D render of a premium invita
         const vars = getContextVariables();
 
         const template = `Tipo de evento: {{EVENT_TYPE}}
-Selo: {{SEAL}}
 Paleta de Cores: {{COLORS}}
 Tema: {{THEME}}
-Task: Create a vertical image of a hyper-realistic 3D render of a premium blank sheet. The sheet is centered, vertical, covering 90% of the image, and has its edges adorned. The paper boasts a high-quality, textured finish, exuding elegance and sophistication. Background: A setting with elements that enhance the luxurious feel of the invitation without specific thematic details. The composition is centered, with dramatic lighting casting volumetric light and creating a soft focus and depth of field. Lighting: Dramatic, cinematic lighting with volumetric effects. Highlights on the sheet and adornments accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, and elegant. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field`;
+Task: Create a vertical image of a hyper-realistic 3D render of a premium blank sheet. The sheet is centered, vertical, covering 90% of the image, and has its edges adorned with decorative elements matching the theme. CRITICAL: DO NOT include ANY text, letters, numbers, or words anywhere in the image - the sheet must be completely blank. The paper boasts a high-quality, textured finish, exuding elegance and sophistication. Background: A setting with elements that enhance the luxurious feel of the invitation without specific thematic details. The composition is centered, with dramatic lighting casting volumetric light and creating a soft focus and depth of field. Lighting: Dramatic, cinematic lighting with volumetric effects. Highlights on the sheet and adornments accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, and elegant. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field`;
 
         return injectVariables(template, vars);
     }
@@ -188,12 +187,12 @@ Manual do convidado:
             'intro': {
                 model: 'hailuo/02-image-to-video-standard',
                 mode: 'image-to-video',
-                duration: 5
+                duration: 6
             },
             'loop': {
                 model: 'kling/v1/standard',
                 mode: 'image-to-video',
-                duration: 5,
+                duration: 6,
                 loop: true
             },
             'gifts': {
