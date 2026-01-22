@@ -3652,7 +3652,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ========================================
     window.AutoBuilderWindows = {
         setupModeToggle,
-        setupAnimationTabs,
         setupMusicPlayer
     };
 
