@@ -4,6 +4,23 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [4.1.1] - 2026-01-21
+### Added
+- **Intelligent Chatbot Automation**:
+  - Chatbot can now control the Builder UI directly.
+  - Supports filling text fields (Title, Date, Links).
+  - Supports toggling features (Shadow, Button Fill, Timer, Payment Warning).
+  - Supports navigation (Changing steps, opening windows).
+  - Implemented `executeBuilderActions` in `chatbot.js` to parse JSON commands from AI.
+  - Updated `ai-prompts.js` with `BUILDER_ACTIONS_SCHEMA` and ID Map.
+  - Added `data-field` attributes to `builder.html` for Manual and Gifts fields.
+
+### Fixed
+- **Final Template**: Fixed `final_template.html` corruption/missing placeholders by performing a full overwrite with verified code.
+- **Button Styles**: Implemented Button Fill Toggle logic in `final_template.html` and `build-system.js`.
+
+---
+
 ## [21/01/2026 - 22:15] - v4.3.49 - Fix: Limpeza do Simulador (Reset)
 
 ### Problema:
