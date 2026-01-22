@@ -10,6 +10,14 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
     - **Backend**: Updated `supabase/functions/chatbot-intent` to actively read and inject the application state (`context`) into the AI system prompt.
     - **Frontend**: Updated `chatbot.js` to explicitly record "System Messages" in the chat history when major actions occur (like "Model Imported"), ensuring the AI follows the sequence of events.
 
+## [4.1.6] - 2026-01-22
+### Fixed
+- **Chatbot 500 Error**: Corrigido erro crítico onde o Chatbot falhava ao enviar requisições para a OpenAI.
+    - **Causa**: A API da OpenAI exigia saída JSON (`response_format: json_object`), mas o prompt do sistema que continha essa instrução não estava sendo enviado pelo frontend.
+    - **Frontend**: Descomentada a linha `system_prompt` no `chatbot.js` para garantir o envio das instruções JSON.
+    - **Frontend**: Melhorado o tratamento de erros HTTP no chat para exibir a mensagem real do erro (ex: body da resposta) em vez de apenas "HTTP 500".
+    - **Backend**: Atualizado `chatbot-intent/index.ts` para incluir um prompt de fallback seguro ("You must output JSON") caso o cliente falhe em enviar o prompt.
+
 ## [4.1.4] - 2026-01-22
 ### Fixed
 - **Icons**: Replaced deprecated/invisible `fa-times` with `fa-trash-can` for remove buttons in dropzones. Fixed dynamic download button icon visibility.
