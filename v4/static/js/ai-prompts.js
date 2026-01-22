@@ -97,7 +97,7 @@ Task: Create a vertical image of a hyper-realistic 3D render of a premium invita
         const template = `Tipo de evento: {{EVENT_TYPE}}
 Paleta de Cores: {{COLORS}}
 Tema: {{THEME}}
-Task: Create a vertical image of a hyper-realistic 3D render of a premium blank sheet. The sheet is centered, vertical, covering 90% of the image, and has its edges adorned with decorative elements matching the theme. CRITICAL: DO NOT include ANY text, letters, numbers, or words anywhere in the image - the sheet must be completely blank. The paper boasts a high-quality, textured finish, exuding elegance and sophistication. Background: A setting with elements that enhance the luxurious feel of the invitation without specific thematic details. The composition is centered, with dramatic lighting casting volumetric light and creating a soft focus and depth of field. Lighting: Dramatic, cinematic lighting with volumetric effects. Highlights on the sheet and adornments accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, and elegant. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field`;
+Task: Create a vertical image of a hyper-realistic 3D render of a premium blank sheet. The sheet is centered, vertical, covering 90% of the image, and has its edges adorned with decorative elements matching the theme. The paper boasts a high-quality, textured finish, exuding elegance and sophistication. Background: A setting with elements that enhance the luxurious feel of the invitation without specific thematic details. The composition is centered, with dramatic lighting casting volumetric light and creating a soft focus and depth of field. Lighting: Dramatic, cinematic lighting with volumetric effects. Highlights on the sheet and adornments accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, and elegant. CRITICAL: DO NOT include ANY text, letters, numbers, or words anywhere in the image - the sheet must be completely blank. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field`;
 
         return injectVariables(template, vars);
     }
@@ -109,8 +109,8 @@ Task: Create a vertical image of a hyper-realistic 3D render of a premium blank 
     function getFilledSheetPrompt() {
         const vars = getContextVariables();
 
-        const template = `Nome: {{NAME}}
-Idade (se houver): {{AGE}}
+        const template = `{{NAME}}
+{{AGE}}
 Tipo de evento: {{EVENT_TYPE}}
 Tema: {{THEME}}
 Task: Preencha essa folha com os dados para convite de forma criativa e elegante.
@@ -126,10 +126,9 @@ Coloque textura, camadas, adornos no texto do nome, letra cursiva (Great Vibes) 
      */
     function getGiftListPrompt(listContent) {
         const vars = getContextVariables();
-        // IMPORTANT: Fallback to empty string if no list, but user likely wants the content provided in input
         vars.LIST_CONTENT = listContent || '[Lista de Presentes Vazia - Informe os itens]';
 
-        const template = `Você irá escrever as sugestões de presentes que vou listar a seguir. Use sua criatividade, inserindo elementos do tema e os itens fotorealistas modernos junto dos itens escritos. 
+        const template = `Você irá escrever as sugestões de presentes que vou listar a seguir. Use sua criatividade, inserindo elementos do tema e os itens fotorealistas modernos junto dos itens descritos. 
 Tema: {{THEME}}
 Paleta de cores: {{COLORS}}
 Composição madura e realista. Highly detailed 3D render of a luxurious setting, centered composition, dramatic lighting, volumetric light, soft focus, depth of field. Lighting: Dramatic, cinematic lighting. Volumetric lighting effects (god rays) filtering through the floral elements and particles. Highlights on the textured paper to emphasize texture and detail. Style: Photorealistic, hyperdetailed, cinematic, elegant, romantic. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field.
