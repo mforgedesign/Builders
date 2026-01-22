@@ -4,6 +4,17 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 
 ---
 
+## [4.1.5] - 2026-01-22
+### Fixed
+- **Chatbot Context Amnesia**: Fixed an issue where the chatbot would lose context (e.g., about imported data) after performing actions.
+    - **Backend**: Updated `supabase/functions/chatbot-intent` to actively read and inject the application state (`context`) into the AI system prompt.
+    - **Frontend**: Updated `chatbot.js` to explicitly record "System Messages" in the chat history when major actions occur (like "Model Imported"), ensuring the AI follows the sequence of events.
+
+## [4.1.4] - 2026-01-22
+### Fixed
+- **Icons**: Replaced deprecated/invisible `fa-times` with `fa-trash-can` for remove buttons in dropzones. Fixed dynamic download button icon visibility.
+- **AI Automation**: Improved `setValue` logic in `chatbot.js` to properly handle color inputs. Now dispatches `input` and `change` events, ensuring the color picker and text field sync correctly when the AI triggers an action.
+
 ## [4.1.3] - 2026-01-22
 ### Changed
 - **Import Logic**: Restored the behavior where importing a model with modifications moves the original cover to the "Reference" dropzone. This prevents the "old" cover from occupying the main slot when the user intends to create a new one.
