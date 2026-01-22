@@ -1,3 +1,13 @@
+## [4.2.3] - 2026-01-22
+### Fixed
+- **Chatbot Connectivity (CORS)**: Corrigida falha de conexão (CORS) trocando a chamada da função inexistente `chat` pelo endpoint correto `chatbot-intent` em `chatbot.js`.
+- **Edge Function Sync**: Restaurado arquivo local `supabase/functions/chatbot-intent/index.ts` com a versão produtiva para garantir paridade entre o repositório e o Supabase.
+
+### Backups
+- `chatbot_backup_20260122_1744_pre_fix_cors.js`
+
+---
+
 ## [4.2.2] - 2026-01-22
 ### Changed
 - **AI Prompts**: Atualizados templates de Capa e Folha Vazia conforme novos padrões de alta fidelidade 3D (Ref: Julia 15).
