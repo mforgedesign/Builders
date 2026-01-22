@@ -194,132 +194,176 @@
     /**
      * Build complete generation payload
      */
-    function buildGenerationPayload(type, options = {}) {
-        const config = getModelConfig(type);
-        let prompt = '';
-
-        // Get appropriate prompt
-        switch (type) {
-            case 'cover':
-                prompt = getCoverPrompt();
-                break;
-            case 'leaf':
-                prompt = getBlankSheetPrompt();
-                break;
-            case 'fill':
-                prompt = getFilledSheetPrompt();
-                break;
-            case 'intro':
-                prompt = getOpeningVideoPrompt();
-                break;
-            case 'loop':
-                prompt = getLoopVideoPrompt();
-                break;
-            case 'gifts':
-                prompt = getGiftListPrompt(options.listContent);
-                break;
-            case 'manual':
-                prompt = getGuestManualPrompt(options.rulesContent);
-                break;
-            default:
-                prompt = options.customPrompt || '';
-        }
-
-        // Allow prompt override from UI
-        if (options.customPrompt) {
-            prompt = options.customPrompt;
-        }
-
-        return {
-            ...config,
-            prompt,
-            target_window: type,
-            reference_image: options.referenceImage,
-            image_url: options.imageUrl // For video generation
-        };
+    // Get appropriate prompt
+    switch (type) {
+        case 'cover':
+            prompt = getCoverPrompt();
+            break;
+        case 'leaf':
+            prompt = getBlankSheetPrompt();
+            break;
+        case 'fill':
+            prompt = getFilledSheetPrompt();
+            break;
+        case 'intro':
+            prompt = getOpeningVideoPrompt();
+            break;
+        case 'loop':
+            prompt = getLoopVideoPrompt();
+            break;
+        case 'gifts':
+            prompt = getGiftListPrompt(options.listContent);
+            break;
+        case 'manual':
+            prompt = getGuestManualPrompt(options.rulesContent);
+            break;
+        default:
+            prompt = options.customPrompt || '';
     }
 
+    // Allow prompt override from UI
+    if (options.customPrompt) {
+        prompt = options.customPrompt;
+    }
+
+    return {
+        ...config,
+        prompt,
+        target_window: type,
+        reference_image: options.referenceImage,
+        image_url: options.imageUrl // For video generation
+    };
+}
+
     /**
-     * DEFAULT COVER PROMPT - Base template with auto-populated form data
-     * Used for the "Preenchimento Padrão" button
+     * TEMPLATE A: Cover (Capa) - Hyper-Realistic 8K
      */
-    function getDefaultCoverPrompt() {
-        const state = window.builderState || {};
-        const formData = state.formData || {};
+    function getCoverPrompt() {
+    const vars = getContextVariables();
+    const template = `Create a vertical image of a hyper-realistic 3D render of a premium invitation envelope, themed around {{THEME}} with a palette of {{COLORS}}. The envelope is made of luxurious texture paper with gold and silver filigree accents and is sealed with a detailed wax seal featuring a motif related to the theme. A glowing, translucent element is centered on top. Background: A blurred, dreamlike view of a setting related to {{THEME}}, bathed in soft lighting, with floating magical sparkles. The composition is centered. Lighting: Dramatic, cinematic moonlight with volumetric effects, casting cool and warm tones. Highlights on the envelope and wax seal accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, and elegant. Technical Details: Resolution: 8K, ultra high resolution, Aspect Ratio: 9:16, Rendering Engine: Octane Render, Unreal Engine 5, Camera: Macro lens, f/2.8, shallow depth of field.`;
+    return injectVariables(template, vars);
+}
 
-        // Also try to get values directly from DOM (more reliable)
-        const getVal = (id, fallback = '') => {
-            const el = document.getElementById(id);
-            return el?.value || formData[id.replace('form-', '')] || fallback;
-        };
+/**
+ * TEMPLATE B: Blank Sheet (Folha Vazia) - Hyper-Realistic 8K
+ */
+function getBlankSheetPrompt() {
+    const vars = getContextVariables();
+    const template = `Create a vertical image of a hyper-realistic 3D render of a premium blank invitation parchment, covering 90% of the frame, ready for text. The luxurious, textured paper is adorned with intricate gold and silver filigree borders, featuring subtle pearlescent accents, delicate swirling patterns, and tiny sparkling elements that hint at {{THEME}} magic. Palette: {{COLORS}}. Background: A blurred, dreamlike view of a majestic setting related to {{THEME}}, bathed in soft lighting, with floating magical sparkles. The composition is centered. Lighting: Dramatic, cinematic moonlight with volumetric effects, casting cool and warm tones. Highlights on the paper texture and borders. Style: Photorealistic, hyper-detailed, cinematic, and elegant. Technical Details: Resolution: 8K, ultra high resolution, Aspect Ratio: 9:16, Rendering Engine: Octane Render, Unreal Engine 5, Camera: Macro lens, f/2.8, shallow depth of field.`;
+    return injectVariables(template, vars);
+}
 
-        const tipoEvento = getVal('form-tipo_evento', formData.tipo_evento || '');
-        const selo = getVal('form-idade', formData.idade || ''); // Selo usually refers to age/initials on wax seal
-        const paletaCores = getVal('form-paleta_cores', formData.paleta_cores || '');
-        const tema = getVal('form-tema_evento', formData.tema_evento || '');
+/**
+ * TEMPLATE C: Filled Sheet (Preenchimento) - Advanced Typography
+ */
+function getFilledSheetPrompt() {
+    const vars = getContextVariables();
+    const template = `[Dados Para escrever: {{EVENT_DATA}}]
+Detalhes técnicos: Tema {{THEME}} (Tons de {{COLORS}})
 
-        return `Tipo de evento: ${tipoEvento}
+Prompt:
+Preencha essa folha com os dados para convite de forma criativa e elegante.
+Coloque elementos de design de forma elegante no convite, divisórias, linhas e frases como "Você está convidado para ..." (complete) conforme sua criatividade. Coloque textura e adornos no texto do nome, letra cursiva (Great Vibes)`;
+    return injectVariables(template, vars);
+}
+
+/**
+ * TEMPLATE F: Gift List (Presentes) - Hyper-Realistic
+ */
+function getGiftListPrompt(listContent) {
+    const vars = getContextVariables();
+    vars.LIST_CONTENT = listContent || 'Lista de Presentes';
+    const template = `Você irá colocar nessa imagem uma folha de pergaminho elegante e moderna, centralizada contendo as sugestões de presentes que vou listar a seguir. Use sua criatividade, inserindo elementos do tema {{THEME}} e os itens fotorealistas modernos junto dos itens escritos. 
+Tema: {{THEME}}. Cores: {{COLORS}}.
+
+Composição madura e realista. Highly detailed 3D render of a luxurious setting, centered composition, dramatic lighting, volumetric light, soft focus, depth of field. Lighting: Dramatic, cinematic lighting. Volumetric lighting effects (god rays) filtering through the theme elements and particles. Highlights on the textured paper to emphasize texture and detail. Style: Photorealistic, hyperdetailed, cinematic, elegant, romantic. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field.
+
+Sugestões de presentes:
+{{LIST_CONTENT}}`;
+    return injectVariables(template, vars);
+}
+
+/**
+ * DEFAULT COVER PROMPT - Base template with auto-populated form data
+ * Used for the "Preenchimento Padrão" button
+ */
+function getDefaultCoverPrompt() {
+    const state = window.builderState || {};
+    const formData = state.formData || {};
+
+    // Also try to get values directly from DOM (more reliable)
+    const getVal = (id, fallback = '') => {
+        const el = document.getElementById(id);
+        return el?.value || formData[id.replace('form-', '')] || fallback;
+    };
+
+    const tipoEvento = getVal('form-tipo_evento', formData.tipo_evento || '');
+    const selo = getVal('form-idade', formData.idade || ''); // Selo usually refers to age/initials on wax seal
+    const paletaCores = getVal('form-paleta_cores', formData.paleta_cores || '');
+    const tema = getVal('form-tema_evento', formData.tema_evento || '');
+
+    return `Tipo de evento: ${tipoEvento}
 Selo: ${selo}
 Paleta de Cores: ${paletaCores}
 Tema: ${tema}
 Task: Create a vertical image of a hyper-realistic 3D render of a premium invitation envelope. The envelope is sealed with an intricately detailed wax seal. The paper boasts a high-quality, textured finish, exuding elegance and sophistication. Background: A setting with elements that enhance the luxurious feel of the invitation without specific thematic details. The composition is centered, with dramatic lighting casting volumetric light and creating a soft focus and depth of field. Lighting: Dramatic, cinematic lighting with volumetric effects. Highlights on the envelope and wax seal accentuate the texture and detail. Style: Photorealistic, hyper-detailed, cinematic, and elegant. Technical Details: Resolution: 8K, ultra high resolution Aspect Ratio: 9:16 Rendering Engine: Octane Render, Unreal Engine 5 Camera: Macro lens, f/2.8, shallow depth of field`;
-    }
+}
 
-    /**
-     * DEFAULT FILL PROMPT - Base template with auto-populated form data
-     * Used for the "Preenchimento Padrão" button on Folha Preenchida
-     */
-    function getDefaultFillPrompt() {
-        const state = window.builderState || {};
-        const formData = state.formData || {};
+/**
+ * DEFAULT FILL PROMPT - Base template with auto-populated form data
+ * Used for the "Preenchimento Padrão" button on Folha Preenchida
+ */
+function getDefaultFillPrompt() {
+    const state = window.builderState || {};
+    const formData = state.formData || {};
 
-        // Also try to get values directly from DOM (more reliable)
-        const getVal = (id, fallback = '') => {
-            const el = document.getElementById(id);
-            return el?.value || formData[id.replace('form-', '')] || fallback;
-        };
+    // Also try to get values directly from DOM (more reliable)
+    const getVal = (id, fallback = '') => {
+        const el = document.getElementById(id);
+        return el?.value || formData[id.replace('form-', '')] || fallback;
+    };
 
-        const nome = getVal('form-nome', formData.nome || '');
-        const idade = getVal('form-idade', formData.idade || '');
-        const tipoEvento = getVal('form-tipo_evento', formData.tipo_evento || '');
-        const tema = getVal('form-tema_evento', formData.tema_evento || '');
+    const nome = getVal('form-nome', formData.nome || '');
+    const idade = getVal('form-idade', formData.idade || '');
+    const tipoEvento = getVal('form-tipo_evento', formData.tipo_evento || '');
+    const tema = getVal('form-tema_evento', formData.tema_evento || '');
 
-        const idadeStr = idade ? idade : '(não informada)';
+    const idadeStr = idade ? idade : '(não informada)';
 
-        return `Nome: ${nome}
+    return `Nome: ${nome}
 Idade (se houver): ${idadeStr}
 Tipo de evento: ${tipoEvento}
 Tema: ${tema}
 Task: Preencha essa folha com os dados para convite de forma criativa e elegante.
 Coloque elementos de design de forma elegante no convite, divisórias modernas, hierarquia visual madura e profissional, linhas, e uma frase similar a "Você está convidado para o... (crie a frase conforme o contexto)" conforme sua criatividade.
 Coloque textura, camadas, adornos no texto do nome, letra cursiva (Great Vibes) e efeitos especiais elegantes.`;
-    }
+}
 
-    // ==================== PUBLIC API ====================
+// ==================== PUBLIC API ====================
 
-    window.AIPrompts = {
-        // Individual prompt getters
-        getCoverPrompt,
-        getBlankSheetPrompt,
-        getFilledSheetPrompt,
-        getOpeningVideoPrompt,
-        getLoopVideoPrompt,
-        getGiftListPrompt,
-        getGuestManualPrompt,
+window.AIPrompts = {
+    // Individual prompt getters
+    getCoverPrompt,
+    getBlankSheetPrompt,
+    getFilledSheetPrompt,
+    getOpeningVideoPrompt,
+    getLoopVideoPrompt,
+    getGiftListPrompt,
+    getGuestManualPrompt,
 
-        // NEW: Default prompts with auto-fill from form
-        getDefaultCoverPrompt,
-        getDefaultFillPrompt,
+    // NEW: Default prompts with auto-fill from form
+    getDefaultCoverPrompt,
+    getDefaultFillPrompt,
 
-        // Utilities
-        getContextVariables,
-        getModelConfig,
-        buildGenerationPayload,
+    // Utilities
+    getContextVariables,
+    getModelConfig,
+    buildGenerationPayload,
 
-        // For testing
-        injectVariables
-    };
+    // For testing
+    injectVariables
+};
 
-    console.log('[AI Prompts] Module loaded - 7 templates available');
+console.log('[AI Prompts] Module loaded - 7 templates available');
 
-})();
+}) ();
