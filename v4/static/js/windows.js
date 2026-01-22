@@ -1020,8 +1020,9 @@
             // 1. Hydrate Form Data (Silent & Batched)
             if (appState.formData) {
                 if (window.AutoBuilderForm && window.AutoBuilderForm.populateForm) {
-                    // Use populateForm to update UI without triggering events/API calls
-                    window.AutoBuilderForm.populateForm(appState.formData);
+                    // Inject _reset flag to allow clearing fields (Clean Slate restoration)
+                    const hydrationState = { ...appState.formData, _reset: true };
+                    window.AutoBuilderForm.populateForm(hydrationState);
 
                     // Dispatch a SINGLE update event to sync persistence/preview
                     document.dispatchEvent(new CustomEvent('stateUpdated', {
@@ -1452,20 +1453,33 @@
                     // Otherwise fills everything
                     const fieldsToKeep = ['tipo_evento', 'paleta_cores', 'botoes_offset', 'shadow_color', 'shadow_disabled', 'timer_contagem', 'watermark_enabled', 'cor_botoes'];
 
+                    // Prep a clean state if modifying
+                    const stateToApply = hasModifications ? { _reset: true } : { _reset: false };
+
                     Object.entries(appState.formData).forEach(([key, value]) => {
                         if (hasModifications) {
                             // Only keep structural fields, skip texts
                             if (fieldsToKeep.includes(key) || typeof value === 'boolean') { // Keep toggles
-                                window.AutoBuilderForm.updateField(key, value);
+                                stateToApply[key] = value;
                             } else {
-                                // Clear text fields
-                                window.AutoBuilderForm.updateField(key, '');
+                                // Explicitly clear text fields (Manual conversion etc)
+                                stateToApply[key] = '';
                             }
                         } else {
                             // Keep everything
-                            window.AutoBuilderForm.updateField(key, value);
+                            stateToApply[key] = value;
                         }
                     });
+
+                    // Batch update via populateForm for efficiency and clean reset
+                    if (window.AutoBuilderForm && window.AutoBuilderForm.populateForm) {
+                        window.AutoBuilderForm.populateForm(stateToApply);
+                    } else {
+                        // Fallback to individual updates
+                        Object.entries(stateToApply).forEach(([k, v]) => {
+                            if (k !== '_reset') window.AutoBuilderForm.updateField(k, v);
+                        });
+                    }
                 }
 
                 // Set Slug
