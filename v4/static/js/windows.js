@@ -2042,7 +2042,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function pollDeployStatus(slug, liveUrl, commitSha = null) {
         const checkBtn = document.getElementById('btn-publish');
         let attempts = 0;
-        const maxAttempts = 60; // 5 minutes (5s interval)
+        const maxAttempts = 150; // 5 minutes (2s interval)
 
         logDebug(`Iniciando Polling. Slug: ${slug}, SHA: ${commitSha?.substring(0, 7)}...`);
 
@@ -3301,8 +3301,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const eventDateTime = eventDate ? `${eventDate}T${eventTime}:00` : '';
                     htmlContent = htmlContent.replace(/\[\[EVENT_DATETIME\]\]/g, eventDateTime);
 
-                    const buttonsOffset = formData.botoes_offset || formData.posicao_botoes || formData.buttons_offset || '0';
+                    // BUTTONS_OFFSET: Ensure 'px' unit is present
+                    let buttonsOffsetRaw = formData.botoes_offset || formData.posicao_botoes || formData.buttons_offset || '-90';
+                    // If it's a number without unit, add 'px'
+                    const buttonsOffset = String(buttonsOffsetRaw).includes('px') ? buttonsOffsetRaw : `${buttonsOffsetRaw}px`;
                     htmlContent = htmlContent.replace(/\[\[BUTTONS_OFFSET\]\]/g, buttonsOffset);
+
+                    // SHADOW_STYLE: Generate gradient based on shadow settings
+                    const isShadowDisabled = String(formData.shadow_disabled).toLowerCase() === 'true';
+                    const shadowColor = formData.shadow_color || '#000000';
+                    const shadowStyle = isShadowDisabled ? '' : `background: linear-gradient(to top, ${shadowColor} 0%, ${shadowColor}cc 30%, transparent 100%);`;
+                    htmlContent = htmlContent.replace(/\[\[SHADOW_STYLE\]\]/g, shadowStyle);
 
                     const hostName = formData.nome_anfitriao || formData.nome || 'Convite';
                     const eventType = formData.tipo_evento || formData.event_type || 'Evento';
