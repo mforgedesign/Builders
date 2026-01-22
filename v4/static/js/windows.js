@@ -799,6 +799,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Store Base64 for Reference Dropzone immediately (needed for API)
                 if (id === 'cover-reference-dropzone') {
+                    const base64 = await readFileAsBase64(file);
+                    dropzone.dataset.base64 = base64;
+                }
+
+                // Update State (Generic)
+                // Note: We need to map dropzone context to asset key
+                if (window.builderState && window.builderState.assets) {
+                    window.builderState.assets[context] = url;
+                }
+
+                // Dispatch Event for Chatbot (Passive Awareness)
+                document.dispatchEvent(new CustomEvent('builder:asset_ready', {
+                    detail: { type: context, url: url, method: 'manual' }
+                }));
+                if (id === 'cover-reference-dropzone') {
                     try {
                         const base64 = await readFileAsBase64(file);
                         dropzone.dataset.base64 = base64; // Store on DOM element
@@ -2443,6 +2458,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Success callback
                 if (onSuccess) onSuccess(generatedUrl);
+
+                // Dispatch Event for Chatbot (Autonomous Flow)
+                document.dispatchEvent(new CustomEvent('builder:asset_ready', {
+                    detail: { type: type, url: generatedUrl, method: 'ai' }
+                }));
 
                 console.log(`✅ Generated ${type}:`, generatedUrl);
                 return generatedUrl;
