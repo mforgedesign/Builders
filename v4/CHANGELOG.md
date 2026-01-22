@@ -13,6 +13,9 @@ Registro de todas as modificações do projeto, conforme as diretrizes das globa
 - **AutoBuild Timeout**: Adicionado timeout de 3 minutos por asset. Se não concluir, fluxo continua automaticamente.
 - **Publicação Automática**: Fluxo autoBuild agora publica mesmo se alguns assets falharem (após timeout).
 - **Empty Values Overwriting Data**: Chatbot agora ignora valores vazios quando o campo já tem conteúdo (`chatbot.js:740-747`). Corrige bug onde dados importados eram apagados.
+- **Prompt Context Fix**: `getContextVariables` agora lê dados diretamente do DOM como fallback (`ai-prompts.js:37-45`). Garante prompts corretos mesmo com atraso no estado.
+- **Modal Buster Countdown**: Adicionado timer de 30s no chat para auto-confirmar o modal de publicação em modo autônomo (`chatbot.js:301-331`).
+- **Exposição de Prompts**: Corrigido erro fatal no console expondo `getLoopVideoPrompt` na API pública (`ai-prompts.js:347`).
 
 ### Added
 - **Seleção Automática de Música**: Chatbot/AutoBuild agora sempre seleciona "Perfect (Violin)" automaticamente.
