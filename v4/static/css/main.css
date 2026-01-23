@@ -337,6 +337,46 @@ html.dark .hover\:bg-gray-300:hover {
     }
 }
 
+/* ===================================== */
+/* DROPZONE/UPLOAD AREAS DARK MODE       */
+/* ===================================== */
+
+/* Light gray dropzone areas */
+html.dark .dropzone,
+html.dark [class*="dropzone"],
+html.dark .upload-area,
+html.dark .border-dashed {
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+}
+
+/* Music player area */
+html.dark .music-player,
+html.dark .audio-player,
+html.dark [id*="music"] .bg-gray-100,
+html.dark [id*="music"] .bg-gray-50 {
+    background-color: #1e293b !important;
+}
+
+/* Range inputs (sliders) */
+html.dark input[type="range"] {
+    background-color: #334155;
+}
+
+html.dark input[type="range"]::-webkit-slider-thumb {
+    background-color: #6366f1;
+}
+
+/* Dividers */
+html.dark .divide-gray-100>*+* {
+    border-color: #334155 !important;
+}
+
+html.dark hr,
+html.dark .border-t {
+    border-color: #334155 !important;
+}
+
 @keyframes slideUp {
     from {
         opacity: 0;
