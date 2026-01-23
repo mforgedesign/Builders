@@ -271,6 +271,102 @@
             }
         }
 
+        /**
+         * Deletes a folder (invitation) from the repository using Tree API
+         * This is an atomic operation that removes only the specified folder
+         * @param {string} slug - The folder name to delete
+         * @returns {Promise<boolean>} - True if successful
+         */
+        async deleteFolder(slug) {
+            if (!await this.ensureAuth()) throw new Error('Autenticação falhou');
+
+            console.log(`[GitHubAdapter] Deleting folder: ${slug}`);
+
+            try {
+                // 1. Get current branch reference
+                const refUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/git/refs/heads/${BRANCH}`;
+                const refRes = await fetch(refUrl, { headers: this.getHeaders() });
+                if (!refRes.ok) throw new Error('Failed to get branch reference');
+                const refData = await refRes.json();
+                const latestCommitSha = refData.object.sha;
+
+                // 2. Get current commit's tree SHA
+                const commitUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/git/commits/${latestCommitSha}`;
+                const commitRes = await fetch(commitUrl, { headers: this.getHeaders() });
+                if (!commitRes.ok) throw new Error('Failed to get commit data');
+                const commitData = await commitRes.json();
+                const baseTreeSha = commitData.tree.sha;
+
+                // 3. Get the full tree (recursive)
+                const treeUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/git/trees/${baseTreeSha}?recursive=1`;
+                const treeRes = await fetch(treeUrl, { headers: this.getHeaders() });
+                if (!treeRes.ok) throw new Error('Failed to get tree data');
+                const treeData = await treeRes.json();
+
+                // 4. Filter out the folder to delete
+                const slugPrefix = `${slug}/`;
+                const newTreeItems = treeData.tree.filter(item => {
+                    // Exclude the folder itself and all its contents
+                    return item.path !== slug && !item.path.startsWith(slugPrefix);
+                });
+
+                // Check if anything was removed
+                if (newTreeItems.length === treeData.tree.length) {
+                    console.warn(`[GitHubAdapter] Folder ${slug} not found in tree`);
+                    return false;
+                }
+
+                // 5. Create new tree (without base_tree to ensure clean structure)
+                const createTreeUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/git/trees`;
+                const newTreeRes = await fetch(createTreeUrl, {
+                    method: 'POST',
+                    headers: this.getHeaders(),
+                    body: JSON.stringify({
+                        tree: newTreeItems.map(item => ({
+                            path: item.path,
+                            mode: item.mode,
+                            type: item.type,
+                            sha: item.sha
+                        }))
+                    })
+                });
+                if (!newTreeRes.ok) throw new Error('Failed to create new tree');
+                const newTreeData = await newTreeRes.json();
+
+                // 6. Create commit
+                const newCommitUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/git/commits`;
+                const newCommitRes = await fetch(newCommitUrl, {
+                    method: 'POST',
+                    headers: this.getHeaders(),
+                    body: JSON.stringify({
+                        message: `Delete ${slug}`,
+                        tree: newTreeData.sha,
+                        parents: [latestCommitSha]
+                    })
+                });
+                if (!newCommitRes.ok) throw new Error('Failed to create commit');
+                const newCommitData = await newCommitRes.json();
+
+                // 7. Update branch reference
+                const updateRefRes = await fetch(refUrl, {
+                    method: 'PATCH',
+                    headers: this.getHeaders(),
+                    body: JSON.stringify({
+                        sha: newCommitData.sha,
+                        force: false
+                    })
+                });
+                if (!updateRefRes.ok) throw new Error('Failed to update branch');
+
+                console.log(`[GitHubAdapter] Successfully deleted ${slug}. Commit: ${newCommitData.sha}`);
+                return true;
+
+            } catch (error) {
+                console.error(`[GitHubAdapter] Delete failed:`, error);
+                throw error;
+            }
+        }
+
         // ... existing uploadFile (keep for backward compatibility if needed) ...
         // (Keeping the rest of the file structure intact is handled by replace_file_content logic if we are careful)
 
