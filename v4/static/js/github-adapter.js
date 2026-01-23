@@ -11,6 +11,7 @@
     const REPO_OWNER = 'mforgedesign';
     const REPO_NAME = 'Convites';
     const BRANCH = 'recuperaçãohoje';
+    const BRANCH_ENCODED = encodeURIComponent(BRANCH); // URL-safe version
     const API_BASE = 'https://api.github.com';
 
     class GitHubAdapter {
@@ -217,8 +218,13 @@
         }
 
         getHeaders() {
+            // Always reload token from localStorage to ensure it's current
+            const currentToken = this.token || localStorage.getItem('github_pat');
+            if (!currentToken) {
+                console.warn('[GitHubAdapter] No token available for request');
+            }
             return {
-                'Authorization': `token ${this.token}`,
+                'Authorization': `token ${currentToken}`,
                 'Accept': 'application/vnd.github.v3+json',
                 'Content-Type': 'application/json'
             };
@@ -278,15 +284,23 @@
          * @returns {Promise<boolean>} - True if successful
          */
         async deleteFolder(slug) {
-            if (!await this.ensureAuth()) throw new Error('Autenticação falhou');
+            // Verify token first
+            const token = localStorage.getItem('github_pat');
+            if (!token) {
+                throw new Error('Token GitHub não encontrado. Por favor, publique um convite primeiro para autenticar.');
+            }
+            this.token = token; // Ensure instance has current token
 
             console.log(`[GitHubAdapter] Deleting folder: ${slug}`);
 
             try {
-                // 1. Get current branch reference
-                const refUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/git/refs/heads/${BRANCH}`;
+                // 1. Get current branch reference (use encoded branch name for URL)
+                const refUrl = `${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/git/refs/heads/${BRANCH_ENCODED}`;
                 const refRes = await fetch(refUrl, { headers: this.getHeaders() });
-                if (!refRes.ok) throw new Error('Failed to get branch reference');
+                if (!refRes.ok) {
+                    const errData = await refRes.json().catch(() => ({}));
+                    throw new Error(`Falha ao obter referência do branch: ${errData.message || refRes.status}`);
+                }
                 const refData = await refRes.json();
                 const latestCommitSha = refData.object.sha;
 
