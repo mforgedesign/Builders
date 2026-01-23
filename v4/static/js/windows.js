@@ -2337,10 +2337,11 @@
 
                     // 3. Asset Availability Check (Secondary)
                     // If we don't have SHA, or as backup if workflow API fails but site is live
-                    if (!commitSha && assetPath) {
+                    // Enable fallback after 20 attempts (40s) even if we have SHA, in case workflow never registers
+                    if (assetPath && (!commitSha || attempts > 20)) {
                         const img = new Image();
                         img.onload = () => {
-                            logDebug('Imagem carregou. Site Online.');
+                            logDebug('Imagem carregou. Site Online (Fallback).');
                             finishPolling(true);
                         };
                         img.src = `${checkUrl}?t=${Date.now()}`;
@@ -3592,7 +3593,8 @@
                         let result;
                         let liveUrl;
 
-                        if (window.githubAdapter) {
+                        // FORCE SERVER-SIDE DEPLOYMENT (Updated per user request)
+                        if (false && window.githubAdapter) {
                             console.log('[Publish] Using generic githubAdapter.deployBatch');
                             try {
                                 // We need to clean keys in filesMap to be relative to the slug folder?
