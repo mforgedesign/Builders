@@ -1105,11 +1105,11 @@ Response:
             const msgId = 'vid-' + Date.now();
             const html = `
                 <div class="chat-upload-card" id="${msgId}">
-                    <video src="${url}" class="rounded mb-2" autoplay muted loop></video>
-                    <p class="text-xs mb-2">Onde usar este vídeo?</p>
-                    <div class="flex gap-2">
-                        <button class="btn-xs bg-brand-100 text-brand-700" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'vid_abertura')">Abertura</button>
-                        <button class="btn-xs bg-brand-100 text-brand-700" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'fundo_tela')">Fundo</button>
+                    <video src="${url}" class="rounded h-auto" autoplay muted loop></video>
+                    <p class="text-[10px] text-gray-500 mb-1.5 uppercase font-bold text-center">Vídeo Detectado</p>
+                    <div class="flex flex-col gap-1 w-full">
+                        <button class="btn-xs bg-brand-600 text-white w-full" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'vid_abertura')">Usar na Abertura</button>
+                        <button class="btn-xs bg-gray-100 hover:bg-brand-100 text-gray-700 w-full" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'fundo_tela')">Usar no Fundo</button>
                     </div>
                 </div>
              `;
@@ -1131,12 +1131,15 @@ Response:
 
     // Expose helpers
     window.AutoBuilderChatbot.assignAsset = (msgId, url, context) => {
-        // Find Dropzone
+        console.log(`[Chatbot] Assigning asset: ${context}`, url);
+
+        // 1. Find Dropzone for visual update
         let dzId = '';
         if (context === 'vid_abertura') dzId = 'intro-video-dropzone';
-        if (context === 'fundo_tela') dzId = 'fill-image-dropzone'; // Can be video too
+        if (context === 'fundo_tela') dzId = 'fill-image-dropzone';
         if (context === 'capa') dzId = 'cover-dropzone';
-        if (context === 'folha_vazia') dzId = 'leaf-dropzone';
+        if (context === 'folha_vazia' || context === 'folha') dzId = 'leaf-dropzone';
+        if (context === 'folha_preenchida') dzId = 'fill-image-dropzone';
         if (context === 'presentes') dzId = 'gifts-image-dropzone';
         if (context === 'manual') dzId = 'manual-image-dropzone';
 
@@ -1145,10 +1148,30 @@ Response:
             window.updateDropzonePreview(dz, url);
         }
 
+        // 2. Critical: Update Builder State & Preview
+        if (window.AutoBuilderForm) {
+            // Map chatbot terminology to form field names
+            const fieldMap = {
+                'vid_abertura': 'vid_abertura',
+                'fundo_tela': 'fundo_tela',
+                'capa': 'capa',
+                'folha': 'folha_vazia',
+                'folha_vazia': 'folha_vazia',
+                'folha_preenchida': 'fundo_tela',
+                'presentes': 'presentes',
+                'manual': 'manual'
+            };
+
+            const fieldName = fieldMap[context] || context;
+            window.AutoBuilderForm.updateField(fieldName, url);
+            console.log(`[Chatbot] Builder form updated: ${fieldName}`);
+        }
+
         // Remove card buttons or whole card
         const card = document.getElementById(msgId);
         if (card) {
-            card.innerHTML = `<div class="text-green-600 text-xs"><i class="fa-solid fa-check"></i> Definido como ${context}</div>`;
+            card.innerHTML = `<div class="text-green-600 text-[10px] font-bold py-1"><i class="fa-solid fa-check"></i> DEFINIDO EM: ${context.toUpperCase()}</div>`;
+            setTimeout(() => card.style.opacity = '0.5', 1000);
         }
 
         // Trigger next if any
@@ -1167,13 +1190,14 @@ Response:
 
         const html = `
             <div class="chat-upload-card" id="${msgId}">
-                <img src="${url}" class="rounded mb-2">
-                <p class="text-xs mb-2">Onde usar esta imagem?</p>
-                <div class="grid grid-cols-2 gap-2">
-                    <button class="btn-xs bg-gray-100 hover:bg-brand-100" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'capa')">Capa</button>
-                    <button class="btn-xs bg-gray-100 hover:bg-brand-100" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'folha_vazia')">Folha</button>
-                    <button class="btn-xs bg-gray-100 hover:bg-brand-100" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'presentes')">Presentes</button>
-                    <button class="btn-xs bg-gray-100 hover:bg-brand-100" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'manual')">Manual</button>
+                <img src="${url}" class="rounded h-auto">
+                <p class="text-[10px] text-gray-500 mb-1.5 uppercase font-bold text-center">Imagem Detectada</p>
+                <div class="grid grid-cols-2 gap-1 w-full">
+                    <button class="btn-xs bg-brand-600 text-white" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'capa')">Capa</button>
+                    <button class="btn-xs bg-saas-sidebar text-white" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'folha')">Folha Vaz.</button>
+                    <button class="btn-xs bg-gray-100 hover:bg-brand-100 text-gray-700" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'folha_preenchida')">Preencher</button>
+                    <button class="btn-xs bg-gray-100 hover:bg-brand-100 text-gray-700" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'presentes')">Presentes</button>
+                    <button class="btn-xs bg-gray-100 hover:bg-brand-100 text-gray-700 col-span-2" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'manual')">Manual</button>
                 </div>
             </div>
          `;
@@ -1217,13 +1241,15 @@ Response:
         // autoFlow.startMonitoring();
 
         // Expose API for external control (like Context Reset)
-        Object.assign(window.AutoBuilderChatbot, {
-            resetContext: () => {
-                contextManager.clearContext();
-                addMessage("🧹 Contexto do chat limpo para novo convite.", "assistant");
-                console.log("[Chatbot] Contexto limpo via AutoBuilderChatbot.");
-            }
-        });
+        if (!window.AutoBuilderChatbot.resetContext) {
+            Object.assign(window.AutoBuilderChatbot, {
+                resetContext: () => {
+                    contextManager.clearContext();
+                    addMessage("🧹 Contexto do chat limpo para novo convite.", "assistant");
+                    console.log("[Chatbot] Contexto limpo via AutoBuilderChatbot.");
+                }
+            });
+        }
 
         // Listen for GitHub Deploy Status Events (from GitHubAdapter)
         window.addEventListener('gh-deploy-status', (e) => {
