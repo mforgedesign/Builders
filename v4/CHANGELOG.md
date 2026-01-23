@@ -3,6 +3,9 @@
 - **History Search Bar**: Barra de busca em tempo real na janela de Histórico para filtrar convites por slug.
 - **Delete Invitation Button**: Botão de lixeira em cada card do Histórico para excluir convites individualmente do GitHub (exclusão atômica via Tree API).
 - **`deleteFolder()` in GitHub Adapter**: Nova função para exclusão atômica de pastas no repositório sem afetar outros arquivos.
+- **Elegant Delete Confirmation Modal**: Modal elegante com animação para confirmar exclusão (substitui o `confirm()` nativo).
+    - CSS: `.confirm-modal-overlay` e `.confirm-modal-content` em `main.css`.
+    - Animações: `fadeIn` e `slideUp` para entrada suave.
 
 ### Fixed
 - **Dark Mode Refinement**: Corrigidos overrides CSS faltantes para classes Tailwind:
@@ -10,17 +13,26 @@
     - Borders: `border-gray-300`.
     - Colors: amber (toggle), brand (buttons), indigo (tabs).
     - Form inputs: date, time, placeholders.
+- **Popup Dark Mode**: Corrigido fundo claro em popups de alerta (ex: "Slug já existe"):
+    - `from-amber-50` → `#422006` (dark warm)
+    - `to-orange-50` → `#431407` (dark warm)
+    - `border-amber-300` → `#d97706`
+    - `text-gray-600` → `#94a3b8`
 - **Manual HTML Import (RAIZ)**: Corrigido o bug crítico onde o campo "Manual do Convidado" não era restaurado ao importar convites.
     - **Causa**: `data-field` estava como `manual_content` em `index.html` mas o código esperava `manual_html`.
     - **Correção**: Alterado `data-field="manual_content"` → `data-field="manual_html"` na linha 1254 de `index.html`.
 
 ### Changed
 - **History Cards**: Adicionado `relative group` e `data-slug` para suportar o botão de exclusão com hover.
+- **Delete Process**: Exclusão roda em background (sem popup de loading). Card some com fade-out imediato e toast de sucesso/erro.
 
 ### Backups
 - `main_backup_20260123_0935_dark_mode.css`
+- `main_backup_20260123_0959_pre_popup_fix.css`
 - `history_backup_20260123_0935_search_delete.js`
+- `history_backup_20260123_0959_pre_delete_fix.js`
 - `github-adapter_backup_20260123_0935_delete_folder.js`
+- `github-adapter_backup_20260123_0959_pre_delete_fix.js`
 - `windows_backup_20260123_0935_manual_fix.js`
 
 ---
