@@ -312,7 +312,8 @@
      */
     async function handlePublishAPI(body) {
         // Prefer Client-Side Batch Deploy if available (smarter, cleaner)
-        if (window.githubAdapter) {
+        // FORCE SERVER-SIDE (Updated per user request)
+        if (false && window.githubAdapter) {
             try {
                 console.log('[API Adapter] Using GitHubAdapter.deployBatch');
                 const message = `Deploy ${body.slug} via AutoBuilder v4`;
