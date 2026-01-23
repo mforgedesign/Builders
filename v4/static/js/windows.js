@@ -2549,69 +2549,96 @@
 
         function setupAIButtons() {
             const aiButtons = [
-                { id: 'btn-generate-cover', type: 'cover', promptId: 'cover-prompt', mediaType: 'image' },
-                { id: 'btn-generate-leaf', type: 'leaf', promptId: 'leaf-prompt', mediaType: 'image' },
-                { id: 'btn-generate-intro', type: 'intro', promptId: 'intro-motion-prompt', mediaType: 'video' },
-                // { id: 'btn-generate-loop', type: 'loop', promptId: 'loop-motion-prompt', mediaType: 'video' }, // Removed
-                { id: 'btn-generate-fill', type: 'fill', promptId: 'fill-prompt', mediaType: 'image' },
-                { id: 'manual-generate-image-btn', type: 'manual', promptId: 'manual-image-prompt', mediaType: 'image' },
-                { id: 'gifts-generate-image-btn', type: 'gifts', promptId: 'gifts-image-prompt', mediaType: 'image' }
+                { id: 'btn-generate-cover', type: 'cover', promptId: 'cover-prompt', mediaType: 'image', dropzoneId: 'cover-dropzone' },
+                { id: 'btn-generate-leaf', type: 'leaf', promptId: 'leaf-prompt', mediaType: 'image', dropzoneId: 'leaf-dropzone' },
+                { id: 'btn-generate-intro', type: 'intro', promptId: 'intro-motion-prompt', mediaType: 'video', dropzoneId: 'intro-video-dropzone' },
+                { id: 'btn-generate-fill', type: 'fill', promptId: 'fill-prompt', mediaType: 'image', dropzoneId: 'fill-image-dropzone' },
+                { id: 'manual-generate-image-btn', type: 'manual', promptId: 'manual-image-prompt', mediaType: 'image', dropzoneId: 'manual-image-dropzone' },
+                { id: 'gifts-generate-image-btn', type: 'gifts', promptId: 'gifts-image-prompt', mediaType: 'image', dropzoneId: 'gifts-image-dropzone' }
             ];
 
-            aiButtons.forEach(({ id, type, promptId, mediaType }) => {
+            aiButtons.forEach(({ id, type, promptId, mediaType, dropzoneId }) => {
                 const btn = document.getElementById(id);
                 if (!btn) return;
 
+                // [ADD] Button State Logic (Regenerate vs Generate)
+                const dropzone = document.getElementById(dropzoneId);
+                const updateButtonUI = () => {
+                    const hasAsset = dropzone?.style?.backgroundImage && dropzone.style.backgroundImage !== 'none';
+                    if (hasAsset) {
+                        btn.innerHTML = `<i class="fa-solid fa-rotate"></i> Regenerar ${btn.dataset.label || ''}`;
+                        btn.classList.remove('from-brand-600', 'to-indigo-600');
+                        btn.classList.add('from-purple-600', 'to-pink-600');
+                    } else {
+                        btn.innerHTML = btn.dataset.originalText || `<i class="fa-solid fa-wand-magic-sparkles"></i> Gerar`;
+                        btn.classList.add('from-brand-600', 'to-indigo-600');
+                        btn.classList.remove('from-purple-600', 'to-pink-600');
+                    }
+                };
+
+                if (dropzone) {
+                    const observer = new MutationObserver(updateButtonUI);
+                    observer.observe(dropzone, { attributes: true, attributeFilter: ['style'] });
+                    btn.dataset.originalText = btn.innerHTML;
+                    updateButtonUI();
+                }
+
                 btn.addEventListener('click', async () => {
                     const promptEl = document.getElementById(promptId);
-                    const customPrompt = promptEl?.value; // User can override AI prompt
+                    const customPrompt = promptEl?.value;
 
-                    // [PATCH] Extract content for Gifts and Manual
                     let listContent = undefined;
                     let rulesContent = undefined;
 
                     if (type === 'gifts') {
-                        // Try to get from gifts-suggestions (textarea)
                         const el = document.getElementById('gifts-suggestions');
                         listContent = el ? el.value : '';
                     } else if (type === 'manual') {
-                        // Try to get from manual-raw-text (textarea)
                         const el = document.getElementById('manual-raw-text');
                         rulesContent = el ? el.value : '';
                     }
 
+                    let referenceImage = null;
+                    if (type === 'cover') {
+                        const refDropzone = document.getElementById('cover-reference-dropzone');
+                        if (refDropzone && refDropzone.dataset.base64) referenceImage = refDropzone.dataset.base64;
+                    } else if (type === 'leaf') {
+                        const refDropzone = document.getElementById('leaf-reference-dropzone');
+                        if (refDropzone && refDropzone.dataset.base64) referenceImage = refDropzone.dataset.base64;
+                    }
+
                     try {
+                        btn.disabled = true;
+                        const originalBtnContent = btn.innerHTML;
+
                         await window.AIGeneration.generate(type, {
                             customPrompt,
                             listContent,
                             rulesContent,
+                            referenceImage,
                             onProgress: (step) => {
-                                btn.disabled = true;
                                 btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i>${step}`;
                             },
                             onSuccess: (url) => {
                                 btn.innerHTML = '<i class="fa-solid fa-check mr-2"></i>Gerado!';
                                 setTimeout(() => {
-                                    btn.innerHTML = btn.dataset.originalText || 'Gerar';
                                     btn.disabled = false;
+                                    updateButtonUI();
                                 }, 2000);
                             },
                             onError: (error) => {
                                 alert('Erro ao gerar: ' + error);
-                                btn.innerHTML = btn.dataset.originalText || 'Gerar';
                                 btn.disabled = false;
+                                updateButtonUI();
                             }
                         });
                     } catch (err) {
                         console.error('AI generation error:', err);
                         alert('Erro técnico: ' + err.message);
                         btn.disabled = false;
-                        btn.innerHTML = btn.dataset.originalText || 'Gerar';
+                        updateButtonUI();
                     }
                 });
-
-                // Store original text for reset
-                btn.dataset.originalText = btn.innerHTML;
             });
         }
 
@@ -2686,23 +2713,25 @@
                             edgeInput.resolution = payload.resolution;
                         }
                     } else {
-                        // Image/Edit Specific
-                        if (isSeedream && payload.image_url) {
+                        // Image/Edit Specific (Seedream, etc.)
+                        // Documentation confirms quality and aspect_ratio are REQUIRED
+                        edgeInput.quality = payload.quality || 'basic';
+                        edgeInput.aspect_ratio = payload.aspect_ratio || '9:16';
+
+                        if (isSeedream && payload.mode === 'image-to-image') {
+                            // Seedream 4.5-edit REQUIRES image_urls as an array
                             edgeInput.image_urls = [payload.image_url];
                         } else if (payload.image_url) {
                             edgeInput.image_url = payload.image_url;
-                        }
-
-                        // Seedream doesn't like duration
-                        if (!isSeedream) {
-                            edgeInput.quality = payload.quality || 'basic';
                         }
                     }
 
                     const { data: taskData, error: taskError } = await window.supabaseClient.functions.invoke('generate-asset', {
                         body: {
-                            model: payload.model, // e.g. hailuo/02-image-to-video-standard
-                            input: edgeInput
+                            model: payload.model,
+                            input: edgeInput,
+                            // Ensure meta fields for backend tracking if needed
+                            target_window: type
                         }
                     });
 
@@ -2806,24 +2835,27 @@
             async getRequiredImage(type) {
                 const assets = window.builderState?.assets || {};
 
+                // For Edit mode (image-to-image) for cover/leaf
+                if (type === 'cover') {
+                    const refCover = document.getElementById('cover-reference-dropzone');
+                    if (refCover && refCover.dataset.base64) return refCover.dataset.base64;
+                }
+                if (type === 'leaf') {
+                    const refLeaf = document.getElementById('leaf-reference-dropzone');
+                    if (refLeaf && refLeaf.dataset.base64) return refLeaf.dataset.base64;
+                }
+
+                // For specialized modes (fill, gifts, manual), usually use the 'leaf' (blank sheet)
+                if (type === 'fill' || type === 'gifts' || type === 'manual') {
+                    return assets.leaf || assets.folha_vazia || assets.folha;
+                }
+
                 // Image-to-Video requirements
                 if (type === 'intro') {
-                    // Needs capa.jpg - check both naming conventions
                     return assets.cover || assets.capa;
                 }
                 if (type === 'loop') {
-                    // Needs background_only.jpg
-                    return assets.background_only || assets.folha_vazia;
-                }
-
-                // Image-to-Image requirements
-                if (type === 'fill') {
-                    // Needs leaf_only.png
-                    return assets.leaf_only || assets.leaf || assets.folha_vazia;
-                }
-                if (type === 'manual' || type === 'gifts') {
-                    // Fallback chain for manual/gifts images
-                    return assets.background_only || assets.leaf || assets.folha_vazia || assets.capa;
+                    return assets.fill || assets.folha_preenchida || assets.fundo_tela || assets.fundo;
                 }
 
                 return null;
@@ -2999,393 +3031,7 @@
         // Cover Generation Logic (AI)
         // ========================================
 
-        function setupCoverGeneration() {
-            const generateBtn = document.getElementById('btn-generate-cover');
-            const promptInput = document.getElementById('cover-prompt');
-            const coverDropzone = document.getElementById('cover-dropzone');
-            const refDropzone = document.getElementById('cover-reference-dropzone');
-
-            if (!generateBtn || !coverDropzone) return;
-
-            // update button text based on state
-            function updateButtonState() {
-                const hasCover = coverDropzone.style.backgroundImage && coverDropzone.style.backgroundImage !== 'none';
-                if (hasCover) {
-                    generateBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Regenerar com IA';
-                    generateBtn.classList.remove('from-brand-600', 'to-indigo-600');
-                    generateBtn.classList.add('from-purple-600', 'to-pink-600');
-                } else {
-                    generateBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Gerar com IA';
-                    generateBtn.classList.add('from-brand-600', 'to-indigo-600');
-                    generateBtn.classList.remove('from-purple-600', 'to-pink-600');
-                }
-            }
-
-            // Listen to changes on dropzone to update button
-            const observer = new MutationObserver(updateButtonState);
-            observer.observe(coverDropzone, { attributes: true, attributeFilter: ['style'] });
-            updateButtonState(); // init
-
-            generateBtn.addEventListener('click', async () => {
-                if (!window.AIGeneration) {
-                    alert('Erro: Módulo de IA não carregado.');
-                    return;
-                }
-
-                const prompt = promptInput.value || (window.getCoverPrompt ? window.getCoverPrompt() : '');
-                if (!prompt) {
-                    alert('Por favor, digite um prompt ou preencha o formulário para auto-geração.');
-                    promptInput.focus();
-                    return;
-                }
-
-                // Get Reference Image if available
-                let referenceImageBase64 = null;
-                // const refInput = refDropzone?.querySelector('input[type="file"]');
-
-                if (refDropzone && refDropzone.dataset.base64) {
-                    referenceImageBase64 = refDropzone.dataset.base64;
-                    console.log('Using reference image for cover generation');
-                }
-
-                // UI Loading State
-                const originalText = generateBtn.innerHTML;
-                generateBtn.disabled = true;
-                generateBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Gerando...';
-
-                try {
-                    console.log('Calling AIGeneration.generate(cover)...');
-                    // Use new unified API
-                    const imageUrl = await window.AIGeneration.generate('cover', {
-                        customPrompt: prompt,
-                        referenceImage: referenceImageBase64
-                    });
-
-                    // Update Main Dropzone happens inside generate, but we ensure field update here if needed
-                    // (generate updates window.builderState.assets['cover'])
-
-                    if (window.AutoBuilderForm && window.AutoBuilderForm.updateField) {
-                        window.AutoBuilderForm.updateField('capa', imageUrl);
-                    }
-
-                    console.log('✅ Capa gerada com sucesso!');
-
-                } catch (error) {
-                    console.error('Generation failed:', error);
-                    // Error shown in button UI, not blocking alert
-                } finally {
-                    generateBtn.disabled = false;
-                    generateBtn.innerHTML = originalText;
-                    updateButtonState(); // refresh state
-                }
-            });
-        }
-
-        // ========================================
-        // Leaf Generation Logic (Blank Sheet)
-        // ========================================
-        function setupLeafGeneration() {
-            const generateBtn = document.getElementById('btn-generate-leaf');
-            const promptInput = document.getElementById('leaf-prompt');
-            const leafDropzone = document.getElementById('leaf-dropzone');
-
-            // Layer Processing Controls
-            const processBtn = document.getElementById('btn-process-layers');
-            const leafOnlyDropzone = document.getElementById('dropzone-leaf-only');
-            const bgOnlyDropzone = document.getElementById('dropzone-background-only');
-
-            if (!generateBtn || !leafDropzone) return;
-
-            // 1. Leaf Generation (Text-to-Image)
-            generateBtn.addEventListener('click', async () => {
-                if (!window.AIGeneration) {
-                    alert('Erro: Módulo de IA não carregado.');
-                    return;
-                }
-
-                const prompt = promptInput.value || (window.AIPrompts ? window.AIPrompts.getBlankSheetPrompt() : '');
-                if (!prompt) {
-                    alert('Por favor, digite um prompt ou certifique-se que o módulo de prompts está carregado.');
-                    promptInput?.focus();
-                    return;
-                }
-
-                // UI Loading State
-                const originalText = generateBtn.innerHTML;
-                generateBtn.disabled = true;
-                generateBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Gerando...';
-
-                try {
-                    // Call API via Unified Interface
-                    const imageUrl = await window.AIGeneration.generate('leaf', {
-                        customPrompt: prompt
-                    });
-
-                    // Update UI (handled in generate, but reinforced here)
-                    updateDropzonePreview(leafDropzone, imageUrl);
-
-                    // Update Form Logic
-                    if (window.AutoBuilderForm) {
-                        window.AutoBuilderForm.updateField('folha', imageUrl);
-                    }
-
-                } catch (error) {
-                    console.error('Leaf Generation failed:', error);
-                    alert(`Erro na geração: ${error.message}`);
-                } finally {
-                    generateBtn.disabled = false;
-                    generateBtn.innerHTML = originalText;
-                }
-            });
-
-            // 2. Treatment Pipeline (Separate Layers: Leaf Only + Background Only)
-            if (processBtn) {
-                processBtn.addEventListener('click', async () => {
-                    if (!window.APIClient) return;
-
-                    // Check if we have a leaf image to process
-                    const leafImage = leafDropzone.style.backgroundImage;
-                    if (!leafImage || leafImage === 'none') {
-                        alert('Por favor, gere ou faça upload de uma Folha Vazia primeiro.');
-                        return;
-                    }
-
-                    // Get URL from background-image url("...")
-                    let leafUrl = leafImage.slice(4, -1).replace(/"/g, "");
-
-                    // If it's a blob URL, we might need to convert it to base64 for the API
-                    // For now, let's assume APIClient handles it or logic helper does.
-                    // NOTE: APIClient expects Base64 or Public URL. Blob URLs won't work remotely.
-                    // We need to fetch the blob and convert to base64.
-
-                    const originalText = processBtn.innerHTML;
-                    processBtn.disabled = true;
-                    processBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processando...';
-
-                    try {
-                        // Convert to base64 if needed
-                        let base64Input = leafUrl;
-                        if (leafUrl.startsWith('blob:') || leafUrl.startsWith('http')) {
-                            const resp = await fetch(leafUrl);
-                            const blob = await resp.blob();
-                            base64Input = await new Promise((resolve) => {
-                                const reader = new FileReader();
-                                reader.onloadend = () => resolve(reader.result); // Helper
-                                reader.readAsDataURL(blob);
-                            });
-                        }
-
-                        // A. Remove Background (Get Leaf Only)
-                        const leafOnlyUrl = await window.APIClient.removeBackground(base64Input);
-                        if (leafOnlyDropzone) updateDropzonePreview(leafOnlyDropzone, leafOnlyUrl);
-                        if (window.AutoBuilderForm) window.AutoBuilderForm.updateField('folha_only', leafOnlyUrl);
-
-                        // B. Inpaint (Get Background Only)
-                        try {
-                            console.log('Generating mask for inpainting...');
-
-                            // 1. Create Mask from Leaf Only (Alpha Channel)
-                            const maskDataUrl = await createMaskFromImage(leafOnlyUrl);
-
-                            // 2. Call Inpaint API
-                            // Prompt: "clean background, empty table, no paper, elegant texture"
-                            // Trigger Inpaint to remove the leaf area defined by mask
-                            const backgroundOnlyUrl = await window.APIClient.inpaint(
-                                base64Input, // Original Image
-                                maskDataUrl, // Mask (White = area to remove/change)
-                                "clean background, texture, empty surface, high quality, consistent lighting"
-                            );
-
-                            // 3. Update UI
-                            if (bgOnlyDropzone) updateDropzonePreview(bgOnlyDropzone, backgroundOnlyUrl);
-                            if (window.AutoBuilderForm) window.AutoBuilderForm.updateField('background_only', backgroundOnlyUrl);
-
-                        } catch (bgError) {
-                            console.error('Background Generation check failed:', bgError);
-                            // Don't block whole flow if masking fails, but log it.
-                            alert('Folha separada, mas houve erro ao gerar o background limpo: ' + bgError.message);
-                        }
-
-                    } catch (error) {
-                        console.error('Treatment failed:', error);
-                        alert(`Erro no tratamento: ${error.message}`);
-                    } finally {
-                        processBtn.disabled = false;
-                        processBtn.innerHTML = originalText;
-                    }
-                });
-            }
-        }
-
-        /**
-         * Helper: Create a binary mask from a transparent image.
-         * White = Non-Transparent (Subject) -> Area to Inpaint/Remove
-         * Black = Transparent (Background) -> Keep
-         */
-        function createMaskFromImage(imageUrl) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.crossOrigin = "Anonymous";
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-
-                    // Draw image
-                    ctx.drawImage(img, 0, 0);
-
-                    // Get pixel data
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const data = imageData.data;
-
-                    // Loop through pixels
-                    for (let i = 0; i < data.length; i += 4) {
-                        const alpha = data[i + 3];
-
-                        // If pixel has opacity (is part of leaf) -> Make it WHITE (Target for Inpaint)
-                        // If pixel is transparent -> Make it BLACK (Keep original background)
-                        if (alpha > 10) {
-                            data[i] = 255;     // R
-                            data[i + 1] = 255; // G
-                            data[i + 2] = 255; // B
-                            data[i + 3] = 255; // Alpha
-                        } else {
-                            data[i] = 0;
-                            data[i + 1] = 0;
-                            data[i + 2] = 0;
-                            data[i + 3] = 255; // Alpha (Opaque black)
-                        }
-                    }
-
-                    ctx.putImageData(imageData, 0, 0);
-                    resolve(canvas.toDataURL('image/png'));
-                };
-                img.onerror = (err) => reject(err);
-                img.src = imageUrl;
-            });
-        }
-
-
-        /**
-         * Setup Process Buttons (Generate Leaf, Treatment)
-         */
-        function setupProcessButtons() {
-            const generateBtn = document.getElementById('btn-generate-leaf');
-            const processBtn = document.getElementById('btn-process-complete');
-            const promptInput = document.getElementById('leaf-prompt');
-
-            const leafDropzone = document.getElementById('dropzone-folha');
-            const leafOnlyDropzone = document.getElementById('dropzone-folha-only');
-            const bgOnlyDropzone = document.getElementById('dropzone-background-only');
-
-            // 1. Generate Leaf
-            if (generateBtn) {
-                generateBtn.addEventListener('click', async () => {
-                    if (!window.APIClient) {
-                        alert('Erro: API Client não carregado.');
-                        return;
-                    }
-
-                    const prompt = promptInput.value || (window.AIPrompts ? window.AIPrompts.getBlankSheetPrompt() : '');
-                    if (!prompt) {
-                        alert('Por favor, digite um prompt ou certifique-se que o módulo de prompts está carregado.');
-                        promptInput?.focus();
-                        return;
-                    }
-
-                    // UI Loading State
-                    const originalText = generateBtn.innerHTML;
-                    generateBtn.disabled = true;
-                    generateBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Gerando...';
-
-                    try {
-                        // Call API
-                        const imageUrl = await window.APIClient.generateLeaf(prompt);
-
-                        // Update UI
-                        updateDropzonePreview(leafDropzone, imageUrl);
-
-                        // Update Form Logic
-                        if (window.AutoBuilderForm) {
-                            window.AutoBuilderForm.updateField('folha', imageUrl);
-                        }
-
-                    } catch (error) {
-                        console.error('Leaf Generation failed:', error);
-                        alert(`Erro na geração: ${error.message}`);
-                    } finally {
-                        generateBtn.disabled = false;
-                        generateBtn.innerHTML = originalText;
-                    }
-                });
-            }
-
-            // 2. Treatment Pipeline
-            if (processBtn) {
-                processBtn.addEventListener('click', async () => {
-                    if (!window.APIClient) return;
-
-                    // Check if we have a leaf image to process
-                    const leafImage = leafDropzone.style.backgroundImage;
-                    if (!leafImage || leafImage === 'none') {
-                        alert('Por favor, gere ou faça upload de uma Folha Vazia primeiro.');
-                        return;
-                    }
-
-                    // Get URL from background-image url("...")
-                    let leafUrl = leafImage.slice(4, -1).replace(/"/g, "");
-
-                    const originalText = processBtn.innerHTML;
-                    processBtn.disabled = true;
-                    processBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processando...';
-
-                    try {
-                        // Convert to base64 if needed
-                        let base64Input = leafUrl;
-                        if (leafUrl.startsWith('blob:') || leafUrl.startsWith('http')) {
-                            const resp = await fetch(leafUrl);
-                            const blob = await resp.blob();
-                            base64Input = await new Promise((resolve) => {
-                                const reader = new FileReader();
-                                reader.onloadend = () => resolve(reader.result); // Helper
-                                reader.readAsDataURL(blob);
-                            });
-                        }
-
-                        // A. Remove Background (Get Leaf Only)
-                        const leafOnlyUrl = await window.APIClient.removeBackground(base64Input);
-                        if (leafOnlyDropzone) updateDropzonePreview(leafOnlyDropzone, leafOnlyUrl);
-                        if (window.AutoBuilderForm) window.AutoBuilderForm.updateField('folha_only', leafOnlyUrl);
-
-                        // B. Inpaint (Get Background Only)
-                        try {
-                            const maskDataUrl = await createMaskFromImage(leafOnlyUrl);
-
-                            const backgroundOnlyUrl = await window.APIClient.inpaint(
-                                base64Input, // Original Image
-                                maskDataUrl, // Mask
-                                "clean background, texture, empty surface, high quality, consistent lighting"
-                            );
-
-                            if (bgOnlyDropzone) updateDropzonePreview(bgOnlyDropzone, backgroundOnlyUrl);
-                            if (window.AutoBuilderForm) window.AutoBuilderForm.updateField('background_only', backgroundOnlyUrl);
-
-                        } catch (bgError) {
-                            console.error('Background Generation check failed:', bgError);
-                            alert('Folha separada, mas houve erro ao gerar o background limpo: ' + bgError.message);
-                        }
-
-                    } catch (error) {
-                        console.error('Treatment failed:', error);
-                        alert(`Erro no tratamento: ${error.message}`);
-                    } finally {
-                        processBtn.disabled = false;
-                        processBtn.innerHTML = originalText;
-                    }
-                });
-            }
-        }
+        // setupCoverGeneration and setupLeafGeneration removed - consolidated into setupAIButtons
 
 
         function setupFinalizeButtons() {
@@ -3885,7 +3531,6 @@
                 }
 
                 // Independent blocks wrapped to prevent cascading failures
-                try { setupProcessButtons(); } catch (e) { console.warn('Process Buttons setup failed', e); }
 
                 // Mode toggles
                 try { setupModeToggle('manual', ['text', 'image']); } catch (e) { console.warn('Manual Mode setup failed', e); }
@@ -3909,10 +3554,8 @@
                 // Finalize buttons
                 try { setupFinalizeButtons(); } catch (e) { console.warn('Finalize Buttons setup failed', e); }
 
-                // AI generation buttons - CRITICAL: This sets up click handlers for all AI buttons including intro/loop
+                // AI generation buttons - consolidated logic
                 try { setupAIButtons(); } catch (e) { console.warn('AI Buttons setup failed', e); }
-                try { setupCoverGeneration(); } catch (e) { console.warn('Cover Gen setup failed', e); }
-                try { setupLeafGeneration(); } catch (e) { console.warn('Leaf Gen setup failed', e); }
 
                 // Manual editor
                 try { setupManualEditor(); } catch (e) { console.warn('Manual Editor setup failed', e); }
