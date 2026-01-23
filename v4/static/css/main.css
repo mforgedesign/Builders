@@ -17,16 +17,58 @@
 
 html.dark {
     --bg-primary: #0f172a;
-    --sidebar-bg: #0f172a;
-    /* Slightly darker or same as bg for clean look */
+    --sidebar-bg: #1e293b;
     --header-bg: #1e293b;
-    --text-primary: #f1f5f9;
+    --text-primary: #f8fafc;
     --text-muted: #94a3b8;
     --text-heading: #ff8e72;
-    /* Vibrant Orange-Pink for titles */
+    /* Orange-Pink vibrant */
     --panel-bg: #1e293b;
     --panel-border: #334155;
     --accent-vibrant: #ff8e72;
+}
+
+/* Hardcoded Tailwind Overrides for Dark Mode */
+html.dark .bg-white {
+    background-color: var(--panel-bg) !important;
+}
+
+html.dark .bg-saas-bg {
+    background-color: var(--bg-primary) !important;
+}
+
+html.dark .bg-gray-50 {
+    background-color: #0f172a !important;
+}
+
+html.dark .text-gray-800,
+html.dark .text-gray-700,
+html.dark .text-gray-600,
+html.dark .text-slate-700,
+html.dark label {
+    color: var(--text-primary) !important;
+}
+
+html.dark .text-gray-400,
+html.dark .text-gray-500,
+html.dark .text-slate-400 {
+    color: var(--text-muted) !important;
+}
+
+html.dark .border-saas-border,
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-slate-700 {
+    border-color: var(--panel-border) !important;
+}
+
+/* Ensure headings use the vibrant orange-pink */
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark #header-title {
+    color: var(--text-heading) !important;
 }
 
 /* Base resets for theme */
@@ -67,7 +109,7 @@ html.dark select {
 
 html.dark .form-input:focus {
     border-color: var(--accent-vibrant);
-    ring-color: var(--accent-vibrant);
+    box-shadow: 0 0 0 2px var(--accent-vibrant);
 }
 
 /* Chat Styles */
