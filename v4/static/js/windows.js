@@ -3497,7 +3497,8 @@
 
                         const payload = {
                             slug: slug,
-                            files: filesMap
+                            files: filesMap,
+                            repo: window.builderState.targetRepo || 'Convites'
                         };
 
                         const response = await fetch('/api/publish', {
@@ -3585,6 +3586,9 @@
                 // Finalize buttons
                 try { setupFinalizeButtons(); } catch (e) { console.warn('Finalize Buttons setup failed', e); }
 
+                // Repo Selection
+                try { setupRepoSelector(); } catch (e) { console.warn('Repo Selector setup failed', e); }
+
                 // AI generation buttons - consolidated logic
                 try { setupAIButtons(); } catch (e) { console.warn('AI Buttons setup failed', e); }
 
@@ -3598,6 +3602,77 @@
             } catch (fatalError) {
                 console.error('[Windows] CRITICAL INITIALIZATION ERROR:', fatalError);
             }
+        }
+
+        /**
+         * Setup Repository Selector (BuilderV4-new feature)
+         */
+        function setupRepoSelector() {
+            if (!window.BUILDER_CONFIG?.enableRepoSelection) return;
+
+            const container = document.querySelector('#window-finalize .space-y-6'); // Left column
+            // Or maybe better placed near the publish button or URL? Use DOM insertion.
+            // Let's modify: Place it after "URL do Convite".
+
+            const slugContainer = document.querySelector('#slug-input')?.closest('div').parentElement;
+            if (!slugContainer) return;
+
+            // Check if already exists
+            if (document.getElementById('repo-selector-container')) return;
+
+            const selectorHtml = `
+                <div id="repo-selector-container" class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mt-4">
+                    <label class="block text-sm font-bold text-indigo-900 mb-2">Destino da Publicação</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="target_repo" value="Convites" checked class="text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-sm text-indigo-700">Convites (Padrão)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="target_repo" value="Convite" class="text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-sm text-indigo-700">Convite (Novo)</span>
+                        </label>
+                    </div>
+                    <p class="text-xs text-indigo-500 mt-2" id="repo-description">
+                        URL Final: https://mforgedesign.github.io/Convites/slug/
+                    </p>
+                </div>
+            `;
+
+            slugContainer.insertAdjacentHTML('afterend', selectorHtml);
+
+            // Listeners
+            const radios = document.getElementsByName('target_repo');
+            const desc = document.getElementById('repo-description');
+
+            // Set initial state
+            window.builderState = window.builderState || {};
+            window.builderState.targetRepo = 'Convites';
+
+            radios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    const val = e.target.value;
+                    window.builderState.targetRepo = val;
+                    const slug = document.getElementById('slug-input').value || 'slug';
+
+                    if (val === 'Convite') {
+                        desc.textContent = `URL Final: https://convite.mforge.com.br/${slug}/`;
+                    } else {
+                        desc.textContent = `URL Final: https://mforgedesign.github.io/Convites/${slug}/`;
+                    }
+                });
+            });
+
+            // Listen to slug changes to update preview
+            document.getElementById('slug-input').addEventListener('input', (e) => {
+                const val = window.builderState.targetRepo || 'Convites';
+                const slug = e.target.value || 'slug';
+                if (val === 'Convite') {
+                    desc.textContent = `URL Final: https://convite.mforge.com.br/${slug}/`;
+                } else {
+                    desc.textContent = `URL Final: https://mforgedesign.github.io/Convites/${slug}/`;
+                }
+            });
         }
 
         /**
