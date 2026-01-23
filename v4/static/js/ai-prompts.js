@@ -180,17 +180,20 @@ Manual do convidado:
             'cover': {
                 model: 'seedream/4.5-text-to-image',
                 mode: 'text-to-image',
-                aspect_ratio: '9:16'
+                aspect_ratio: '9:16',
+                quality: 'basic'
             },
             'leaf': {
                 model: 'seedream/4.5-text-to-image',
                 mode: 'text-to-image',
-                aspect_ratio: '9:16'
+                aspect_ratio: '9:16',
+                quality: 'basic'
             },
             'fill': {
                 model: 'seedream/4.5-edit',
                 mode: 'image-to-image',
-                aspect_ratio: '9:16'
+                aspect_ratio: '9:16',
+                quality: 'basic'
             },
             'intro': {
                 model: 'hailuo/02-image-to-video-standard',
@@ -206,12 +209,14 @@ Manual do convidado:
             'gifts': {
                 model: 'seedream/4.5-edit',
                 mode: 'image-to-image',
-                aspect_ratio: '9:16'
+                aspect_ratio: '9:16',
+                quality: 'basic'
             },
             'manual': {
                 model: 'seedream/4.5-edit',
                 mode: 'image-to-image',
-                aspect_ratio: '9:16'
+                aspect_ratio: '9:16',
+                quality: 'basic'
             }
         };
         return configs[type] || {};
@@ -220,12 +225,23 @@ Manual do convidado:
     function buildGenerationPayload(type, options, config) {
         if (!config) config = getModelConfig(type);
 
-        let prompt = '';
         const opts = options || {};
 
+        // [HEURISTIC] Auto-switch to Edit mode (image-to-image) if reference image is present
+        // This is crucial for fixing the "Reference image required" error in api-client.js
+        if (opts.referenceImage && (type === 'cover' || type === 'leaf')) {
+            config.model = 'seedream/4.5-edit';
+            config.mode = 'image-to-image';
+        }
+
+        let prompt = '';
         switch (type) {
-            case 'cover': prompt = getCoverPrompt(); break;
-            case 'leaf': prompt = getBlankSheetPrompt(); break;
+            case 'cover':
+                prompt = opts.referenceImage ? getCoverEditPrompt() : getCoverPrompt();
+                break;
+            case 'leaf':
+                prompt = opts.referenceImage ? getBlankSheetEditPrompt() : getBlankSheetPrompt();
+                break;
             case 'fill': prompt = getFilledSheetPrompt(); break;
             case 'intro': prompt = getOpeningVideoPrompt(); break;
             case 'loop': prompt = getLoopVideoPrompt(); break;
@@ -239,10 +255,7 @@ Manual do convidado:
             default: prompt = opts.customPrompt || '';
         }
 
-        // If user manually edited the prompt box in UI, prefer that (unless it's empty?)
-        // BUT if it's gifts/manual, we prefer the template + list content over the raw prompt, 
-        // unless the raw prompt ALREADY contains the list (which it might if user edited it).
-        // Let's assume if customPrompt is very long, user wants to use it.
+        // If user manually edited the prompt box in UI, prefer that
         if (opts.customPrompt && opts.customPrompt.length > 50 && type !== 'gifts' && type !== 'manual') {
             prompt = opts.customPrompt;
         }
