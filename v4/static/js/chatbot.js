@@ -368,6 +368,16 @@
 
                     updateCountdown();
                 }
+                // 3. Detect Repo Selection Modal (NEW)
+                const repoConfirmBtn = document.getElementById('modal-confirm-repo');
+                if (repoConfirmBtn) {
+                    console.log('[AutoFlow] Repo Selection detected. Auto-confirming default (Novo)...');
+                    repoConfirmBtn.click();
+                    addMessage("🗄️ Repositório 'Novo' selecionado automaticamente.", "assistant");
+                    // Do NOT clear interval, as we still need to confirm the next modal (Publish)
+                    return;
+                }
+
             }, 500);
         }
 
