@@ -311,17 +311,20 @@
      * Uses Client-Side Batch Deploy via GitHub Adapter to optimize workflows
      */
     async function handlePublishAPI(body) {
-        // HYBRID STRATEGY: Prefer Client-Side Batch Deploy if available (smarter, cleaner)
-        // UNLESS repo is 'Convites', which requires Server-Side processing.
-        if (window.githubAdapter && body.repo !== 'Convites') {
+        // Prefer Client-Side Batch Deploy if available (smarter, cleaner)
+        // FORCE SERVER-SIDE (Updated per user request)
+        if (false && window.githubAdapter) {
             try {
-                console.log('[API Adapter] Using GitHubAdapter.deployBatch (Hybrid Strategy)');
+                console.log('[API Adapter] Using GitHubAdapter.deployBatch');
                 const message = `Deploy ${body.slug} via AutoBuilder v4`;
-                const result = await window.githubAdapter.deployBatch(body.slug, body.files || {}, body.repo, message);
+                const result = await window.githubAdapter.deployBatch(body.slug, body.files || {}, message);
                 return createResponse(result);
             } catch (error) {
                 console.error('[API Adapter] GitHubAdapter failed, falling back to Supabase...', error);
-                // Fallthrough to Supabase if client-side fails
+                // Fallthrough to Supabase if client-side fails (e.g. token refused)
+                // Actually, if token refused, we probably strictly shouldn't fallback to server unless logic dictates.
+                // But for resilience, let's just return error so user knows.
+                throw new Error(error.message);
             }
         }
 
