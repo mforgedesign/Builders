@@ -1,0 +1,1962 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoBuilder v4 - Criador de Convites Digitais</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='white'>✉️</text></svg>">
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="../static/css/main.css?v=4.4.0">
+
+    <!-- JSZip -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- SortableJS for drag-and-drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
+
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        },
+                        saas: {
+                            bg: '#f6f8fa',
+                            sidebar: '#1e293b',
+                            border: '#e2e8f0'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .device-frame {
+            box-shadow: 0 0 0 12px #1f2937, 0 0 0 14px #4b5563, 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .toggle-checkbox {
+            left: 0;
+            transition: left 0.3s ease-in-out, border-color 0.3s ease-in-out;
+        }
+
+        .toggle-checkbox:checked {
+            left: calc(100% - 1.5rem);
+            border-color: #4f46e5;
+        }
+
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #4f46e5;
+        }
+
+        .window-panel {
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        .window-panel.hidden {
+            display: none;
+        }
+
+        /* Initial theme setup to avoid flash */
+        :root {
+            --bg-primary: #f6f8fa;
+            --sidebar-bg: #1e293b;
+            --header-bg: #ffffff;
+            --text-primary: #374151;
+            --text-heading: #111827;
+            --panel-bg: #ffffff;
+            --panel-border: #e2e8f0;
+        }
+
+        html.dark {
+            --bg-primary: #0f172a;
+            --sidebar-bg: #1e293b;
+            --header-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-heading: #ff8e72;
+            /* Orange-Pink vibrant */
+            --panel-bg: #1e293b;
+            --panel-border: #334155;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .window-panel {
+            background-color: var(--panel-bg);
+            border-color: var(--panel-border);
+        }
+
+        header {
+            background-color: var(--header-bg);
+            border-color: var(--panel-border);
+        }
+
+        h3,
+        h4,
+        #header-title {
+            color: var(--text-heading);
+        }
+    </style>
+    <script>
+            // Separate init block to ensure DOM readiness doesn't block class addition
+            (function () {
+                const theme = localStorage.getItem('theme') || 'dark';
+                if (theme === 'dark') document.documentElement.classList.add('dark');
+            })();
+    </script>
+</head>
+
+<body class="bg-saas-bg h-screen w-screen overflow-hidden text-gray-700">
+
+    <div id="app" class="flex h-full">
+
+        <!-- ========================================== -->
+        <!-- MOBILE OVERLAY (backdrop) -->
+        <!-- ========================================== -->
+        <div id="mobile-overlay" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden" onclick="closeMobileMenu()">
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SIDEBAR - Navegação Principal -->
+        <!-- ========================================== -->
+        <aside id="sidebar"
+            class="fixed lg:relative w-64 h-full bg-saas-sidebar flex flex-col shrink-0 transition-transform duration-300 z-40 -translate-x-full lg:translate-x-0">
+
+            <!-- Logo & Close Button (fixed at top) -->
+            <div
+                class="h-16 flex items-center justify-between px-4 lg:px-6 bg-slate-900 border-b border-slate-700 shrink-0">
+                <div class="flex items-center">
+                    <span class="text-white font-semibold tracking-wide">AutoBuilder v4</span>
+                    <button id="theme-toggle"
+                        class="ml-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                        title="Alternar Tema">
+                        <i id="theme-icon" class="fa-solid fa-moon"></i>
+                    </button>
+                </div>
+                <button id="btn-close-menu" class="lg:hidden text-slate-400 hover:text-white p-2"
+                    onclick="closeMobileMenu()">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Tabs (scrollable) -->
+            <nav id="sidebar-nav" class="flex-1 overflow-y-auto py-4 flex flex-col gap-1 px-2">
+                <button data-window="chat"
+                    class="nav-btn active flex items-center px-3 py-3 rounded-md transition-colors duration-200 group bg-brand-600 text-white shadow-md">
+                    <i class="fa-regular fa-comments text-lg w-6 text-center"></i>
+                    <span class="ml-3 text-sm font-medium">Chatbot</span>
+                </button>
+                <button id="btn-new-invitation"
+                    class="nav-btn flex items-center px-3 py-3 rounded-md transition-colors duration-200 group text-slate-400 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-plus-circle text-lg w-6 text-center"></i>
+                    <span class="ml-3 text-sm font-medium">Novo Convite</span>
+                </button>
+                <button data-window="history"
+                    class="nav-btn flex items-center px-3 py-3 rounded-md transition-colors duration-200 group text-slate-400 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-clock-rotate-left text-lg w-6 text-center"></i>
+                    <span class="ml-3 text-sm font-medium">Histórico</span>
+                </button>
+                <button data-window="form"
+                    class="nav-btn flex items-center px-3 py-3 rounded-md transition-colors duration-200 group text-slate-400 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-list-check text-lg w-6 text-center"></i>
+                    <span class="ml-3 text-sm font-medium">Formulário</span>
+                </button>
+                <button data-window="cover"
+                    class="nav-btn flex items-center px-3 py-3 rounded-md transition-colors duration-200 group text-slate-400 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-regular fa-image text-lg w-6 text-center"></i>
+                    <span class="ml-3 text-sm font-medium">Capa</span>
+                </button>
+                <button data-window="leaf"
+                    class="nav-btn flex items-center px-3 py-3 rounded-md transition-colors duration-200 group text-slate-400 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-regular fa-file text-lg w-6 text-center"></i>
+                    <span class="ml-3 text-sm font-medium">Folha Vazia</span>
+                </button>
+                <button data-window="video_intro"
+                    class="nav-btn flex items-center px-3 py-3 rounded-md transition-colors duration-200 group text-slate-400 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-film text-lg w-6 text-center"></i>
+                    <span class="ml-3 text-sm font-medium">Animação</span>
+                </button>
+                <button data-window="fill_leaf"
+                    class="nav-btn flex items-center px-3 py-3 rounded-md transition-colors duration-200 group text-slate-400 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-pen-nib text-lg w-6 text-center"></i>
+                    <span class="ml-3 text-sm font-medium">Preencher</span>
+                </button>
+                <button data-window="gifts"
+                    class="nav-btn flex items-center px-3 py-3 rounded-md transition-colors duration-200 group text-slate-400 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-gift text-lg w-6 text-center"></i>
+                    <span class="ml-3 text-sm font-medium">Presentes</span>
+                </button>
+                <button data-window="manual"
+                    class="nav-btn flex items-center px-3 py-3 rounded-md transition-colors duration-200 group text-slate-400 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-book-open text-lg w-6 text-center"></i>
+                    <span class="ml-3 text-sm font-medium">Manual</span>
+                </button>
+                <button data-window="music"
+                    class="nav-btn flex items-center px-3 py-3 rounded-md transition-colors duration-200 group text-slate-400 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-music text-lg w-6 text-center"></i>
+                    <span class="ml-3 text-sm font-medium">Música</span>
+                </button>
+                <button data-window="finalize"
+                    class="nav-btn flex items-center px-3 py-3 rounded-md transition-colors duration-200 group text-slate-400 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-rocket text-lg w-6 text-center"></i>
+                    <span class="ml-3 text-sm font-medium">Finalizar</span>
+                </button>
+            </nav>
+
+            <!-- Local Import -->
+            <div class="p-4 border-t border-slate-700">
+                <input type="file" id="local-import-input" accept=".zip,.rar" class="hidden">
+                <button id="btn-local-import"
+                    class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition-colors group">
+                    <div
+                        class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-xs text-slate-400">Importar</p>
+                        <p class="text-sm text-white font-medium">Pasta / ZIP</p>
+                    </div>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ========================================== -->
+        <!-- MAIN CONTENT AREA -->
+        <!-- ========================================== -->
+        <main class="flex-1 flex flex-col h-full overflow-hidden relative w-full">
+
+            <!-- Header -->
+            <header
+                class="h-16 bg-white border-b border-saas-border flex items-center justify-between px-4 lg:px-6 shrink-0">
+                <!-- Menu Hamburger (mobile) -->
+                <button id="btn-open-menu" class="lg:hidden text-gray-600 p-2 mr-2" onclick="openMobileMenu()">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+
+                <h1 id="header-title" class="text-lg lg:text-xl font-semibold text-gray-800 flex-1">Chatbot</h1>
+
+                <button id="btn-mobile-preview"
+                    class="lg:hidden bg-brand-500 text-white px-3 py-2 rounded-md hover:bg-brand-600 text-sm font-medium flex items-center gap-2"
+                    onclick="openMobilePreview()">
+                    <i class="fa-solid fa-mobile-screen"></i>
+                    <span class="hidden sm:inline">Prévia</span>
+                </button>
+            </header>
+
+            <!-- Dynamic Window Area -->
+            <div id="dynamic-window-area" class="flex-1 overflow-y-auto p-4 lg:p-8">
+                <div class="max-w-4xl mx-auto space-y-6 pb-20">
+
+                    <!-- ============================== -->
+                    <!-- WINDOW: Chatbot -->
+                    <!-- ============================== -->
+                    <div id="chatbot-container"
+                        class="window-panel bg-white rounded-lg shadow-sm border border-saas-border flex flex-col h-[calc(100vh-160px)]">
+                        <div id="chat-messages" class="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50/50">
+                            <!-- Chat messages will be injected here -->
+                            <div class="flex justify-start">
+                                <div
+                                    class="max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm bg-white border border-gray-200 text-gray-700 rounded-tl-none">
+                                    <p>Olá! Sou o <strong>AutoBuilder AI</strong>. Vamos criar um convite incrível. Qual
+                                        o
+                                        tema do evento?</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-4 bg-white border-t border-gray-100 flex items-center gap-3">
+                            <button class="text-gray-400 hover:text-brand-600 p-2"><i
+                                    class="fa-solid fa-paperclip"></i></button>
+                            <input type="text" id="chat-input" placeholder="Descreva o convite ou anexe arquivos..."
+                                class="flex-1 bg-gray-100 border-0 rounded-full px-4 py-2 focus:ring-2 focus:ring-brand-500 outline-none text-sm">
+                            <button id="chat-send"
+                                class="bg-brand-600 hover:bg-brand-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition shadow-lg">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- WINDOW: Histórico -->
+                    <!-- ============================== -->
+                    <div id="window-history"
+                        class="window-panel hidden bg-white rounded-lg shadow-sm border border-saas-border">
+
+                        <!-- Header -->
+                        <div class="p-6 border-b border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">Convites Publicados</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Gerencie e importe convites anteriores</p>
+                                </div>
+                                <button id="btn-refresh-history"
+                                    class="bg-brand-50 text-brand-600 px-4 py-2 rounded-md hover:bg-brand-100 text-sm font-medium flex items-center gap-2 transition">
+                                    <i class="fa-solid fa-rotate"></i>
+                                    Atualizar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div id="history-loading" class="p-12 text-center">
+                            <i class="fa-solid fa-spinner fa-spin text-3xl text-brand-500 mb-4"></i>
+                            <p class="text-gray-500">Carregando convites do GitHub...</p>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="history-empty" class="p-12 text-center hidden">
+                            <i class="fa-solid fa-clock-rotate-left text-5xl text-gray-300 mb-4"></i>
+                            <h4 class="text-lg font-semibold text-gray-700 mb-2">Nenhum convite publicado</h4>
+                            <p class="text-sm text-gray-500">Publique seu primeiro convite para vê-lo aqui</p>
+                        </div>
+
+                        <!-- Error State -->
+                        <div id="history-error" class="p-12 text-center hidden">
+                            <i class="fa-solid fa-triangle-exclamation text-5xl text-red-400 mb-4"></i>
+                            <h4 class="text-lg font-semibold text-gray-700 mb-2">Erro ao carregar</h4>
+                            <p class="text-sm text-gray-500 mb-4" id="history-error-message">Não foi possível conectar
+                                ao GitHub</p>
+                            <button onclick="window.History.loadInvitations()"
+                                class="bg-brand-500 text-white px-4 py-2 rounded-md hover:bg-brand-600 text-sm font-medium">
+                                Tentar Novamente
+                            </button>
+                        </div>
+
+                        <!-- Cards Grid -->
+                        <div id="history-cards" class="p-6 hidden">
+                            <!-- Search Bar -->
+                            <div class="mb-6">
+                                <div class="relative">
+                                    <i
+                                        class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                    <input type="text" id="history-search" placeholder="Buscar convites..."
+                                        class="form-input w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                                </div>
+                            </div>
+                            <div id="history-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <!-- Cards will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- WINDOW: Formulário -->
+                    <!-- ============================== -->
+                    <div id="window-form"
+                        class="window-panel hidden bg-white rounded-lg border border-saas-border shadow-sm divide-y divide-gray-100">
+
+                        <!-- Seção: Identidade do Evento -->
+                        <div class="p-6">
+                            <h3 class="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4">Identidade do
+                                Evento
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                                    <input type="text" id="form-nome" name="nome" data-field="nome"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                                        placeholder="Ex: Julia">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Evento</label>
+                                    <select id="form-tipo_evento" name="tipo_evento" data-field="tipo_evento"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm focus:border-brand-500 outline-none"
+                                        onchange="document.getElementById('custom-tipo-container').classList.toggle('hidden', this.value !== 'Outro')">
+                                        <option value="">Selecione...</option>
+                                        <option value="Aniversário">Aniversário</option>
+                                        <option value="Casamento">Casamento</option>
+                                        <option value="Formatura">Formatura</option>
+                                        <option value="Chá de Bebê">Chá de Bebê</option>
+                                        <option value="Corporativo">Corporativo</option>
+                                        <option value="Outro">Outro</option>
+                                    </select>
+                                    <div id="custom-tipo-container" class="hidden mt-2">
+                                        <input type="text" id="form-tipo_evento_custom" name="tipo_evento_custom"
+                                            data-field="tipo_evento_custom"
+                                            class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                                            placeholder="Especifique o tipo de evento...">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Data</label>
+                                    <input type="date" id="form-data" name="data" data-field="data"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Hora</label>
+                                    <input type="time" id="form-hora" name="hora" data-field="hora"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none">
+                                </div>
+                                <div id="idade-container">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Idade</label>
+                                    <input type="number" id="form-idade" name="idade" data-field="idade" min="1"
+                                        max="150"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none"
+                                        placeholder="Ex: 15">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tema do Evento</label>
+                                    <input type="text" id="form-tema_evento" name="tema_evento" data-field="tema_evento"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none"
+                                        placeholder="Ex: Tropical, Rústico, Elegante">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Local do Evento</label>
+                                    <input type="text" id="form-local_evento" name="local_evento"
+                                        data-field="local_evento"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none"
+                                        placeholder="Nome do local / Endereço">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Paleta de Cores</label>
+                                    <input type="text" id="form-paleta_cores" name="paleta_cores"
+                                        data-field="paleta_cores"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none"
+                                        placeholder="Ex: Rosa e dourado">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Frase do Convite
+                                        (Opcional)</label>
+                                    <textarea id="form-frase_convite" name="frase_convite" data-field="frase_convite"
+                                        rows="2"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none resize-none"
+                                        placeholder="Ex: Venha celebrar conosco este momento especial!"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seção: Estilo & UI -->
+                        <div class="p-6">
+                            <h3 class="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4">Estilo & UI</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Cor dos Botões</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="color" id="form-cor_botoes" name="cor_botoes"
+                                            data-field="cor_botoes" value="#4f46e5"
+                                            class="form-input h-9 w-9 rounded cursor-pointer border-0 p-0">
+                                        <input type="text" id="form-cor_botoes_text" value="#4f46e5"
+                                            class="flex-1 rounded-md border-gray-300 bg-gray-50 border p-2 text-sm font-mono uppercase">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Sombra Gradiente</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="color" id="form-sombra_gradiente" name="sombra_gradiente"
+                                            data-field="sombra_gradiente" value="#000000"
+                                            class="form-input h-9 w-9 rounded cursor-pointer border-0 p-0">
+                                        <span class="text-xs text-gray-500">Cor base do fade inferior</span>
+                                    </div>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Posição dos Botões
+                                        (Bottom)</label>
+                                    <div class="flex items-center gap-4">
+                                        <input type="range" id="form-posicao_botoes" name="posicao_botoes"
+                                            data-field="posicao_botoes" min="0" max="200" value="20"
+                                            class="form-input w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                        <span id="posicao-value"
+                                            class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[60px] text-center">20px</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tamanho dos
+                                        Botões</label>
+                                    <select id="form-tamanho_botoes" name="tamanho_botoes" data-field="tamanho_botoes"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none">
+                                        <option value="pequeno">Pequeno</option>
+                                        <option value="medio" selected>Médio</option>
+                                        <option value="grande">Grande</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seção: Links e Funcionalidades -->
+                        <div class="p-6">
+                            <h3 class="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4">Links e
+                                Funcionalidades</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Link do Google
+                                        Maps</label>
+                                    <input type="url" id="form-link_google_maps" name="link_google_maps"
+                                        data-field="link_google_maps"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none"
+                                        placeholder="https://maps.app.goo.gl/...">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Link de
+                                        Presentes</label>
+                                    <input type="url" id="form-link_presentes" name="link_presentes"
+                                        data-field="link_presentes"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none"
+                                        placeholder="https://lista.casar.com/...">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Manual do Convidado
+                                        (Texto HTML)</label>
+                                    <textarea id="form-manual_content" name="manual_content" data-field="manual_content"
+                                        rows="4"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none font-mono text-xs"
+                                        placeholder="<p>Instruções para os padrinhos...</p>"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seção: Links Extras (Dynamic Array) -->
+                        <div class="p-4 sm:p-6 overflow-hidden">
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+                                <div>
+                                    <h3 class="text-sm font-bold uppercase text-gray-400 tracking-wider">Links Extras
+                                    </h3>
+                                    <p class="text-xs text-gray-500 mt-1">Adicione botões personalizados ao convite</p>
+                                </div>
+                                <button id="btn-add-link" type="button"
+                                    class="text-xs flex items-center justify-center gap-1 bg-brand-50 text-brand-600 px-3 py-2 rounded hover:bg-brand-100 font-semibold border border-brand-200 transition w-full sm:w-auto">
+                                    <i class="fa-solid fa-plus"></i> Adicionar Link
+                                </button>
+                            </div>
+
+                            <!-- Container para os links dinâmicos -->
+                            <div id="links-extras-container" class="space-y-3 overflow-hidden">
+                                <!-- Links serão adicionados aqui via JavaScript -->
+                            </div>
+
+                            <!-- Template de linha (hidden) -->
+                            <template id="link-extra-template">
+                                <div
+                                    class="link-extra-row bg-gray-50 rounded-lg p-3 border border-gray-200 space-y-2 overflow-hidden">
+                                    <!-- Row 1: Name and Delete -->
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" placeholder="Nome do Botão"
+                                            class="link-nome flex-1 min-w-0 rounded border-gray-300 bg-white border p-2.5 text-sm focus:border-brand-500 outline-none"
+                                            data-link-field="label">
+                                        <button type="button"
+                                            class="btn-remove-link text-gray-400 hover:text-red-500 transition-colors p-1.5 flex-shrink-0">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                    <!-- Row 2: URL -->
+                                    <input type="url" placeholder="https://exemplo.com/link"
+                                        class="link-url w-full rounded border-gray-300 bg-white border p-2.5 text-sm text-blue-600 focus:border-brand-500 outline-none"
+                                        data-link-field="url">
+                                    <!-- Row 3: Icon Selector -->
+                                    <select
+                                        class="link-icon w-full rounded border-gray-300 bg-white border p-2.5 text-sm focus:border-brand-500 outline-none"
+                                        data-link-field="icon">
+                                        <option value="fa-solid fa-link">🔗 Link</option>
+                                        <option value="fa-solid fa-location-dot">📍 Mapa</option>
+                                        <option value="fa-brands fa-whatsapp">💬 WhatsApp</option>
+                                        <option value="fa-solid fa-gift">🎁 Presente</option>
+                                        <option value="fa-solid fa-camera">📷 Foto</option>
+                                        <option value="fa-solid fa-video">🎥 Vídeo</option>
+                                        <option value="fa-solid fa-music">🎵 Música</option>
+                                        <option value="fa-solid fa-envelope">✉️ Email</option>
+                                        <option value="fa-solid fa-phone">📞 Telefone</option>
+                                        <option value="fa-brands fa-instagram">📸 Instagram</option>
+                                        <option value="fa-brands fa-facebook">📘 Facebook</option>
+                                        <option value="fa-solid fa-heart">❤️ Coração</option>
+                                        <option value="fa-solid fa-star">⭐ Estrela</option>
+                                        <option value="fa-solid fa-info-circle">ℹ️ Info</option>
+                                        <option value="fa-solid fa-calendar">📅 Calendário</option>
+                                        <option value="fa-solid fa-file-pdf">📄 PDF</option>
+                                        <option value="custom">✏️ Personalizar...</option>
+                                    </select>
+                                    <!-- Campo de ícone personalizado (shown when custom selected) -->
+                                    <input type="text" placeholder="fa-solid fa-code"
+                                        class="link-icon-custom hidden w-full rounded border-gray-300 bg-white border p-2.5 text-sm font-mono focus:border-brand-500 outline-none"
+                                        data-link-field="icon_custom">
+                                </div>
+                            </template>
+
+                            <!-- Mensagem quando não há links -->
+                            <div id="no-links-message"
+                                class="text-center py-8 text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">
+                                <i class="fa-solid fa-link text-3xl mb-2"></i>
+                                <p class="text-sm">Nenhum link extra adicionado</p>
+                                <p class="text-xs mt-1">Clique em "Adicionar Link" para criar botões personalizados</p>
+                            </div>
+                        </div>
+
+                        <!-- Seção: Confirmação de Presença (RSVP) -->
+                        <div class="p-6">
+                            <h3 class="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4">Confirmação de
+                                Presença</h3>
+                            <div class="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp ou Link</label>
+                                    <input type="text" id="form-confirmacao" name="confirmacao" data-field="confirmacao"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none"
+                                        placeholder="5511999999999 ou https://forms.google.com/...">
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <i class="fa-solid fa-circle-info mr-1"></i>
+                                        Número = popup WhatsApp | Link = abre direto
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seção: Toggles -->
+                        <div class="p-6 bg-gray-50 rounded-b-lg">
+                            <h3 class="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4">Opções Adicionais
+                            </h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-800">Permitir Levar Acompanhante</h4>
+                                        <p class="text-xs text-gray-500">Habilita seletor de quantidade no RSVP</p>
+                                    </div>
+                                    <div class="relative inline-block w-10 mr-2 align-middle select-none">
+                                        <input type="checkbox" id="form-permitir_acompanhante"
+                                            name="permitir_acompanhante" data-field="permitir_acompanhante"
+                                            class="form-input toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300" />
+                                        <label for="form-permitir_acompanhante"
+                                            class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-800">Timer de Contagem Regressiva</h4>
+                                        <p class="text-xs text-gray-500">Exibe cronômetro no topo do convite</p>
+                                    </div>
+                                    <div class="relative inline-block w-10 mr-2 align-middle select-none">
+                                        <input type="checkbox" id="form-timer_contagem" name="timer_contagem"
+                                            data-field="timer_contagem"
+                                            class="form-input toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300" />
+                                        <label for="form-timer_contagem"
+                                            class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- WINDOW: Capa -->
+                    <!-- ============================== -->
+                    <div id="window-cover"
+                        class="window-panel hidden bg-white rounded-lg shadow-sm border border-saas-border p-6">
+                        <div class="flex flex-col lg:flex-row gap-8">
+                            <div class="flex-1 space-y-6">
+                                <div
+                                    class="bg-blue-50 border border-blue-100 rounded-md p-4 text-sm text-blue-800 flex gap-2 items-start">
+                                    <i class="fa-solid fa-robot mt-1"></i>
+                                    <div>
+                                        <strong>Auto-Prompt:</strong> O sistema gera a arte baseada no tema do evento.
+                                        <br><a href="#" class="underline text-xs mt-1 block">Editar Prompt Técnico</a>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <label class="block text-sm font-medium text-gray-700">Prompt de
+                                            Criação</label>
+                                        <button id="btn-default-cover-prompt" type="button"
+                                            class="text-xs bg-brand-50 text-brand-600 px-2 py-1 rounded hover:bg-brand-100 border border-brand-200 transition flex items-center gap-1">
+                                            <i class="fa-solid fa-rotate-left"></i> Preenchimento Padrão
+                                        </button>
+                                    </div>
+                                    <textarea id="cover-prompt" data-field="cover_prompt" rows="6"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                        placeholder="Descreva a imagem desejada..."></textarea>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button id="btn-generate-cover"
+                                        class="flex-1 bg-gradient-to-r from-brand-600 to-indigo-600 text-white py-2.5 rounded-md font-medium shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar com IA
+                                    </button>
+                                </div>
+
+                                <!-- External Tools Links -->
+                                <div class="pt-4 border-t border-gray-100">
+                                    <p class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+                                        Ferramentas Avançadas</p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                                        <a href="https://fal.ai/models/fal-ai/bytedance/seedream/v4/text-to-image"
+                                            target="_blank"
+                                            class="flex items-center gap-2 text-gray-600 hover:text-brand-600 p-2 bg-gray-50 rounded border border-gray-100 hover:border-brand-200 transition">
+                                            <i class="fa-solid fa-external-link-alt"></i> Seedream v4 (T2I)
+                                        </a>
+                                        <a href="https://fal.ai/models/fal-ai/bytedance/seedream/v4.5/edit"
+                                            target="_blank"
+                                            class="flex items-center gap-2 text-gray-600 hover:text-brand-600 p-2 bg-gray-50 rounded border border-gray-100 hover:border-brand-200 transition">
+                                            <i class="fa-solid fa-external-link-alt"></i> Seedream v4.5 (Edit)
+                                        </a>
+                                        <a href="https://gemini.google.com" target="_blank"
+                                            class="flex items-center gap-2 text-gray-600 hover:text-brand-600 p-2 bg-gray-50 rounded border border-gray-100 hover:border-brand-200 transition">
+                                            <i class="fa-solid fa-external-link-alt"></i> Gemini (Prompts)
+                                        </a>
+                                        <a href="https://pxz.ai/tools/image-generator" target="_blank"
+                                            class="flex items-center gap-2 text-gray-600 hover:text-brand-600 p-2 bg-gray-50 rounded border border-gray-100 hover:border-brand-200 transition">
+                                            <i class="fa-solid fa-external-link-alt"></i> PXZ.ai (Free)
+                                        </a>
+                                        <a href="https://dreamina.capcut.com/ai-tool/generate?type=image"
+                                            target="_blank"
+                                            class="flex items-center gap-2 text-gray-600 hover:text-brand-600 p-2 bg-gray-50 rounded border border-gray-100 hover:border-brand-200 transition">
+                                            <i class="fa-solid fa-external-link-alt"></i> Dreamina (CapCut)
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="w-full lg:w-64 shrink-0 flex flex-col gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Preview da Capa</label>
+                                    <div id="cover-dropzone"
+                                        class="w-full aspect-[9/16] bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-brand-300 transition-colors cursor-pointer relative overflow-hidden">
+                                        <input type="file" accept="image/*"
+                                            class="absolute inset-0 opacity-0 cursor-pointer">
+                                        <button
+                                            class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
+                                            title="Remover">
+                                            <i class="fa-solid fa-trash-can text-sm"></i>
+                                        </button>
+                                        <i class="fa-solid fa-image text-3xl mb-2"></i>
+                                        <span class="text-xs">Arraste a Capa</span>
+                                    </div>
+                                </div>
+
+                                <!-- Reference Image Dropzone -->
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-gray-700 mb-2 flex justify-between items-center">
+                                        <span>Referência (Opcional)</span>
+                                        <i class="fa-solid fa-circle-question text-gray-400"
+                                            title="Use uma imagem para guiar a IA"></i>
+                                    </label>
+                                    <div id="cover-reference-dropzone"
+                                        class="w-full aspect-[9/16] bg-gray-50 rounded-lg border-2 border-dashed border-blue-200 flex flex-col items-center justify-center text-blue-400 hover:bg-white hover:border-blue-400 transition-colors cursor-pointer relative overflow-hidden">
+                                        <input type="file" accept="image/*"
+                                            class="absolute inset-0 opacity-0 cursor-pointer">
+                                        <button
+                                            class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
+                                            title="Remover Referência">
+                                            <i class="fa-solid fa-trash-can text-sm"></i>
+                                        </button>
+                                        <i class="fa-solid fa-eye-dropper text-2xl mb-1"></i>
+                                        <span class="text-[10px] text-center px-2">Arraste
+                                            Referência<br>(Img-to-Img)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- WINDOW: Folha Vazia -->
+                    <!-- ============================== -->
+                    <div id="window-leaf"
+                        class="window-panel hidden bg-white rounded-lg shadow-sm border border-saas-border">
+
+                        <!-- Header -->
+                        <div class="p-6 border-b border-gray-100">
+                            <h3 class="text-lg font-semibold text-gray-800">Folha Vazia</h3>
+                            <p class="text-sm text-gray-500 mt-1">A base visual onde os botões serão exibidos</p>
+                        </div>
+
+                        <div class="p-6">
+                            <div class="flex flex-col lg:flex-row gap-8">
+                                <!-- Left: Controls -->
+                                <div class="flex-1 space-y-6">
+                                    <div
+                                        class="bg-blue-50 border border-blue-100 rounded-md p-4 text-sm text-blue-800 flex gap-2 items-start">
+                                        <i class="fa-solid fa-lightbulb mt-0.5"></i>
+                                        <div>
+                                            <strong>Dica:</strong> A Folha Vazia é a imagem de fundo para os botões do
+                                            convite.
+                                            <br><span class="text-xs">Se for animar o background, o sistema separará
+                                                automaticamente as camadas.</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
+                                            Criação</label>
+                                        <textarea id="leaf-prompt" data-field="leaf_prompt" rows="4"
+                                            class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                            placeholder="Descreva o design da folha..."></textarea>
+                                    </div>
+
+                                    <button id="btn-generate-leaf"
+                                        class="w-full bg-gradient-to-r from-brand-600 to-indigo-600 text-white py-2.5 rounded-md font-medium shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                        Gerar com IA
+                                    </button>
+
+                                    <div class="mt-4 pt-4 border-t border-gray-100">
+                                        <p class="text-xs text-gray-500 font-medium mb-2">Ferramentas Externas:</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <a href="https://fal.ai/models/fal-ai/bytedance/seedream/v4/text-to-image"
+                                                target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Seedream
+                                                v4</a>
+                                            <a href="https://fal.ai/models/fal-ai/bytedance/seedream/v4.5/edit"
+                                                target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Seedream
+                                                v4.5</a>
+                                            <a href="https://gemini.google.com" target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Gemini</a>
+                                            <a href="https://pxz.ai/tools/image-generator" target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">PXZ.ai</a>
+                                            <a href="https://dreamina.capcut.com/ai-tool/generate?type=image"
+                                                target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Dreamina</a>
+                                        </div>
+                                    </div>
+
+                                    <!-- Background Animation Toggle Removed -->
+
+                                </div>
+
+                                <!-- Right: Dropzone and Layers -->
+                                <div class="w-full lg:w-80 shrink-0 space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagem Base</label>
+                                        <div id="leaf-dropzone"
+                                            class="w-full aspect-[9/16] bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-brand-300 transition-colors cursor-pointer relative overflow-hidden">
+                                            <input type="file" accept="image/*"
+                                                class="absolute inset-0 opacity-0 cursor-pointer">
+                                            <button
+                                                class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
+                                                title="Remover">
+                                                <i class="fa-solid fa-times text-xs"></i>
+                                            </button>
+                                            <i class="fa-solid fa-file-image text-3xl mb-2"></i>
+                                            <span class="text-xs">Arraste ou Clique</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Layer Previews Removed -->
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- WINDOW: Animação -->
+                    <!-- ============================== -->
+                    <div id="window-video_intro"
+                        class="window-panel hidden bg-white rounded-lg shadow-sm border border-saas-border">
+
+                        <!-- Header -->
+                        <div class="p-6 border-b border-gray-100">
+                            <h3 class="text-lg font-semibold text-gray-800">Animação</h3>
+                            <p class="text-sm text-gray-500 mt-1">Gere vídeos a partir das imagens</p>
+                        </div>
+
+                        <div class="p-6">
+                            <!-- Tabs Removed (Only Intro available) -->
+                            <!-- Intro Content -->
+
+                            <div id="anim-intro-content" class="space-y-6">
+                                <div class="flex flex-col lg:flex-row gap-8">
+                                    <div class="flex-1 space-y-4">
+                                        <div
+                                            class="bg-amber-50 border border-amber-100 rounded-md p-4 text-sm text-amber-800 flex gap-2 items-start">
+                                            <i class="fa-solid fa-film mt-0.5"></i>
+                                            <div>
+                                                <strong>Animação de Abertura:</strong> Vídeo que toca quando o convite é
+                                                aberto.
+                                                <br><span class="text-xs">Usa a imagem da Capa como frame
+                                                    inicial.</span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
+                                                Movimento</label>
+                                            <textarea id="intro-motion-prompt" data-field="intro_motion_prompt" rows="3"
+                                                class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                                placeholder="Ex: Zoom lento para fora, partículas douradas flutuando"></textarea>
+                                        </div>
+
+                                        <button id="btn-generate-intro"
+                                            class="w-full bg-gradient-to-r from-brand-600 to-indigo-600 text-white py-2.5 rounded-md font-medium shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                            Gerar Animação
+                                        </button>
+
+                                        <div class="mt-4 pt-4 border-t border-gray-100">
+                                            <p class="text-xs text-gray-500 font-medium mb-2">Ferramentas Externas:</p>
+                                            <div class="flex flex-wrap gap-2">
+                                                <a href="https://hailuoai.video" target="_blank"
+                                                    class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Hailuo</a>
+                                                <a href="https://kling.kuaishou.com" target="_blank"
+                                                    class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Kling</a>
+                                                <a href="https://deepmind.google/technologies/veo/veo-2/"
+                                                    target="_blank"
+                                                    class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Veo
+                                                    2</a>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="w-full lg:w-80 shrink-0">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Vídeo de
+                                            Abertura</label>
+                                        <div id="intro-video-dropzone"
+                                            class="w-full aspect-[9/16] bg-gray-900 rounded-lg border-2 border-dashed border-gray-600 flex flex-col items-center justify-center text-gray-400 cursor-pointer relative overflow-hidden">
+                                            <input type="file" accept="video/*"
+                                                class="absolute inset-0 opacity-0 cursor-pointer">
+                                            <button
+                                                class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
+                                                title="Remover">
+                                                <i class="fa-solid fa-times text-xs"></i>
+                                            </button>
+                                            <i class="fa-solid fa-video text-3xl mb-2"></i>
+                                            <span class="text-xs">MP4</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Loop Tab Content Removed -->
+
+                        </div>
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- WINDOW: Preencher Folha (SIMPLIFICADO) -->
+                    <!-- ============================== -->
+                    <div id="window-fill_leaf"
+                        class="window-panel hidden bg-white rounded-lg shadow-sm border border-saas-border">
+
+                        <!-- Header -->
+                        <div class="p-6 border-b border-gray-100">
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">Fundo da Tela de Botões</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Imagem ou vídeo que aparece atrás dos botões
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Content -->
+                        <div class="p-6">
+                            <div class="flex flex-col lg:flex-row gap-8">
+                                <div class="flex-1 space-y-4">
+                                    <div
+                                        class="bg-purple-50 border border-purple-100 rounded-md p-4 text-sm text-purple-800 flex gap-2 items-start">
+                                        <i class="fa-solid fa-wand-magic-sparkles mt-0.5"></i>
+                                        <div>
+                                            <strong>Gere ou anexe:</strong> Use a IA para gerar um fundo ou
+                                            faça upload de uma imagem/vídeo pronta.
+                                            <br><span class="text-xs">Aceita: JPG, PNG ou MP4</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div class="flex items-center justify-between mb-2">
+                                            <label class="block text-sm font-medium text-gray-700">Prompt de
+                                                Preenchimento</label>
+                                            <button id="btn-default-fill-prompt" type="button"
+                                                class="text-xs bg-brand-50 text-brand-600 px-2 py-1 rounded hover:bg-brand-100 border border-brand-200 transition flex items-center gap-1">
+                                                <i class="fa-solid fa-rotate-left"></i> Preenchimento Padrão
+                                            </button>
+                                        </div>
+                                        <textarea id="fill-prompt" data-field="fill_prompt" rows="6"
+                                            class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                            placeholder="Descreva os elementos visuais a adicionar..."></textarea>
+                                    </div>
+
+                                    <button id="btn-generate-fill"
+                                        class="w-full bg-gradient-to-r from-brand-600 to-indigo-600 text-white py-2.5 rounded-md font-medium shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                        Gerar Preenchimento
+                                    </button>
+
+                                    <div class="mt-4 pt-4 border-t border-gray-100">
+                                        <p class="text-xs text-gray-500 font-medium mb-2">Ferramentas Externas:</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <a href="https://fal.ai/models/fal-ai/bytedance/seedream/v4/text-to-image"
+                                                target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Seedream
+                                                v4</a>
+                                            <a href="https://fal.ai/models/fal-ai/bytedance/seedream/v4.5/edit"
+                                                target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Seedream
+                                                v4.5</a>
+                                            <a href="https://gemini.google.com" target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Gemini</a>
+                                            <a href="https://pxz.ai/tools/image-generator" target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">PXZ.ai</a>
+                                            <a href="https://dreamina.capcut.com/ai-tool/generate?type=image"
+                                                target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Dreamina</a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="w-full lg:w-80 shrink-0">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Fundo (JPG, PNG ou
+                                        MP4)</label>
+                                    <div id="fill-image-dropzone"
+                                        class="w-full aspect-[9/16] bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-brand-300 transition-colors cursor-pointer relative overflow-hidden">
+                                        <input type="file" accept="image/*,video/mp4"
+                                            class="absolute inset-0 opacity-0 cursor-pointer">
+                                        <button
+                                            class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
+                                            title="Remover">
+                                            <i class="fa-solid fa-times text-xs"></i>
+                                        </button>
+                                        <i class="fa-solid fa-image text-3xl mb-2"></i>
+                                        <span class="text-xs">Imagem ou Vídeo</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- WINDOW: Presentes -->
+                    <!-- ============================== -->
+                    <div id="window-gifts"
+                        class="window-panel hidden bg-white rounded-lg shadow-sm border border-saas-border">
+
+                        <!-- Header with Mode Toggle -->
+                        <div class="p-6 border-b border-gray-100">
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">Lista de Presentes</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Configure o modo de exibição de presentes</p>
+                                </div>
+                                <!-- Mode Toggle -->
+                                <div id="gifts-mode-buttons" class="flex items-center bg-gray-100 rounded-lg p-1">
+                                    <button id="gifts-mode-link" data-mode="link"
+                                        class="gifts-mode-btn flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition bg-white shadow-sm text-brand-600">
+                                        <i class="fa-solid fa-link"></i>
+                                        <span>Link Externo</span>
+                                    </button>
+                                    <button id="gifts-mode-image" data-mode="image"
+                                        class="gifts-mode-btn flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition text-gray-500 hover:text-gray-700">
+                                        <i class="fa-solid fa-image"></i>
+                                        <span>Popup de Imagem</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Link Mode Content -->
+                        <div id="gifts-link-mode" class="p-6">
+                            <div
+                                class="bg-green-50 border border-green-100 rounded-md p-4 text-sm text-green-800 flex gap-2 items-start mb-6">
+                                <i class="fa-solid fa-check-circle mt-0.5"></i>
+                                <div>
+                                    <strong>Modo Link:</strong> O botão redirecionará para sua lista de presentes
+                                    externa.
+                                    <br><span class="text-xs">Ex: Amazon, Casas Bahia, ou lista personalizada.</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">URL da Lista de
+                                    Presentes</label>
+                                <div class="flex gap-2">
+                                    <span
+                                        class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                        <i class="fa-solid fa-link"></i>
+                                    </span>
+                                    <input type="url" id="gifts-link-input" data-field="link_presentes"
+                                        class="form-input flex-1 rounded-r-md border-gray-300 bg-gray-50 border p-2.5 text-sm focus:border-brand-500 outline-none"
+                                        placeholder="https://lista.casar.com/minha-lista">
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">
+                                    <i class="fa-solid fa-info-circle mr-1"></i>
+                                    Cole o link completo da sua lista de presentes.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Image Mode Content -->
+                        <div id="gifts-image-mode" class="p-6 hidden">
+                            <div class="flex flex-col lg:flex-row gap-6">
+                                <!-- Left: Suggestions and Controls -->
+                                <div class="flex-1 space-y-4">
+                                    <div
+                                        class="bg-purple-50 border border-purple-100 rounded-md p-4 text-sm text-purple-800 flex gap-2 items-start">
+                                        <i class="fa-solid fa-wand-magic-sparkles mt-0.5"></i>
+                                        <div>
+                                            <strong>Modo Popup:</strong> Uma imagem com sugestões de presentes será
+                                            exibida.
+                                            <br><span class="text-xs">A IA pode gerar uma arte baseada nas suas
+                                                sugestões.</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Sugestões de
+                                            Presentes</label>
+                                        <textarea id="gifts-suggestions" rows="4" data-field="sugestoes_presentes"
+                                            class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                            placeholder="Liste os itens desejados (um por linha):&#10;Liquidificador&#10;Jogo de toalhas&#10;Vale presente..."></textarea>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
+                                            Geração</label>
+                                        <textarea id="gifts-image-prompt" data-field="gifts_image_prompt" rows="3"
+                                            class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                            placeholder="Descreva o estilo da imagem..."></textarea>
+                                    </div>
+
+                                    <button id="gifts-generate-image-btn"
+                                        class="w-full bg-gradient-to-r from-brand-600 to-indigo-600 text-white py-2.5 rounded-md font-medium shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                        Gerar Imagem com IA
+                                    </button>
+
+                                    <div class="mt-4 pt-4 border-t border-gray-100">
+                                        <p class="text-xs text-gray-500 font-medium mb-2">Ferramentas Externas:</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <a href="https://fal.ai/models/fal-ai/bytedance/seedream/v4/text-to-image"
+                                                target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Seedream
+                                                v4</a>
+                                            <a href="https://fal.ai/models/fal-ai/bytedance/seedream/v4.5/edit"
+                                                target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Seedream
+                                                v4.5</a>
+                                            <a href="https://gemini.google.com" target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Gemini</a>
+                                            <a href="https://pxz.ai/tools/image-generator" target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">PXZ.ai</a>
+                                            <a href="https://dreamina.capcut.com/ai-tool/generate?type=image"
+                                                target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Dreamina</a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right: Image Dropzone -->
+                                <div class="w-full lg:w-80 shrink-0">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Imagem da Lista</label>
+                                    <div id="gifts-image-dropzone"
+                                        class="w-full aspect-[9/16] bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-brand-300 transition-colors cursor-pointer relative overflow-hidden">
+                                        <input type="file" accept="image/*"
+                                            class="absolute inset-0 opacity-0 cursor-pointer">
+                                        <button
+                                            class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
+                                            title="Remover">
+                                            <i class="fa-solid fa-times text-xs"></i>
+                                        </button>
+                                        <i class="fa-solid fa-gift text-3xl mb-2"></i>
+                                        <span class="text-xs">Arraste ou Clique</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- WINDOW: Manual -->
+                    <!-- ============================== -->
+                    <div id="window-manual"
+                        class="window-panel hidden bg-white rounded-lg shadow-sm border border-saas-border">
+
+                        <!-- Header with Mode Toggle -->
+                        <div class="p-6 border-b border-gray-100">
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">Manual do Convidado</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Instruções e informações para os convidados
+                                    </p>
+                                </div>
+                                <!-- Mode Toggle -->
+                                <div id="manual-mode-buttons" class="flex items-center bg-gray-100 rounded-lg p-1">
+                                    <button id="manual-mode-text" data-mode="text"
+                                        class="manual-mode-btn flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition bg-white shadow-sm text-brand-600">
+                                        <i class="fa-solid fa-align-left"></i>
+                                        <span>Texto HTML</span>
+                                    </button>
+                                    <button id="manual-mode-image" data-mode="image"
+                                        class="manual-mode-btn flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition text-gray-500 hover:text-gray-700">
+                                        <i class="fa-solid fa-image"></i>
+                                        <span>Imagem</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Text Mode Content -->
+                        <div id="manual-text-mode" class="p-6">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <!-- Editor -->
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Instruções (Texto
+                                            Bruto)</label>
+                                        <textarea id="manual-raw-text" rows="5" data-field="manual_raw_content"
+                                            class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                            placeholder="Digite as instruções...&#10;Ex: Traje esporte fino&#10;Chegar às 20h&#10;Estacionamento no local"></textarea>
+                                    </div>
+
+                                    <button id="manual-optimize-btn"
+                                        class="w-full bg-gradient-to-r from-brand-600 to-indigo-600 text-white py-2.5 rounded-md font-medium shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                        Otimizar com IA (adicionar ícones)
+                                    </button>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            HTML Gerado
+                                            <span class="text-xs text-gray-400 ml-2">(editável)</span>
+                                        </label>
+                                        <textarea id="manual-html-editor" rows="8" data-field="manual_html"
+                                            class="form-input w-full rounded-md border-gray-300 bg-gray-900 text-green-400 border p-3 text-sm font-mono focus:border-brand-500 outline-none resize-none"
+                                            placeholder="<p><i class='fa-solid fa-shirt'></i> Traje esporte fino</p>"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Preview -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Prévia da
+                                        Renderização</label>
+                                    <div id="manual-preview"
+                                        class="min-h-[300px] bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-6 text-white">
+                                        <div class="text-center text-gray-400">
+                                            <i class="fa-solid fa-eye-slash text-3xl mb-2"></i>
+                                            <p class="text-sm">Digite o texto e clique em "Otimizar" para ver a prévia
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Image Mode Content -->
+                        <div id="manual-image-mode" class="p-6 hidden">
+                            <div class="flex flex-col lg:flex-row gap-6">
+                                <!-- Left: Upload and Controls -->
+                                <div class="flex-1 space-y-4">
+                                    <div
+                                        class="bg-blue-50 border border-blue-100 rounded-md p-4 text-sm text-blue-800 flex gap-2 items-start">
+                                        <i class="fa-solid fa-info-circle mt-0.5"></i>
+                                        <div>
+                                            <strong>Modo Imagem:</strong> O manual será exibido como uma imagem em
+                                            popup.
+                                            <br><span class="text-xs">Ideal para manuais com design
+                                                personalizado.</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
+                                            Geração</label>
+                                        <textarea id="manual-image-prompt" rows="3"
+                                            class="w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                            placeholder="Descreva o design do manual..."></textarea>
+                                    </div>
+
+                                    <button id="manual-generate-image-btn"
+                                        class="w-full bg-gradient-to-r from-brand-600 to-indigo-600 text-white py-2.5 rounded-md font-medium shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                        Gerar Imagem com IA
+                                    </button>
+
+                                    <div class="mt-4 pt-4 border-t border-gray-100">
+                                        <p class="text-xs text-gray-500 font-medium mb-2">Ferramentas Externas:</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <a href="https://fal.ai/models/fal-ai/bytedance/seedream/v4/text-to-image"
+                                                target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Seedream
+                                                v4</a>
+                                            <a href="https://fal.ai/models/fal-ai/bytedance/seedream/v4.5/edit"
+                                                target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Seedream
+                                                v4.5</a>
+                                            <a href="https://gemini.google.com" target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Gemini</a>
+                                            <a href="https://pxz.ai/tools/image-generator" target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">PXZ.ai</a>
+                                            <a href="https://dreamina.capcut.com/ai-tool/generate?type=image"
+                                                target="_blank"
+                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Dreamina</a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right: Image Dropzone -->
+                                <div class="w-full lg:w-80 shrink-0">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Imagem do Manual</label>
+                                    <div id="manual-image-dropzone"
+                                        class="w-full aspect-[9/16] bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-brand-300 transition-colors cursor-pointer relative overflow-hidden">
+                                        <input type="file" accept="image/*"
+                                            class="absolute inset-0 opacity-0 cursor-pointer">
+                                        <button
+                                            class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
+                                            title="Remover">
+                                            <i class="fa-solid fa-times text-xs"></i>
+                                        </button>
+                                        <i class="fa-solid fa-cloud-arrow-up text-3xl mb-2"></i>
+                                        <span class="text-xs">Arraste ou Clique</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- WINDOW: Música -->
+                    <!-- ============================== -->
+                    <div id="window-music"
+                        class="window-panel hidden bg-white rounded-lg shadow-sm border border-saas-border">
+
+                        <!-- Header -->
+                        <div class="p-6 border-b border-gray-100">
+                            <h3 class="text-lg font-semibold text-gray-800">Música</h3>
+                            <p class="text-sm text-gray-500 mt-1">Selecione a trilha sonora do convite</p>
+                        </div>
+
+                        <!-- Main Audio Player -->
+                        <div class="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-100">
+                            <div class="flex flex-col md:flex-row items-center gap-6">
+                                <!-- Album Art / Dropzone -->
+                                <div id="music-dropzone"
+                                    class="w-32 h-32 md:w-40 md:h-40 shrink-0 bg-gray-200 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-brand-400 hover:bg-gray-100 transition cursor-pointer relative overflow-hidden">
+                                    <input type="file" accept="audio/*"
+                                        class="absolute inset-0 opacity-0 cursor-pointer" id="music-file-input">
+                                    <i class="fa-solid fa-music text-3xl mb-2"></i>
+                                    <span class="text-xs text-center px-2">Arraste MP3<br>ou Clique</span>
+                                </div>
+
+                                <!-- Player Controls -->
+                                <div class="flex-1 w-full">
+                                    <div id="music-current-track" class="text-center md:text-left">
+                                        <p class="text-sm text-gray-500">Música selecionada:</p>
+                                        <p id="music-track-name" class="text-lg font-semibold text-gray-800 mt-1">
+                                            Nenhuma
+                                            música</p>
+                                        <!-- Hidden field for music name persistence -->
+                                        <input type="hidden" id="music-track-name-hidden" data-field="music_name"
+                                            class="form-input" value="">
+                                    </div>
+
+                                    <!-- Audio Element -->
+                                    <audio id="music-audio-player" class="hidden"></audio>
+
+                                    <!-- Controls -->
+                                    <div class="flex items-center gap-4 mt-4">
+                                        <button id="music-play-btn"
+                                            class="w-12 h-12 bg-brand-600 hover:bg-brand-700 text-white rounded-full flex items-center justify-center shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                            disabled>
+                                            <i class="fa-solid fa-play ml-1"></i>
+                                        </button>
+
+                                        <!-- Progress Bar -->
+                                        <div class="flex-1">
+                                            <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                <div id="music-progress" class="h-full bg-brand-500 w-0 transition-all">
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                                <span id="music-time-current">0:00</span>
+                                                <span id="music-time-total">0:00</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Remove Button -->
+                                        <button id="music-remove-btn"
+                                            class="text-gray-400 hover:text-red-500 transition p-2 hidden"
+                                            title="Remover música">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- File Size Warning -->
+                            <div class="mt-4 text-xs text-gray-500 flex items-center gap-2">
+                                <i class="fa-solid fa-info-circle"></i>
+                                <span>Recomendamos arquivos MP3 menores que 5MB para carregamento rápido.</span>
+                            </div>
+                        </div>
+
+                        <!-- Samples Library -->
+                        <div class="p-6">
+                            <h4 class="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4">
+                                <i class="fa-solid fa-headphones mr-2"></i>Biblioteca de Samples
+                            </h4>
+
+                            <div id="music-samples-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <!-- MUSIC_SAMPLES_START -->
+                                <!-- Auto-generated: PERFECT - Ed Sheeran - Violin Cover by Andre Soueid -->
+                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
+                                    data-sample="música base/PERFECT - Ed Sheeran - Violin Cover by Andre Soueid [b9v96HD_3_U].mp3"
+                                    data-name="PERFECT - Ed Sheeran - Violin Cover by Andre Soueid">
+                                    <div
+                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
+                                        <i class="fa-solid fa-heart"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-700 truncate">PERFECT - Ed Sheeran -
+                                            Violin Cover by Andre Soueid</p>
+                                        <p class="text-xs text-gray-400">Biblioteca • PERFECT</p>
+                                    </div>
+                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
+                                        title="Ouvir prévia">
+                                        <i class="fa-solid fa-play text-sm"></i>
+                                    </button>
+                                    <button
+                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
+                                        Usar
+                                    </button>
+                                </div>
+                                <!-- Auto-generated: Música filme Enrolados  I See the Light  instrumental - para Entrada das Floristas -->
+                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
+                                    data-sample="música base/Música filme Enrolados _I See the Light_ instrumental - para Entrada das Floristas [LAA3_ZFZYLY].mp3"
+                                    data-name="Música filme Enrolados  I See the Light  instrumental - para Entrada das Floristas">
+                                    <div
+                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
+                                        <i class="fa-solid fa-heart"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-700 truncate">Música filme Enrolados I
+                                            See the Light instrumental - para Entrada das Floristas</p>
+                                        <p class="text-xs text-gray-400">Biblioteca • Música</p>
+                                    </div>
+                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
+                                        title="Ouvir prévia">
+                                        <i class="fa-solid fa-play text-sm"></i>
+                                    </button>
+                                    <button
+                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
+                                        Usar
+                                    </button>
+                                </div>
+                                <!-- Auto-generated: sample enchanted -->
+                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
+                                    data-sample="música base/sample_enchanted.mp3" data-name="sample enchanted">
+                                    <div
+                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
+                                        <i class="fa-solid fa-bolt"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-700 truncate">sample enchanted</p>
+                                        <p class="text-xs text-gray-400">Biblioteca • sample</p>
+                                    </div>
+                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
+                                        title="Ouvir prévia">
+                                        <i class="fa-solid fa-play text-sm"></i>
+                                    </button>
+                                    <button
+                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
+                                        Usar
+                                    </button>
+                                </div>
+                                <!-- Auto-generated: sample vivalavida -->
+                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
+                                    data-sample="música base/sample_vivalavida.mp3" data-name="sample vivalavida">
+                                    <div
+                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
+                                        <i class="fa-solid fa-music"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-700 truncate">sample vivalavida</p>
+                                        <p class="text-xs text-gray-400">Biblioteca • sample</p>
+                                    </div>
+                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
+                                        title="Ouvir prévia">
+                                        <i class="fa-solid fa-play text-sm"></i>
+                                    </button>
+                                    <button
+                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
+                                        Usar
+                                    </button>
+                                </div>
+                                <!-- Auto-generated: Ed Sheeran - Thinking Out Loud -->
+                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
+                                    data-sample="música base/Ed Sheeran - Thinking Out Loud (Official Lyric Video).mp3"
+                                    data-name="Ed Sheeran - Thinking Out Loud">
+                                    <div
+                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
+                                        <i class="fa-solid fa-music"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-700 truncate">Ed Sheeran - Thinking Out
+                                            Loud</p>
+                                        <p class="text-xs text-gray-400">Biblioteca • Ed</p>
+                                    </div>
+                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
+                                        title="Ouvir prévia">
+                                        <i class="fa-solid fa-play text-sm"></i>
+                                    </button>
+                                    <button
+                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
+                                        Usar
+                                    </button>
+                                </div>
+                                <!-- Auto-generated: Sentimentos São - Bela e a Fera -->
+                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
+                                    data-sample="música base/Sentimentos São - Bela e a Fera.mp3"
+                                    data-name="Sentimentos São - Bela e a Fera">
+                                    <div
+                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
+                                        <i class="fa-solid fa-music"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-700 truncate">Sentimentos São - Bela e a
+                                            Fera</p>
+                                        <p class="text-xs text-gray-400">Biblioteca • Sentimentos</p>
+                                    </div>
+                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
+                                        title="Ouvir prévia">
+                                        <i class="fa-solid fa-play text-sm"></i>
+                                    </button>
+                                    <button
+                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
+                                        Usar
+                                    </button>
+                                </div>
+                                <!-- MUSIC_SAMPLES_END -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================== -->
+                    <!-- WINDOW: Finalizar -->
+                    <!-- ============================== -->
+                    <div id="window-finalize"
+                        class="window-panel hidden bg-white rounded-lg shadow-sm border border-saas-border">
+
+                        <!-- Header -->
+                        <div class="p-6 border-b border-gray-100">
+                            <h3 class="text-lg font-semibold text-gray-800">Finalizar e Publicar</h3>
+                            <p class="text-sm text-gray-500 mt-1">Configure a URL e exporte seu convite</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+                            <!-- Left Column: Controls -->
+                            <div class="space-y-6">
+                                <!-- Slug Input -->
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-800 mb-2">URL do Convite
+                                        (Slug)</label>
+                                    <div class="flex">
+                                        <span
+                                            class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                            convites.mforge.com.br/
+                                        </span>
+                                        <input type="text" id="slug-input" placeholder="meu-convite" data-field="slug"
+                                            class="form-input flex-1 min-w-0 block w-full px-3 py-2.5 rounded-none rounded-r-md border border-gray-300 text-sm focus:ring-brand-500 focus:border-brand-500 outline-none">
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        <i class="fa-solid fa-info-circle mr-1"></i>
+                                        Use apenas letras minúsculas, números e hífens.
+                                    </p>
+                                </div>
+
+                                <!-- Watermark Toggle -->
+                                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <h4 class="text-sm font-medium text-amber-800">Modo Prévia (Pagamento
+                                                Pendente)
+                                            </h4>
+                                            <p class="text-xs text-amber-600 mt-1">Exibe marca d'água "Aguardando
+                                                Pagamento"
+                                            </p>
+                                        </div>
+                                        <div class="relative inline-block w-12 mr-2 align-middle select-none">
+                                            <input type="checkbox" id="watermark-toggle" data-field="watermark_enabled"
+                                                checked
+                                                class="form-input toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-amber-300" />
+                                            <label for="watermark-toggle"
+                                                class="toggle-label block overflow-hidden h-6 rounded-full bg-amber-300 cursor-pointer"></label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Deploy Status -->
+                                <div id="deploy-status" class="hidden bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-3">Status do Deploy</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex items-center gap-3">
+                                            <div id="step-build"
+                                                class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
+                                                1</div>
+                                            <span class="text-sm text-gray-600">Build Local</span>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <div id="step-upload"
+                                                class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
+                                                2</div>
+                                            <span class="text-sm text-gray-600">Upload para GitHub</span>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <div id="step-live"
+                                                class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
+                                                3</div>
+                                            <span class="text-sm text-gray-600">Live no GitHub Pages</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Column: Actions -->
+                            <div class="space-y-4">
+                                <!-- Preview Button -->
+                                <button id="btn-preview-local"
+                                    class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg font-medium transition flex items-center justify-center gap-2 border border-gray-200">
+                                    <i class="fa-solid fa-eye"></i>
+                                    Prévia Local
+                                </button>
+
+                                <!-- Download ZIP Button -->
+                                <button id="btn-download-zip"
+                                    class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 py-3 rounded-lg font-medium transition flex items-center justify-center gap-2 border border-blue-200">
+                                    <i class="fa-solid fa-download"></i>
+                                    Baixar ZIP
+                                </button>
+
+                                <!-- Publish Button -->
+                                <div class="flex items-center gap-2 mb-2 justify-end">
+                                    <input type="checkbox" id="debug-log-toggle"
+                                        class="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer">
+                                    <label for="debug-log-toggle"
+                                        class="text-xs text-gray-500 cursor-pointer select-none hover:text-gray-700">Baixar
+                                        Log de Debug</label>
+                                </div>
+
+                                <button id="btn-publish"
+                                    class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-4 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2">
+                                    <i class="fa-brands fa-github"></i>
+                                    Publicar no GitHub Pages
+                                </button>
+
+                                <!-- Divider -->
+                                <div class="relative">
+                                    <div class="absolute inset-0 flex items-center">
+                                        <div class="w-full border-t border-gray-200"></div>
+                                    </div>
+                                    <div class="relative flex justify-center text-xs">
+                                        <span class="px-2 bg-white text-gray-400">ou</span>
+                                    </div>
+                                </div>
+
+                                <!-- Custom ZIP Upload -->
+                                <div id="custom-zip-dropzone"
+                                    class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-brand-400 hover:bg-brand-50 transition cursor-pointer relative">
+                                    <input type="file" accept=".zip" class="absolute inset-0 opacity-0 cursor-pointer">
+                                    <i class="fa-solid fa-file-zipper text-2xl text-gray-400 mb-2"></i>
+                                    <p class="text-sm text-gray-600 font-medium">Upload ZIP Personalizado</p>
+                                    <p class="text-xs text-gray-400 mt-1">Bypass do build padrão</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer: New Inline Status Area -->
+                        <div id="publish-status-area"
+                            class="hidden mt-6 bg-gray-50 border border-gray-200 rounded-lg p-5 transition-all duration-300">
+
+                            <!-- Header -->
+                            <div class="flex items-center justify-between mb-4 border-b border-gray-200 pb-2">
+                                <h3 class="text-sm font-bold text-gray-700">Status da Publicação</h3>
+                                <span id="deploy-status-text"
+                                    class="text-xs font-mono text-gray-500 bg-gray-200 px-2 py-1 rounded">Iniciando...</span>
+                            </div>
+
+                            <!-- Steps Container -->
+                            <div class="space-y-4 pl-2">
+
+                                <!-- Step 1: Build -->
+                                <div id="deploy-step-1"
+                                    class="flex items-center gap-3 text-gray-400 transition-colors duration-300">
+                                    <div class="w-6 flex justify-center shrink-0">
+                                        <i
+                                            class="step-icon fa-regular fa-circle text-lg transition-all duration-300"></i>
+                                    </div>
+                                    <span class="text-sm font-medium">1. Gerando Arquivos (Build)</span>
+                                </div>
+
+                                <!-- Step 2: Upload -->
+                                <div id="deploy-step-2"
+                                    class="flex items-center gap-3 text-gray-400 transition-colors duration-300">
+                                    <div class="w-6 flex justify-center shrink-0">
+                                        <i
+                                            class="step-icon fa-regular fa-circle text-lg transition-all duration-300"></i>
+                                    </div>
+                                    <span class="text-sm font-medium">2. Enviando para GitHub</span>
+                                </div>
+
+                                <!-- Step 3: Live -->
+                                <div id="deploy-step-3"
+                                    class="flex items-center gap-3 text-gray-400 transition-colors duration-300">
+                                    <div class="w-6 flex justify-center shrink-0">
+                                        <i
+                                            class="step-icon fa-regular fa-circle text-lg transition-all duration-300"></i>
+                                    </div>
+                                    <span class="text-sm font-medium">3. Verificando Site Online</span>
+                                </div>
+
+                            </div>
+
+
+                            <!-- Success Actions -->
+                            <div id="publish-success-actions" class="hidden mt-4 pt-4 border-t border-gray-200">
+                                <div class="p-3 bg-green-50 border border-green-200 rounded mb-3 text-center">
+                                    <p class="text-sm text-green-700 font-bold mb-1"><i
+                                            class="fa-solid fa-check-circle"></i> Publicado com Sucesso!</p>
+                                    <p class="text-xs text-green-600">Seu convite está online e pronto para
+                                        compartilhar.</p>
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <a id="btn-open-live" href="#" target="_blank"
+                                        class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg text-sm font-bold text-center transition shadow-sm flex items-center justify-center gap-2">
+                                        VER CONVITE ONLINE <i class="fa-solid fa-external-link-alt"></i>
+                                    </a>
+                                    <a id="btn-open-repo" href="#" target="_blank"
+                                        class="w-full bg-gray-800 hover:bg-gray-900 text-white py-3 rounded-lg text-sm font-bold text-center transition shadow-sm flex items-center justify-center gap-2">
+                                        <i class="fa-brands fa-github"></i> Abrir Pasta no GitHub
+                                    </a>
+                                    <button id="btn-copy-link"
+                                        class="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 rounded-lg text-sm font-bold text-center transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-copy"></i> Copiar Link
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- ========================================== -->
+        <!-- DEVICE PREVIEW (Desktop Only) -->
+        <!-- ========================================== -->
+        <aside id="device-preview"
+            class="hidden lg:flex w-[400px] bg-white border-l border-saas-border flex-col items-center justify-center p-8 shrink-0 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+
+            <div
+                class="absolute top-4 right-4 bg-white/80 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-brand-600 shadow-sm border border-brand-100">
+                <i class="fa-solid fa-mobile-screen-button mr-1"></i> Moto G75 View
+            </div>
+
+            <div
+                class="relative w-[320px] aspect-[9/16] bg-black rounded-[2.5rem] device-frame overflow-hidden ring-1 ring-white/20">
+                <div id="preview-content" class="w-full h-full relative bg-cover bg-center transition-all duration-500"
+                    style="background-image: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)">
+
+                    <div class="absolute inset-0 bg-black/30"></div>
+
+                    <!-- Timer Preview -->
+                    <div id="preview-timer" class="absolute top-12 left-0 w-full flex justify-center z-10"
+                        style="display: none;">
+                        <div class="flex gap-3 text-white text-center">
+                            <div><span class="text-xl font-bold block leading-none">00</span><span
+                                    class="text-[8px] uppercase opacity-80">Meses</span></div>
+                            <div><span class="text-xl font-bold block leading-none">00</span><span
+                                    class="text-[8px] uppercase opacity-80">Dias</span></div>
+                            <div><span class="text-xl font-bold block leading-none">00</span><span
+                                    class="text-[8px] uppercase opacity-80">Hs</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Shadow Gradient -->
+                    <div id="preview-shadow" class="absolute bottom-0 left-0 w-full h-1/2 pointer-events-none"
+                        style="background: linear-gradient(to top, #000000, transparent);"></div>
+
+                    <!-- Buttons Preview -->
+                    <div id="preview-buttons" class="absolute w-full px-4 flex justify-center" style="bottom: 40px;">
+                        <div class="flex gap-2 justify-center items-start flex-wrap">
+                            <!-- Buttons will be dynamically rendered by preview.js -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Notch -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-xl z-20"></div>
+            </div>
+
+            <p class="mt-6 text-xs text-gray-400 text-center max-w-xs">
+                Esta prévia simula a renderização final. As animações ocorrerão no site publicado.
+            </p>
+
+        </aside>
+
+
+
+        <!-- MOBILE PREVIEW MODAL -->
+        <!-- ========================================== -->
+        <div id="mobile-preview-modal"
+            class="fixed inset-0 bg-black/90 z-50 hidden lg:hidden flex flex-col items-center justify-center p-4">
+
+            <!-- Header with Close Button -->
+            <div class="w-full max-w-sm flex justify-between items-center mb-4">
+                <span class="text-white font-medium">Prévia do Convite</span>
+                <button onclick="closeMobilePreview()"
+                    class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition">
+                    <i class="fa-solid fa-xmark"></i> Fechar
+                </button>
+            </div>
+
+            <div class="relative w-full max-w-sm">
+                <!-- Device Frame -->
+                <div
+                    class="relative w-full aspect-[9/16] bg-black rounded-[2rem] overflow-hidden ring-2 ring-white/20 mx-auto">
+                    <div id="mobile-preview-content" class="w-full h-full relative bg-cover bg-center"
+                        style="background-image: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)">
+
+                        <div class="absolute inset-0 bg-black/30"></div>
+
+                        <!-- Timer -->
+                        <div id="mobile-preview-timer" class="absolute top-8 left-0 w-full flex justify-center z-10"
+                            style="display: none;">
+                            <div class="flex gap-3 text-white text-center">
+                                <div><span class="text-lg font-bold block leading-none">00</span><span
+                                        class="text-[7px] uppercase opacity-80">Meses</span></div>
+                                <div><span class="text-lg font-bold block leading-none">00</span><span
+                                        class="text-[7px] uppercase opacity-80">Dias</span></div>
+                                <div><span class="text-lg font-bold block leading-none">00</span><span
+                                        class="text-[7px] uppercase opacity-80">Hs</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Shadow Gradient -->
+                        <div class="absolute bottom-0 left-0 w-full h-1/2 pointer-events-none"
+                            style="background: linear-gradient(to top, #000000, transparent);"></div>
+
+                        <!-- Buttons -->
+                        <div id="mobile-preview-buttons" class="absolute w-full px-4 flex justify-center"
+                            style="bottom: 30px;">
+                            <div class="flex gap-2 justify-center flex-wrap">
+                                <!-- Buttons will be synced from main preview -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notch -->
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-5 bg-black rounded-b-xl z-20"></div>
+                </div>
+
+                <p class="mt-4 text-xs text-gray-400 text-center">
+                    Toque fora para fechar
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- Core Dependencies -->
+    <script src="../static/js/supabase-adapter.js?v=4.4.0"></script>
+    <script src="../static/js/persistence.js?v=4.3.55"></script>
+    <script src="../static/js/history.js?v=4.3.55"></script>
+    <script src="../static/js/form.js?v=4.4.0"></script>
+
+    <!-- Utilities -->
+    <script src="../static/js/ai-prompts.js?v=4.4.0"></script>
+    <script src="../static/js/build-system.js?v=4.3.55"></script>
+    <script src="../static/js/debug-logger.js?v=4.3.55"></script>
+    <script src="../static/js/api-client.js?v=4.3.55"></script>
+
+    <!-- Logic & UI -->
+    <script src="../static/js/navigation.js?v=4.3.55"></script>
+    <script src="../static/js/links-extras.js?v=4.3.55"></script>
+    <script src="../static/js/preview.js?v=4.3.55"></script>
+    <script src="../static/js/windows.js?v=4.4.0"></script>
+    <script src="../static/js/chatbot.js?v=4.4.0"></script>
+    <script src="../static/js/theme.js?v=4.4.0"></script>
+    <script src="../static/js/github-adapter.js?v=4.4.0"></script>
+    <script src="../static/js/gemini-adapter.js?v=4.3.55"></script>
+    <script src="../static/js/app.js?v=4.3.55"></script>
+
+    <script>
+        // Builder Configuration for New Instance
+        window.BUILDER_CONFIG = {
+            enableRepoSelection: true,
+            defaultRepo: 'Convites'
+        };
+
+        // Mobile menu helpers
+        function openMobileMenu() {
+            document.getElementById('sidebar').classList.remove('-translate-x-full');
+            document.getElementById('mobile-overlay').classList.remove('hidden');
+        }
+
+        function closeMobileMenu() {
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+            document.getElementById('mobile-overlay').classList.add('hidden');
+        }
+
+        function openMobilePreview() {
+            document.getElementById('mobile-preview-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            // Sync preview content
+            syncMobilePreview();
+        }
+
+        function closeMobilePreview() {
+            document.getElementById('mobile-preview-modal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function syncMobilePreview() {
+            // Copy buttons from main preview to mobile preview
+            const mainButtons = document.querySelector('#preview-buttons > div');
+            const mobileButtons = document.querySelector('#mobile-preview-buttons > div');
+            if (mainButtons && mobileButtons) {
+                mobileButtons.innerHTML = mainButtons.innerHTML;
+            }
+        }
+
+        // Listen for preview updates to sync mobile
+        document.addEventListener('linksExtrasUpdated', syncMobilePreview);
+        document.addEventListener('stateUpdated', syncMobilePreview);
+
+        console.log('[AutoBuilder v4] Initialized');
+    </script>
+</body>
+
+</html>
