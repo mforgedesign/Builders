@@ -5,26 +5,35 @@
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
-    padding: 0.6rem;
-    max-width: 150px; /* Reduced width for more balanced cards */
+    padding: 0.5rem;
+    max-width: 160px;
+    /* Compact width */
     margin-top: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.chat-upload-card img, 
+.chat-upload-card img,
 .chat-upload-card video {
-    max-height: 100px; /* Half of previous 200px */
-    object-fit: cover;
+    max-height: 120px;
+    /* Request was "half the size", 200/2 = 100, so 120 is a good safe limit */
+    object-fit: contain;
+    /* Better for previews than cover */
     width: 100%;
     border-radius: 0.375rem;
-    background: #f1f5f9;
+    background: #f8fafc;
+    margin-bottom: 0.4rem;
 }
 
 /* Chat Drag Over State - Applied to .chat-window */
 .drag-over {
     position: relative;
-    background-color: #eff6ff !important; /* blue-50 */
-    border: 2px dashed #93c5fd !important; /* blue-300 */
+    background-color: #eff6ff !important;
+    /* blue-50 */
+    border: 2px dashed #93c5fd !important;
+    /* blue-300 */
 }
 
 /* Overlay message for drag */
@@ -38,7 +47,7 @@
     color: #2563eb;
     font-weight: 600;
     pointer-events: none;
-    background: rgba(255,255,255,0.8);
+    background: rgba(255, 255, 255, 0.8);
     padding: 1rem 2rem;
     border-radius: 2rem;
     backdrop-filter: blur(4px);
