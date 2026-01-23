@@ -2,18 +2,24 @@
  * AutoBuilder v4 - History Module
  * =================================
  * Manages GitHub repository history and invitation imports
- * Multi-repo support enabled.
  */
 
 (function () {
     'use strict';
+
+    // GitHub Configuration
+    const GITHUB_OWNER = 'mforgedesign';
+    const GITHUB_REPO = 'Convites';
+    const GITHUB_BASE_PATH = ''; // Root of repo (invitations are in root)
+    const GITHUB_PAGES_BASE = `https://mforgedesign.github.io/Convites/`;
+    const GITHUB_BRANCH = 'recuperaçãohoje';
+    const GITHUB_REPO_BASE = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/tree/${GITHUB_BRANCH}/`;
 
     // DOM Elements
     let loadingEl, emptyEl, errorEl, cardsEl, gridEl, errorMessageEl;
 
     // State
     let invitations = [];
-    let allInvitations = []; // Full list for filtering
     let isLoading = false;
 
     /**
@@ -48,53 +54,11 @@
             }
         });
 
-        // Setup search bar
-        const searchInput = document.getElementById('history-search');
-        if (searchInput) {
-            let debounceTimer;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => filterInvitations(e.target.value), 300);
-            });
-        }
-
         console.log('[History] Initialized');
     }
 
     /**
-     * Filter invitations by search query
-     */
-    function filterInvitations(query) {
-        const q = query.toLowerCase().trim();
-        gridEl.innerHTML = '';
-
-        if (!q) {
-            // Show all
-            invitations = [...allInvitations];
-        } else {
-            invitations = allInvitations.filter(inv =>
-                inv.slug.toLowerCase().includes(q)
-            );
-        }
-
-        if (invitations.length === 0) {
-            // Show "no results" message inside the grid (keep search bar visible)
-            showState('cards');
-            gridEl.innerHTML = `
-                <div class="col-span-full text-center py-12">
-                    <i class="fa-solid fa-search text-5xl text-gray-500 mb-4"></i>
-                    <h4 class="text-lg font-semibold text-gray-600 mb-2">Nenhum resultado para "${q}"</h4>
-                    <p class="text-sm text-gray-500">Tente buscar por outro termo ou limpe a busca</p>
-                </div>
-            `;
-        } else {
-            showState('cards');
-            invitations.forEach(renderCard);
-        }
-    }
-
-    /**
-     * Load invitations from ALL configured GitHub repositories
+     * Load invitations from GitHub - OPTIMIZED (Single Request)
      */
     async function loadInvitations() {
         if (isLoading) return;
@@ -104,55 +68,104 @@
         showState('loading');
 
         try {
-            console.log('[History] Fetching invitations from all repositories...');
+            console.log('[History] Fetching invitations tree from GitHub...');
 
-            // Ensure Config is available (loaded from github-adapter.js)
-            const repoConfig = window.REPO_CONFIG;
-            if (!repoConfig) {
-                throw new Error('Configuração de repositórios não encontrada (github-adapter não carregado?)');
+            // Fetch entire repository tree in ONE request (recursive=2)
+            // This avoids N+1 requests that hit API rate limits (403 error)
+            const response = await fetch(
+                `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/trees/${GITHUB_BRANCH}?recursive=2`,
+                {
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                // Handle rate limit specifically
+                if (response.status === 403) {
+                    throw new Error('Limite de acesso ao GitHub atingido. Tente novamente em alguns minutos.');
+                }
+                throw new Error(`GitHub API error: ${response.status}`);
             }
 
-            const repos = Object.keys(repoConfig);
-            const allFetchedInvitations = [];
+            const data = await response.json();
+            const tree = data.tree;
 
-            // Fetch in parallel
-            const fetchPromises = repos.map(async (repoKey) => {
-                const config = repoConfig[repoKey];
-                try {
-                    const response = await fetch(
-                        `https://api.github.com/repos/${config.owner}/${repoKey}/git/trees/${config.branch}?recursive=2`,
-                        {
-                            headers: {
-                                'Accept': 'application/vnd.github.v3+json'
-                            }
-                        }
-                    );
-
-                    if (!response.ok) {
-                        if (response.status === 404) {
-                            console.warn(`[History] Branch/Repo not found: ${repoKey}`);
-                            return []; // Valid repo but branch might be missing or empty
-                        }
-                        if (response.status === 403) {
-                            console.warn(`[History] Rate limit for ${repoKey}`);
-                            return [];
-                        }
-                        throw new Error(`GitHub API error for ${repoKey}: ${response.status}`);
+            // Fetch ignored paths config
+            let ignoredPaths = ['builder', 'static', 'assets', 'builder-v4', 'home', 'v3-1']; // Defaults
+            try {
+                const configResponse = await fetch('builder-config.json');
+                if (configResponse.ok) {
+                    const config = await configResponse.json();
+                    if (config.ignorePaths && Array.isArray(config.ignorePaths)) {
+                        ignoredPaths = config.ignorePaths;
                     }
+                }
+            } catch (e) {
+                console.warn('[History] Could not load builder-config.json, using defaults.', e);
+            }
 
-                    const data = await response.json();
-                    return processTree(data.tree, repoKey, config);
+            // Normalize ignored paths for case-insensitive comparison
+            const ignoredSet = new Set(ignoredPaths.map(p => p.toLowerCase()));
 
-                } catch (e) {
-                    console.error(`[History] Failed to fetch ${repoKey}:`, e);
-                    return [];
+            // Process tree to find invitations
+            // directory structure: slug/file.ext
+            const invitationsMap = new Map();
+
+            tree.forEach(item => {
+                const pathLower = item.path.toLowerCase();
+
+                // Skip if matches ignored path (partial or full match check strategy)
+                // Strategy: exact match on root folder name
+                const rootFolder = item.path.split('/')[0].toLowerCase();
+
+                if (ignoredSet.has(rootFolder) || pathLower.startsWith('.')) {
+                    return;
+                }
+
+                // Skip root files that are not directories
+                if (!item.path.includes('/')) {
+                    if (item.type !== 'tree') return; // Skip files in root
+                }
+
+                const parts = item.path.split('/');
+                const slug = parts[0];
+
+                // If we haven't seen this folder yet
+                // Extra safety: re-check against ignore list (redundant but safe)
+                if (!invitationsMap.has(slug) && !slug.startsWith('.') && !ignoredSet.has(slug.toLowerCase())) {
+                    invitationsMap.set(slug, {
+                        slug: slug,
+                        coverUrl: null,
+                        files: []
+                    });
+                }
+
+                if (invitationsMap.has(slug)) {
+                    const inv = invitationsMap.get(slug);
+                    inv.files.push(item);
+
+                    // Check for cover image
+                    const lowerPath = item.path.toLowerCase();
+
+                    // Must be a valid image
+                    if (/\.(jpg|jpeg|png|webp)$/i.test(lowerPath)) {
+
+                        // Check if "capa" or "cover" is in the path (excluding the slug itself)
+                        // This handles:
+                        // - slug/capa.jpg
+                        // - slug/capa/image.jpg
+                        // - slug/assets/cover.png
+                        const pathInsideSlug = parts.slice(1).join('/').toLowerCase();
+
+                        if (pathInsideSlug.includes('capa') || pathInsideSlug.includes('cover')) {
+                            // Construct raw URL directly
+                            inv.coverUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${item.path}`;
+                        }
+                    }
                 }
             });
-
-            const results = await Promise.all(fetchPromises);
-
-            // Flatten results
-            results.forEach(list => allFetchedInvitations.push(...list));
 
             // Load sorting timestamps
             let historyTimestamps = {};
@@ -162,10 +175,16 @@
                 console.warn('[History] Failed to load timestamps', e);
             }
 
-            invitations = allFetchedInvitations.map(inv => ({
-                ...inv,
-                timestamp: historyTimestamps[inv.slug] || 0 // Use saved timestamp or 0
-            }));
+            // Convert to array and sort
+            invitations = Array.from(invitationsMap.values())
+                .filter(inv => inv.slug !== '404.html' && inv.slug !== 'assets' && inv.slug !== 'static')
+                .map(inv => ({
+                    slug: inv.slug,
+                    coverUrl: inv.coverUrl,
+                    liveUrl: `${GITHUB_PAGES_BASE}${inv.slug}/`,
+                    repoUrl: `${GITHUB_REPO_BASE}${inv.slug}`,
+                    timestamp: historyTimestamps[inv.slug] || 0 // Use saved timestamp or 0
+                }));
 
             // Sort: Timestamp Descending (Newest First) -> Then Alphabetical
             invitations.sort((a, b) => {
@@ -183,13 +202,10 @@
                 return;
             }
 
-            console.log(`[History] Found ${invitations.length} invitations total`);
+            console.log(`[History] Found ${invitations.length} invitations via Tree API`);
 
             // Show cards container
             showState('cards');
-
-            // Save to allInvitations for filtering
-            allInvitations = [...invitations];
 
             // Render all
             invitations.forEach(invitation => {
@@ -206,89 +222,20 @@
     }
 
     /**
-     * Process a single repo tree
+     * Load details for a single invitation - DEPRECATED (Merged into loadInvitations)
      */
-    async function processTree(tree, repoKey, config) {
-        // Fetch ignored paths config
-        let ignoredPaths = ['builder', 'static', 'assets', 'builder-v4', 'home', 'v3-1'];
-        // Note: we skip fetching config per repo for speed, using generic defaults + maybe local builder config
-
-        const ignoredSet = new Set(ignoredPaths.map(p => p.toLowerCase()));
-        const invitationsMap = new Map();
-
-        tree.forEach(item => {
-            const pathLower = item.path.toLowerCase();
-            const rootFolder = item.path.split('/')[0].toLowerCase();
-
-            if (ignoredSet.has(rootFolder) || pathLower.startsWith('.')) return;
-            if (!item.path.includes('/') && item.type !== 'tree') return;
-
-            const parts = item.path.split('/');
-            const slug = parts[0];
-
-            if (!invitationsMap.has(slug) && !slug.startsWith('.') && !ignoredSet.has(slug.toLowerCase())) {
-                invitationsMap.set(slug, {
-                    slug: slug,
-                    repo: repoKey,
-                    owner: config.owner,
-                    branch: config.branch,
-                    domain: config.domain,
-                    coverUrl: null,
-                    files: []
-                });
-            }
-
-            if (invitationsMap.has(slug)) {
-                const inv = invitationsMap.get(slug);
-                inv.files.push(item);
-
-                // Check for cover image
-                const lowerPath = item.path.toLowerCase();
-                if (/\.(jpg|jpeg|png|webp)$/i.test(lowerPath)) {
-                    const pathInsideSlug = parts.slice(1).join('/').toLowerCase();
-                    if (pathInsideSlug.includes('capa') || pathInsideSlug.includes('cover')) {
-                        inv.coverUrl = `https://raw.githubusercontent.com/${config.owner}/${repoKey}/${config.branch}/${item.path}`;
-                    }
-                }
-            }
-        });
-
-        return Array.from(invitationsMap.values())
-            .filter(inv => inv.slug !== '404.html' && inv.slug !== 'assets' && inv.slug !== 'static')
-            .map(inv => ({
-                slug: inv.slug,
-                coverUrl: inv.coverUrl,
-                liveUrl: `https://${inv.domain}/${inv.slug}/`,
-                repoUrl: `https://github.com/${inv.owner}/${inv.repo}/tree/${inv.branch}/${inv.slug}`,
-                repo: inv.repo // Key for deletion
-            }));
+    async function loadInvitationDetails(folder) {
+        // No longer needed with Tree API
     }
-
 
     /**
      * Render invitation card with animation
      */
     function renderCard(invitation) {
         const card = document.createElement('div');
-        card.className = 'relative group bg-white rounded-lg border border-saas-border shadow-sm overflow-hidden hover:shadow-md transition opacity-0';
-        card.setAttribute('data-slug', invitation.slug);
-
-        // Repo Badge color
-        const repoColor = invitation.repo === 'convite' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600';
+        card.className = 'bg-white rounded-lg border border-saas-border shadow-sm overflow-hidden hover:shadow-md transition opacity-0';
 
         card.innerHTML = `
-            <!-- Delete Button (Top Right Corner) -->
-            <button onclick="event.stopPropagation(); window.History.deleteInvitation('${invitation.slug}', '${invitation.repo}')"
-                class="absolute top-2 right-2 w-8 h-8 bg-red-500/80 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10"
-                title="Excluir Convite">
-                <i class="fa-solid fa-trash text-sm"></i>
-            </button>
-            
-            <!-- Repo Badge (Top Left) -->
-            <div class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide opacity-90 ${repoColor} z-10 shadow-sm border border-white/20">
-                ${invitation.repo}
-            </div>
-
             <!-- Cover Thumbnail -->
             <div class="aspect-[9/16] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden">
                 ${invitation.coverUrl
@@ -338,8 +285,6 @@
             card.style.opacity = '1';
         });
     }
-
-
 
     /**
      * Import invitation to builder - FULL IMPLEMENTATION
@@ -717,163 +662,12 @@
         showState('error');
     }
 
-    /**
-     * Delete an invitation from GitHub
-     * Uses elegant confirmation modal and runs deletion in background
-     */
-    async function deleteInvitation(slug, repoKey) {
-        // Create elegant confirmation modal
-        const modalId = `confirm-delete-${Date.now()}`;
-        const modal = document.createElement('div');
-        modal.className = 'confirm-modal-overlay';
-        modal.id = modalId;
-        modal.innerHTML = `
-            <div class="confirm-modal-content">
-                <div class="flex flex-col items-center text-center">
-                    <!-- Icon -->
-                    <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
-                        <i class="fa-solid fa-trash text-red-500 text-2xl"></i>
-                    </div>
-                    
-                    <!-- Title -->
-                    <h3 class="text-xl font-bold text-white mb-2">Excluir Convite?</h3>
-                    
-                    <!-- Message -->
-                    <p class="text-gray-400 text-sm mb-2">Você está prestes a excluir:</p>
-                    <p class="text-brand-400 font-semibold mb-1">${slug}</p>
-                    <p class="text-xs text-gray-500 mb-4">Do repositório: ${repoKey || 'Padrão'}</p>
-                    <p class="text-red-400 text-xs mb-6">
-                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                        Esta ação não pode ser desfeita.
-                    </p>
-                    
-                    <!-- Buttons -->
-                    <div class="flex gap-3 w-full">
-                        <button id="${modalId}-cancel" 
-                            class="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition">
-                            Cancelar
-                        </button>
-                        <button id="${modalId}-confirm" 
-                            class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-trash"></i>
-                            Excluir
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-        // Handle button clicks
-        return new Promise((resolve) => {
-            const cancelBtn = document.getElementById(`${modalId}-cancel`);
-            const confirmBtn = document.getElementById(`${modalId}-confirm`);
-
-            const closeModal = () => {
-                modal.style.animation = 'fadeIn 0.2s ease-out reverse';
-                setTimeout(() => modal.remove(), 200);
-            };
-
-            cancelBtn.addEventListener('click', () => {
-                closeModal();
-                resolve(false);
-            });
-
-            // Close on overlay click
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    closeModal();
-                    resolve(false);
-                }
-            });
-
-            confirmBtn.addEventListener('click', async () => {
-                // Change button to loading state
-                confirmBtn.disabled = true;
-                confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Excluindo...';
-
-                try {
-                    if (!window.githubAdapter) {
-                        throw new Error('GitHub Adapter não disponível');
-                    }
-
-                    // Ensure auth (will prompt if needed)
-                    const authOk = await window.githubAdapter.ensureAuth();
-                    if (!authOk) {
-                        throw new Error('Autenticação cancelada');
-                    }
-
-                    // Start deletion in background
-                    closeModal();
-
-                    // Immediately fade out the card for responsive UI
-                    const cardEl = document.querySelector(`[data-slug="${slug}"]`);
-                    if (cardEl) {
-                        cardEl.style.transition = 'opacity 0.3s, transform 0.3s';
-                        cardEl.style.opacity = '0.5';
-                        cardEl.style.pointerEvents = 'none';
-                    }
-
-                    // Perform deletion
-                    const success = await window.githubAdapter.deleteFolder(slug, repoKey);
-
-                    if (success) {
-                        // Remove from local state
-                        invitations = invitations.filter(i => i.slug !== slug);
-                        allInvitations = allInvitations.filter(i => i.slug !== slug);
-
-                        // Remove card from DOM
-                        if (cardEl) {
-                            cardEl.style.transform = 'scale(0.9)';
-                            cardEl.style.opacity = '0';
-                            setTimeout(() => cardEl.remove(), 300);
-                        }
-
-                        // Show success toast
-                        if (window.showToast) {
-                            window.showToast(`"${slug}" excluído com sucesso!`, 'success');
-                        }
-
-                        // Check if empty
-                        if (invitations.length === 0) {
-                            showState('empty');
-                        }
-
-                        resolve(true);
-                    } else {
-                        throw new Error('Pasta não encontrada no repositório');
-                    }
-
-                } catch (error) {
-                    console.error('[History] Delete Error:', error);
-
-                    // Restore card if it exists
-                    const cardEl = document.querySelector(`[data-slug="${slug}"]`);
-                    if (cardEl) {
-                        cardEl.style.opacity = '1';
-                        cardEl.style.pointerEvents = 'auto';
-                    }
-
-                    // Show error toast
-                    if (window.showToast) {
-                        window.showToast(`Erro ao excluir: ${error.message}`, 'error');
-                    } else {
-                        alert(`Erro ao excluir: ${error.message}`);
-                    }
-
-                    resolve(false);
-                }
-            });
-        });
-    }
-
     // ==================== PUBLIC API ====================
 
     window.History = {
         init,
         loadInvitations,
-        importInvitation,
-        deleteInvitation
+        importInvitation
     };
 
     // Auto-init
