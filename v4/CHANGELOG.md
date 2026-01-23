@@ -1,3 +1,17 @@
+## [4.2.7] - 2026-01-23
+### Added
+- **Multi-Repo Support (Server-Side Patch)**: Atualizada Edge Function `deploy-github-v2` via MCP para aceitar dinamicamente o parâmetro `repo`, permitindo publicação em 'Convites' ou 'Convite'.
+- **Repository Selector UI**: Adicionado seletor de repositório na janela de finalização (exclusivo para `BuilderV4-new` via `BUILDER_CONFIG`).
+- **History Multi-Repo**: O módulo de histórico agora busca convites simultaneamente nos repositórios 'Convites' e 'Convite', identificando a origem e gerando os links corretos.
+- **BuilderV4-new**: Criada nova instância do builder configurada para permitir a escolha do repositório de destino.
+
+### Changed
+- **Windows.js**: Refatorado `setupFinalizeButtons` e `setupRepoSelector` para gerenciar a escolha do repositório e passar no payload de publicação.
+- **History.js**: Refatorado `loadInvitations` para execução paralela de requests na API do GitHub (Recursive Tree) em múltiplos repositórios.
+
+### Fixed
+- **Edge Function Hardcoding**: Removida limitação hardcoded de repositório na função de deploy, mantendo a autenticação segura no servidor.
+
 ## [4.2.6] - 2025-05-21
 ### Added
 - **Multi-Repo Support**: Implementado seletor de repositório ("Convite" vs "Convites") no fluxo de publicação e upload de ZIP.
