@@ -10,7 +10,7 @@
 
     const REPO_OWNER = 'mforgedesign';
     const REPO_NAME = 'Convite';
-    const BRANCH = 'recuperaçãohoje';
+    const BRANCH = 'main';
     const BRANCH_ENCODED = encodeURIComponent(BRANCH); // URL-safe version
     const API_BASE = 'https://api.github.com';
 
