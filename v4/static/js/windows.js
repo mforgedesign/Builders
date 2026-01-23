@@ -707,7 +707,6 @@
                 video.autoplay = true;
                 video.classList.add('absolute', 'inset-0', 'w-full', 'h-full', 'object-cover');
                 dropzone.appendChild(video);
-                dropzone.appendChild(video);
                 dropzone.querySelectorAll('i, span').forEach(el => el.classList.add('hidden'));
             }
 
