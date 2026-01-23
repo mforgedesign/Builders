@@ -1105,7 +1105,7 @@ Response:
             const msgId = 'vid-' + Date.now();
             const html = `
                 <div class="chat-upload-card" id="${msgId}">
-                    <video src="${url}" class="w-full rounded mb-2" autoplay muted loop></video>
+                    <video src="${url}" class="rounded mb-2" autoplay muted loop></video>
                     <p class="text-xs mb-2">Onde usar este vídeo?</p>
                     <div class="flex gap-2">
                         <button class="btn-xs bg-brand-100 text-brand-700" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'vid_abertura')">Abertura</button>
@@ -1167,7 +1167,7 @@ Response:
 
         const html = `
             <div class="chat-upload-card" id="${msgId}">
-                <img src="${url}" class="w-full h-32 object-cover rounded mb-2">
+                <img src="${url}" class="rounded mb-2">
                 <p class="text-xs mb-2">Onde usar esta imagem?</p>
                 <div class="grid grid-cols-2 gap-2">
                     <button class="btn-xs bg-gray-100 hover:bg-brand-100" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'capa')">Capa</button>
@@ -1217,13 +1217,13 @@ Response:
         // autoFlow.startMonitoring();
 
         // Expose API for external control (like Context Reset)
-        window.AutoBuilderChatbot = {
+        Object.assign(window.AutoBuilderChatbot, {
             resetContext: () => {
                 contextManager.clearContext();
                 addMessage("🧹 Contexto do chat limpo para novo convite.", "assistant");
                 console.log("[Chatbot] Contexto limpo via AutoBuilderChatbot.");
             }
-        };
+        });
 
         // Listen for GitHub Deploy Status Events (from GitHubAdapter)
         window.addEventListener('gh-deploy-status', (e) => {
