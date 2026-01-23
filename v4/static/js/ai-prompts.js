@@ -198,7 +198,9 @@ Manual do convidado:
             'intro': {
                 model: 'hailuo/02-image-to-video-standard',
                 mode: 'image-to-video',
-                duration: 6
+                duration: 6,
+                resolution: '768P',
+                prompt_optimizer: false
             },
             'loop': {
                 model: 'kling/v1/standard',
