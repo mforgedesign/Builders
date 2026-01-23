@@ -1,9 +1,12 @@
 ## [4.2.4] - 2026-01-22
 ### Fixed
 - **Chatbot CORS Error**: Corrigida falha de conexão (CORS) trocando a chamada da função inexistente `chat` pelo endpoint correto `chatbot-intent`.
-- Fixed Chatbot file attachment logic (`assignAsset` and `processNextImage` were being overwritten during initialization).
-- Reduced Chatbot file preview size to 50% (max-height 100px) and set a fixed card width for better UI balance.
-- Replaced direct `window.AutoBuilderChatbot` assignment with `Object.assign` to preserve previously defined system functions.
+- **Chatbot Asset Refinement**:
+    - Added "Preencher" (Folha Preenchida) option for images in the chat.
+    - Implemented full state synchronization: assigning an asset via chat now updates the builder's form and main preview immediately.
+    - Optimized preview cards: reduced dimensions and centered media for a cleaner UI.
+    - Fixed logic bug in `windows.js` (duplicate video nodes) and preserved chatbot system functions.
+- Fixed Chatbot file attachment logic (`assignAsset` and `processNextImage` were being overwritten).
 - Fixed "This field is required" error for Seedream models by ensuring `quality` and `aspect_ratio` are always passed.
 - Fixed "Reference image required" error by updating `getRequiredImage` to correctly detect base images for all generation modes.
 - Refactored `windows.js` to remove redundant generation listeners and consolidated logic in `setupAIButtons`.
