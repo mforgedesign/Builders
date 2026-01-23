@@ -1108,8 +1108,8 @@ Response:
                     <video src="${url}" class="rounded h-auto" autoplay muted loop></video>
                     <p class="text-[10px] text-gray-500 mb-1.5 uppercase font-bold text-center">Vídeo Detectado</p>
                     <div class="flex flex-col gap-1 w-full">
-                        <button class="btn-xs bg-brand-600 text-white w-full" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'vid_abertura')">Usar na Abertura</button>
-                        <button class="btn-xs bg-gray-100 hover:bg-brand-100 text-gray-700 w-full" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'fundo_tela')">Usar no Fundo</button>
+                        <button class="btn-xs bg-brand-600 text-white w-full" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'vid_abertura', 'video')">Usar na Abertura</button>
+                        <button class="btn-xs bg-gray-100 hover:bg-brand-100 text-gray-700 w-full" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'fundo_tela', 'video')">Usar no Fundo</button>
                     </div>
                 </div>
              `;
@@ -1130,8 +1130,8 @@ Response:
     }
 
     // Expose helpers
-    window.AutoBuilderChatbot.assignAsset = (msgId, url, context) => {
-        console.log(`[Chatbot] Assigning asset: ${context}`, url);
+    window.AutoBuilderChatbot.assignAsset = (msgId, url, context, type = 'image') => {
+        console.log(`[Chatbot] Assigning asset: ${context} (${type})`, url);
 
         // 1. Find Dropzone for visual update
         let dzId = '';
@@ -1145,7 +1145,7 @@ Response:
 
         const dz = document.getElementById(dzId);
         if (dz && window.updateDropzonePreview) {
-            window.updateDropzonePreview(dz, url);
+            window.updateDropzonePreview(dz, url, type);
         }
 
         // 2. Critical: Update Builder State & Preview
@@ -1193,11 +1193,11 @@ Response:
                 <img src="${url}" class="rounded h-auto">
                 <p class="text-[10px] text-gray-500 mb-1.5 uppercase font-bold text-center">Imagem Detectada</p>
                 <div class="grid grid-cols-2 gap-1 w-full">
-                    <button class="btn-xs bg-brand-600 text-white" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'capa')">Capa</button>
-                    <button class="btn-xs bg-saas-sidebar text-white" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'folha')">Folha Vaz.</button>
-                    <button class="btn-xs bg-gray-100 hover:bg-brand-100 text-gray-700" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'folha_preenchida')">Preencher</button>
-                    <button class="btn-xs bg-gray-100 hover:bg-brand-100 text-gray-700" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'presentes')">Presentes</button>
-                    <button class="btn-xs bg-gray-100 hover:bg-brand-100 text-gray-700 col-span-2" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'manual')">Manual</button>
+                    <button class="btn-xs bg-brand-600 text-white" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'capa', 'image')">Capa</button>
+                    <button class="btn-xs bg-saas-sidebar text-white" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'folha', 'image')">Folha Vaz.</button>
+                    <button class="btn-xs bg-gray-100 hover:bg-brand-100 text-gray-700" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'folha_preenchida', 'image')">Preencher</button>
+                    <button class="btn-xs bg-gray-100 hover:bg-brand-100 text-gray-700" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'presentes', 'image')">Presentes</button>
+                    <button class="btn-xs bg-gray-100 hover:bg-brand-100 text-gray-700 col-span-2" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'manual', 'image')">Manual</button>
                 </div>
             </div>
          `;
