@@ -1244,19 +1244,22 @@ Response:
         }
 
         // Drag & Drop Handler
-        const chatContainer = document.querySelector('.chat-window') || document.body;
-        chatContainer.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            chatContainer.classList.add('drag-over');
-        });
-        chatContainer.addEventListener('dragleave', () => chatContainer.classList.remove('drag-over'));
-        chatContainer.addEventListener('drop', (e) => {
-            e.preventDefault();
-            chatContainer.classList.remove('drag-over');
-            if (e.dataTransfer.files.length > 0) {
-                handleFiles(Array.from(e.dataTransfer.files));
-            }
-        });
+        // Drag & Drop Handler
+        const chatContainer = document.getElementById('chatbot-container');
+        if (chatContainer) {
+            chatContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                chatContainer.classList.add('drag-over');
+            });
+            chatContainer.addEventListener('dragleave', () => chatContainer.classList.remove('drag-over'));
+            chatContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                chatContainer.classList.remove('drag-over');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFiles(Array.from(e.dataTransfer.files));
+                }
+            });
+        }
 
         // Initialize Managers
 
