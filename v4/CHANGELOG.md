@@ -1,3 +1,16 @@
+## [4.2.6] - 2025-05-21
+### Added
+- **Multi-Repo Support**: Implementado seletor de repositório ("Convite" vs "Convites") no fluxo de publicação e upload de ZIP.
+- **GitHub Adapter**: Adicionado método `getLatestWorkflowStatus` com suporte a `repoKey` para monitorar status de deploy em múltiplos repositórios.
+- **UI**: Novo modal `showRepoSelectionModal` para escolha explicita do destino de publicação.
+
+### Changed
+- **Windows.js**:
+    - `setupFinalizeButtons`: Agora solicita escolha do repositório antes de iniciar o deploy.
+    - `pollDeployStatus`: Recebe `repoKey` para consultar o status do workflow no repositório correto.
+    - `finalizeSuccessUI`: Gera URLs do GitHub e Live corretas baseadas no repositório selecionado (`convite.mforge.com.br` ou `convites.mforge.com.br`).
+    - `handleCustomZipUpload`: Adicionado suporte a seleção de repositório e uso do `githubAdapter` unificado.
+
 ## [4.2.5] - 2026-01-23
 ### Added
 - **History Search Bar**: Barra de busca em tempo real na janela de Histórico para filtrar convites por slug.
