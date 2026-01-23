@@ -1,13 +1,82 @@
 /* AutoBuilder v4.0 - Main Stylesheet */
 
-/* Chat Upload Card */
+/* Global Theme Variables */
+:root {
+    --bg-primary: #f6f8fa;
+    --sidebar-bg: #1e293b;
+    --header-bg: #ffffff;
+    --text-primary: #374151;
+    --text-muted: #6b7280;
+    --text-heading: #111827;
+    --panel-bg: #ffffff;
+    --panel-border: #e2e8f0;
+    --brand-primary: #6366f1;
+    --brand-hover: #4f46e5;
+    --accent-vibrant: #4f46e5;
+}
+
+html.dark {
+    --bg-primary: #0f172a;
+    --sidebar-bg: #0f172a;
+    /* Slightly darker or same as bg for clean look */
+    --header-bg: #1e293b;
+    --text-primary: #f1f5f9;
+    --text-muted: #94a3b8;
+    --text-heading: #ff8e72;
+    /* Vibrant Orange-Pink for titles */
+    --panel-bg: #1e293b;
+    --panel-border: #334155;
+    --accent-vibrant: #ff8e72;
+}
+
+/* Base resets for theme */
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.window-panel {
+    background-color: var(--panel-bg);
+    border-color: var(--panel-border);
+}
+
+header {
+    background-color: var(--header-bg);
+    border-color: var(--panel-border);
+}
+
+h1,
+h2,
+h3,
+h4,
+[id="header-title"] {
+    color: var(--text-heading);
+}
+
+/* Form inputs adjustment for dark mode */
+html.dark .form-input,
+html.dark input[type="text"],
+html.dark input[type="url"],
+html.dark textarea,
+html.dark select {
+    background-color: #0f172a;
+    border-color: #334155;
+    color: #f1f5f9;
+}
+
+html.dark .form-input:focus {
+    border-color: var(--accent-vibrant);
+    ring-color: var(--accent-vibrant);
+}
+
+/* Chat Styles */
 .chat-upload-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
     border-radius: 0.5rem;
     padding: 0.5rem;
     max-width: 160px;
-    /* Compact width */
     margin-top: 0.5rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     display: flex;
@@ -18,25 +87,20 @@
 .chat-upload-card img,
 .chat-upload-card video {
     max-height: 120px;
-    /* Request was "half the size", 200/2 = 100, so 120 is a good safe limit */
     object-fit: contain;
-    /* Better for previews than cover */
     width: 100%;
     border-radius: 0.375rem;
-    background: #f8fafc;
+    background: #0f172a;
     margin-bottom: 0.4rem;
 }
 
-/* Chat Drag Over State - Applied to .chat-window */
+/* Chat Drag Over State */
 .drag-over {
     position: relative;
-    background-color: #eff6ff !important;
-    /* blue-50 */
-    border: 2px dashed #93c5fd !important;
-    /* blue-300 */
+    background-color: rgba(99, 102, 241, 0.1) !important;
+    border: 2px dashed var(--brand-primary) !important;
 }
 
-/* Overlay message for drag */
 .drag-over::after {
     content: "Solte para enviar arquivos";
     position: absolute;
@@ -44,24 +108,45 @@
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 1.1rem;
-    color: #2563eb;
+    color: var(--brand-primary);
     font-weight: 600;
     pointer-events: none;
-    background: rgba(255, 255, 255, 0.8);
+    background: var(--panel-bg);
     padding: 1rem 2rem;
     border-radius: 2rem;
     backdrop-filter: blur(4px);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-/* Button variants for cards */
 .btn-xs {
     padding: 0.25rem 0.5rem;
     font-size: 0.75rem;
     line-height: 1rem;
     border-radius: 0.25rem;
     font-weight: 500;
-    transition-property: color, background-color, border-color;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
+    transition: all 150ms ease;
+}
+
+/* Helper for orange-pink accents */
+.text-vibrant {
+    color: var(--text-heading);
+}
+
+.bg-vibrant {
+    background-color: var(--text-heading);
+}
+
+/* Sample Items Dark Mode */
+html.dark .sample-item {
+    background-color: #334155;
+    border-color: #475569;
+}
+
+html.dark .sample-item p {
+    color: #e2e8f0;
+}
+
+html.dark .sample-item:hover {
+    border-color: var(--accent-vibrant);
+    background-color: #1e293b;
 }
