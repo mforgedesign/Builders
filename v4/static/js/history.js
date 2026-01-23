@@ -85,7 +85,15 @@
         }
 
         if (invitations.length === 0) {
-            showState('empty');
+            // Show "no results" message inside the grid (keep search bar visible)
+            showState('cards');
+            gridEl.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <i class="fa-solid fa-search text-5xl text-gray-500 mb-4"></i>
+                    <h4 class="text-lg font-semibold text-gray-600 mb-2">Nenhum resultado para "${q}"</h4>
+                    <p class="text-sm text-gray-500">Tente buscar por outro termo ou limpe a busca</p>
+                </div>
+            `;
         } else {
             showState('cards');
             invitations.forEach(renderCard);
