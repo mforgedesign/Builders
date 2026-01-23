@@ -20,6 +20,7 @@
 
     // State
     let invitations = [];
+    let allInvitations = []; // Full list for filtering
     let isLoading = false;
 
     /**
@@ -54,7 +55,41 @@
             }
         });
 
+        // Setup search bar
+        const searchInput = document.getElementById('history-search');
+        if (searchInput) {
+            let debounceTimer;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => filterInvitations(e.target.value), 300);
+            });
+        }
+
         console.log('[History] Initialized');
+    }
+
+    /**
+     * Filter invitations by search query
+     */
+    function filterInvitations(query) {
+        const q = query.toLowerCase().trim();
+        gridEl.innerHTML = '';
+
+        if (!q) {
+            // Show all
+            invitations = [...allInvitations];
+        } else {
+            invitations = allInvitations.filter(inv =>
+                inv.slug.toLowerCase().includes(q)
+            );
+        }
+
+        if (invitations.length === 0) {
+            showState('empty');
+        } else {
+            showState('cards');
+            invitations.forEach(renderCard);
+        }
     }
 
     /**
@@ -207,6 +242,9 @@
             // Show cards container
             showState('cards');
 
+            // Save to allInvitations for filtering
+            allInvitations = [...invitations];
+
             // Render all
             invitations.forEach(invitation => {
                 renderCard(invitation);
@@ -233,9 +271,17 @@
      */
     function renderCard(invitation) {
         const card = document.createElement('div');
-        card.className = 'bg-white rounded-lg border border-saas-border shadow-sm overflow-hidden hover:shadow-md transition opacity-0';
+        card.className = 'relative group bg-white rounded-lg border border-saas-border shadow-sm overflow-hidden hover:shadow-md transition opacity-0';
+        card.setAttribute('data-slug', invitation.slug);
 
         card.innerHTML = `
+            <!-- Delete Button (Top Right Corner) -->
+            <button onclick="event.stopPropagation(); window.History.deleteInvitation('${invitation.slug}')"
+                class="absolute top-2 right-2 w-8 h-8 bg-red-500/80 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10"
+                title="Excluir Convite">
+                <i class="fa-solid fa-trash text-sm"></i>
+            </button>
+
             <!-- Cover Thumbnail -->
             <div class="aspect-[9/16] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden">
                 ${invitation.coverUrl
@@ -662,12 +708,99 @@
         showState('error');
     }
 
+    /**
+     * Delete an invitation from GitHub
+     */
+    async function deleteInvitation(slug) {
+        if (!confirm(`Tem certeza que deseja excluir "${slug}"?\n\nEsta ação não pode ser desfeita.`)) {
+            return;
+        }
+
+        // Show loading overlay
+        const loadingMsg = document.createElement('div');
+        loadingMsg.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm';
+        loadingMsg.innerHTML = `
+            <div class="bg-gray-900 text-white rounded-xl p-8 max-w-md w-full border border-gray-700 shadow-2xl">
+                <div class="flex flex-col items-center gap-6 text-center">
+                    <div class="relative">
+                        <div class="w-16 h-16 border-4 border-red-500/30 border-t-red-500 rounded-full animate-spin"></div>
+                        <i class="fa-solid fa-trash absolute inset-0 flex items-center justify-center text-red-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-xl mb-2">Excluindo Convite</h3>
+                        <p class="text-gray-400 text-sm" id="delete-status">Conectando ao GitHub...</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(loadingMsg);
+
+        const updateStatus = (msg) => {
+            const statusEl = document.getElementById('delete-status');
+            if (statusEl) statusEl.textContent = msg;
+        };
+
+        try {
+            if (!window.githubAdapter) {
+                throw new Error('GitHub Adapter não disponível');
+            }
+
+            updateStatus('Autenticando...');
+            await window.githubAdapter.ensureAuth();
+
+            updateStatus('Excluindo pasta do repositório...');
+            const success = await window.githubAdapter.deleteFolder(slug);
+
+            if (success) {
+                // Remove from local state
+                invitations = invitations.filter(i => i.slug !== slug);
+                allInvitations = allInvitations.filter(i => i.slug !== slug);
+
+                // Remove card from DOM
+                const cardEl = document.querySelector(`[data-slug="${slug}"]`);
+                if (cardEl) {
+                    cardEl.style.transition = 'opacity 0.3s, transform 0.3s';
+                    cardEl.style.opacity = '0';
+                    cardEl.style.transform = 'scale(0.9)';
+                    setTimeout(() => cardEl.remove(), 300);
+                }
+
+                // Close loading
+                loadingMsg.remove();
+
+                // Show success
+                if (window.showToast) {
+                    window.showToast(`"${slug}" excluído com sucesso!`, 'success');
+                } else {
+                    alert(`"${slug}" excluído com sucesso!`);
+                }
+
+                // Check if empty
+                if (invitations.length === 0) {
+                    showState('empty');
+                }
+            } else {
+                throw new Error('Falha ao excluir do repositório');
+            }
+
+        } catch (error) {
+            console.error('[History] Delete Error:', error);
+            loadingMsg.remove();
+            if (window.showToast) {
+                window.showToast(`Erro ao excluir: ${error.message}`, 'error');
+            } else {
+                alert(`Erro ao excluir: ${error.message}`);
+            }
+        }
+    }
+
     // ==================== PUBLIC API ====================
 
     window.History = {
         init,
         loadInvitations,
-        importInvitation
+        importInvitation,
+        deleteInvitation
     };
 
     // Auto-init
