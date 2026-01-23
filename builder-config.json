@@ -1,0 +1,12 @@
+{
+    "ignorePaths": [
+        "builder-v4",
+        "home",
+        "v3-1",
+        "CNAME",
+        "index.html",
+        "404.html",
+        "robots.txt",
+        "sitemap.xml"
+    ]
+}

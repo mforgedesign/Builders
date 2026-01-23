@@ -5,8 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AutoBuilder v4 - Criador de Convites Digitais</title>
-    <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='white'>✉️</text></svg>">
 
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -16,14 +14,8 @@
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="static/css/main.css?v=4.4.0">
-
     <!-- JSZip -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <!-- SortableJS for drag-and-drop -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
 
     <!-- Google Fonts - Inter -->
@@ -32,7 +24,6 @@
     <!-- Tailwind Config -->
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -103,57 +94,7 @@
         .window-panel.hidden {
             display: none;
         }
-
-        /* Initial theme setup to avoid flash */
-        :root {
-            --bg-primary: #f6f8fa;
-            --sidebar-bg: #1e293b;
-            --header-bg: #ffffff;
-            --text-primary: #374151;
-            --text-heading: #111827;
-            --panel-bg: #ffffff;
-            --panel-border: #e2e8f0;
-        }
-
-        html.dark {
-            --bg-primary: #0f172a;
-            --sidebar-bg: #1e293b;
-            --header-bg: #1e293b;
-            --text-primary: #f8fafc;
-            --text-heading: #ff8e72;
-            /* Orange-Pink vibrant */
-            --panel-bg: #1e293b;
-            --panel-border: #334155;
-        }
-
-        body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-        }
-
-        .window-panel {
-            background-color: var(--panel-bg);
-            border-color: var(--panel-border);
-        }
-
-        header {
-            background-color: var(--header-bg);
-            border-color: var(--panel-border);
-        }
-
-        h3,
-        h4,
-        #header-title {
-            color: var(--text-heading);
-        }
     </style>
-    <script>
-            // Separate init block to ensure DOM readiness doesn't block class addition
-            (function () {
-                const theme = localStorage.getItem('theme') || 'dark';
-                if (theme === 'dark') document.documentElement.classList.add('dark');
-            })();
-    </script>
 </head>
 
 <body class="bg-saas-bg h-screen w-screen overflow-hidden text-gray-700">
@@ -176,12 +117,9 @@
             <div
                 class="h-16 flex items-center justify-between px-4 lg:px-6 bg-slate-900 border-b border-slate-700 shrink-0">
                 <div class="flex items-center">
-                    <span class="text-white font-semibold tracking-wide">AutoBuilder v4</span>
-                    <button id="theme-toggle"
-                        class="ml-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                        title="Alternar Tema">
-                        <i id="theme-icon" class="fa-solid fa-moon"></i>
-                    </button>
+                    <div class="w-8 h-8 bg-brand-500 rounded-md flex items-center justify-center text-white font-bold">A
+                    </div>
+                    <span class="ml-3 text-white font-semibold tracking-wide">AutoBuilder v4</span>
                 </div>
                 <button id="btn-close-menu" class="lg:hidden text-slate-400 hover:text-white p-2"
                     onclick="closeMobileMenu()">
@@ -253,20 +191,15 @@
                 </button>
             </nav>
 
-            <!-- Local Import -->
+            <!-- User Info -->
             <div class="p-4 border-t border-slate-700">
-                <input type="file" id="local-import-input" accept=".zip,.rar" class="hidden">
-                <button id="btn-local-import"
-                    class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition-colors group">
-                    <div
-                        class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
-                        <i class="fa-solid fa-folder-open"></i>
+                <div class="flex items-center gap-3">
+                    <img src="https://ui-avatars.com/api/?name=User&background=random" class="w-8 h-8 rounded-full">
+                    <div>
+                        <p class="text-xs text-slate-400">Logado como</p>
+                        <p class="text-sm text-white font-medium">Usuário</p>
                     </div>
-                    <div class="text-left">
-                        <p class="text-xs text-slate-400">Importar</p>
-                        <p class="text-sm text-white font-medium">Pasta / ZIP</p>
-                    </div>
-                </button>
+                </div>
             </div>
         </aside>
 
@@ -373,15 +306,6 @@
 
                         <!-- Cards Grid -->
                         <div id="history-cards" class="p-6 hidden">
-                            <!-- Search Bar -->
-                            <div class="mb-6">
-                                <div class="relative">
-                                    <i
-                                        class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                                    <input type="text" id="history-search" placeholder="Buscar convites..."
-                                        class="form-input w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:ring-brand-500 focus:border-brand-500 outline-none">
-                                </div>
-                            </div>
                             <div id="history-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <!-- Cards will be inserted here -->
                             </div>
@@ -502,10 +426,10 @@
                                         (Bottom)</label>
                                     <div class="flex items-center gap-4">
                                         <input type="range" id="form-posicao_botoes" name="posicao_botoes"
-                                            data-field="posicao_botoes" min="0" max="200" value="20"
+                                            data-field="posicao_botoes" min="0" max="200" value="50"
                                             class="form-input w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                                         <span id="posicao-value"
-                                            class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[60px] text-center">20px</span>
+                                            class="text-sm font-mono bg-gray-100 px-2 py-1 rounded min-w-[60px] text-center">50px</span>
                                     </div>
                                 </div>
                                 <div>
@@ -632,16 +556,22 @@
                         <div class="p-6">
                             <h3 class="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4">Confirmação de
                                 Presença</h3>
-                            <div class="grid grid-cols-1 gap-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp ou Link</label>
-                                    <input type="text" id="form-confirmacao" name="confirmacao" data-field="confirmacao"
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Número do
+                                        WhatsApp</label>
+                                    <input type="tel" id="form-numero_whatsapp" name="numero_whatsapp"
+                                        data-field="numero_whatsapp"
                                         class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none"
-                                        placeholder="5511999999999 ou https://forms.google.com/...">
-                                    <p class="text-xs text-gray-500 mt-1">
-                                        <i class="fa-solid fa-circle-info mr-1"></i>
-                                        Número = popup WhatsApp | Link = abre direto
-                                    </p>
+                                        placeholder="5511999999999">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Link de Confirmação
+                                        (Alternativo)</label>
+                                    <input type="url" id="form-link_confirmacao" name="link_confirmacao"
+                                        data-field="link_confirmacao"
+                                        class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-2 text-sm outline-none"
+                                        placeholder="https://forms.google.com/...">
                                 </div>
                             </div>
                         </div>
@@ -697,15 +627,9 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <div class="flex items-center justify-between mb-2">
-                                        <label class="block text-sm font-medium text-gray-700">Prompt de
-                                            Criação</label>
-                                        <button id="btn-default-cover-prompt" type="button"
-                                            class="text-xs bg-brand-50 text-brand-600 px-2 py-1 rounded hover:bg-brand-100 border border-brand-200 transition flex items-center gap-1">
-                                            <i class="fa-solid fa-rotate-left"></i> Preenchimento Padrão
-                                        </button>
-                                    </div>
-                                    <textarea id="cover-prompt" data-field="cover_prompt" rows="6"
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
+                                        Criação</label>
+                                    <textarea id="cover-prompt" data-field="cover_prompt" rows="4"
                                         class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
                                         placeholder="Descreva a imagem desejada..."></textarea>
                                 </div>
@@ -739,11 +663,6 @@
                                             class="flex items-center gap-2 text-gray-600 hover:text-brand-600 p-2 bg-gray-50 rounded border border-gray-100 hover:border-brand-200 transition">
                                             <i class="fa-solid fa-external-link-alt"></i> PXZ.ai (Free)
                                         </a>
-                                        <a href="https://dreamina.capcut.com/ai-tool/generate?type=image"
-                                            target="_blank"
-                                            class="flex items-center gap-2 text-gray-600 hover:text-brand-600 p-2 bg-gray-50 rounded border border-gray-100 hover:border-brand-200 transition">
-                                            <i class="fa-solid fa-external-link-alt"></i> Dreamina (CapCut)
-                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -757,7 +676,7 @@
                                         <button
                                             class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
                                             title="Remover">
-                                            <i class="fa-solid fa-trash-can text-sm"></i>
+                                            <i class="fa-solid fa-times text-xs"></i>
                                         </button>
                                         <i class="fa-solid fa-image text-3xl mb-2"></i>
                                         <span class="text-xs">Arraste a Capa</span>
@@ -779,7 +698,7 @@
                                         <button
                                             class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
                                             title="Remover Referência">
-                                            <i class="fa-solid fa-trash-can text-sm"></i>
+                                            <i class="fa-solid fa-times text-xs"></i>
                                         </button>
                                         <i class="fa-solid fa-eye-dropper text-2xl mb-1"></i>
                                         <span class="text-[10px] text-center px-2">Arraste
@@ -846,14 +765,26 @@
                                                 class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Gemini</a>
                                             <a href="https://pxz.ai/tools/image-generator" target="_blank"
                                                 class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">PXZ.ai</a>
-                                            <a href="https://dreamina.capcut.com/ai-tool/generate?type=image"
-                                                target="_blank"
-                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Dreamina</a>
                                         </div>
                                     </div>
 
-                                    <!-- Background Animation Toggle Removed -->
-
+                                    <!-- Background Animation Toggle -->
+                                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h4 class="text-sm font-medium text-purple-800">Animar Background</h4>
+                                                <p class="text-xs text-purple-600 mt-1">Separar camadas para animação
+                                                </p>
+                                            </div>
+                                            <div class="relative inline-block w-12 mr-2 align-middle select-none">
+                                                <input type="checkbox" id="animate-background-toggle"
+                                                    data-field="animate_background"
+                                                    class="form-input toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-purple-300" />
+                                                <label for="animate-background-toggle"
+                                                    class="toggle-label block overflow-hidden h-6 rounded-full bg-purple-300 cursor-pointer"></label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Right: Dropzone and Layers -->
@@ -874,8 +805,34 @@
                                         </div>
                                     </div>
 
-                                    <!-- Layer Previews Removed -->
+                                    <!-- Layer Previews (shown when animate is enabled) -->
+                                    <div id="leaf-layers" class="hidden space-y-3">
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div class="text-center">
+                                                <div id="dropzone-leaf-only"
+                                                    class="w-full aspect-square bg-gray-50 rounded border border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 text-xs hover:border-brand-300 cursor-pointer relative overflow-hidden">
+                                                    <input type="file" accept="image/*"
+                                                        class="absolute inset-0 opacity-0 cursor-pointer">
+                                                    <i class="fa-solid fa-layer-group mb-1"></i>
+                                                    <span class="text-[10px]">Folha (PNG)</span>
+                                                </div>
+                                            </div>
+                                            <div class="text-center">
+                                                <div id="dropzone-background-only"
+                                                    class="w-full aspect-square bg-gray-50 rounded border border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 text-xs hover:border-brand-300 cursor-pointer relative overflow-hidden">
+                                                    <input type="file" accept="image/*"
+                                                        class="absolute inset-0 opacity-0 cursor-pointer">
+                                                    <i class="fa-solid fa-panorama mb-1"></i>
+                                                    <span class="text-[10px]">Background (JPG)</span>
+                                                </div>
+                                            </div>
+                                        </div>
 
+                                        <button id="btn-process-layers"
+                                            class="w-full bg-purple-100 text-purple-700 py-2 rounded-md text-xs font-bold hover:bg-purple-200 transition flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-wand-sparkles"></i> Separar Camadas com IA
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -894,9 +851,20 @@
                         </div>
 
                         <div class="p-6">
-                            <!-- Tabs Removed (Only Intro available) -->
-                            <!-- Intro Content -->
+                            <!-- Tabs -->
+                            <div class="flex border-b border-gray-200 mb-6">
+                                <button
+                                    class="anim-tab px-4 py-2 text-sm font-medium text-brand-600 border-b-2 border-brand-600"
+                                    data-tab="intro">
+                                    <i class="fa-solid fa-play mr-2"></i>Abertura
+                                </button>
+                                <button class="anim-tab px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+                                    data-tab="loop">
+                                    <i class="fa-solid fa-repeat mr-2"></i>Loop Background
+                                </button>
+                            </div>
 
+                            <!-- Intro Tab -->
                             <div id="anim-intro-content" class="space-y-6">
                                 <div class="flex flex-col lg:flex-row gap-8">
                                     <div class="flex-1 space-y-4">
@@ -959,52 +927,121 @@
                                 </div>
                             </div>
 
-                            <!-- Loop Tab Content Removed -->
+                            <!-- Loop Tab (hidden by default) -->
+                            <div id="anim-loop-content" class="hidden space-y-6">
+                                <div class="flex flex-col lg:flex-row gap-8">
+                                    <div class="flex-1 space-y-4">
+                                        <div
+                                            class="bg-purple-50 border border-purple-100 rounded-md p-4 text-sm text-purple-800 flex gap-2 items-start">
+                                            <i class="fa-solid fa-repeat mt-0.5"></i>
+                                            <div>
+                                                <strong>Loop de Background:</strong> Vídeo que toca em loop atrás dos
+                                                botões.
+                                                <br><span class="text-xs">Usa o background separado da Folha
+                                                    Vazia.</span>
+                                            </div>
+                                        </div>
 
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
+                                                Movimento</label>
+                                            <textarea id="loop-motion-prompt" data-field="loop_motion_prompt" rows="3"
+                                                class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
+                                                placeholder="Ex: Movimento suave das flores, brilho pulsante"></textarea>
+                                        </div>
+
+                                        <button id="btn-generate-loop"
+                                            class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-md font-medium shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                            Gerar Loop
+                                        </button>
+
+                                        <div class="mt-4 pt-4 border-t border-gray-100">
+                                            <p class="text-xs text-gray-500 font-medium mb-2">Ferramentas Externas:</p>
+                                            <div class="flex flex-wrap gap-2">
+                                                <a href="https://hailuoai.video" target="_blank"
+                                                    class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Hailuo</a>
+                                                <a href="https://kling.kuaishou.com" target="_blank"
+                                                    class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Kling</a>
+                                                <a href="https://deepmind.google/technologies/veo/veo-2/"
+                                                    target="_blank"
+                                                    class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Veo
+                                                    2</a>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="w-full lg:w-80 shrink-0">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Vídeo Loop</label>
+                                        <div id="loop-video-dropzone"
+                                            class="w-full aspect-[9/16] bg-gray-900 rounded-lg border-2 border-dashed border-gray-600 flex flex-col items-center justify-center text-gray-400 cursor-pointer relative overflow-hidden">
+                                            <input type="file" accept="video/*"
+                                                class="absolute inset-0 opacity-0 cursor-pointer">
+                                            <button
+                                                class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
+                                                title="Remover">
+                                                <i class="fa-solid fa-times text-xs"></i>
+                                            </button>
+                                            <i class="fa-solid fa-film text-3xl mb-2"></i>
+                                            <span class="text-xs">MP4 (Loop)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- ============================== -->
-                    <!-- WINDOW: Preencher Folha (SIMPLIFICADO) -->
+                    <!-- WINDOW: Preencher Folha -->
                     <!-- ============================== -->
                     <div id="window-fill_leaf"
                         class="window-panel hidden bg-white rounded-lg shadow-sm border border-saas-border">
 
-                        <!-- Header -->
+                        <!-- Header with Mode Toggle -->
                         <div class="p-6 border-b border-gray-100">
                             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                 <div>
-                                    <h3 class="text-lg font-semibold text-gray-800">Fundo da Tela de Botões</h3>
-                                    <p class="text-sm text-gray-500 mt-1">Imagem ou vídeo que aparece atrás dos botões
+                                    <h3 class="text-lg font-semibold text-gray-800">Preencher Folha</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Adicione elementos à folha (overlay ou
+                                        composição)
                                     </p>
+                                </div>
+                                <!-- Mode Toggle -->
+                                <div id="fill-mode-buttons" class="flex items-center bg-gray-100 rounded-lg p-1">
+                                    <button id="fill-mode-overlay" data-mode="overlay"
+                                        class="fill-mode-btn flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition bg-white shadow-sm text-brand-600">
+                                        <i class="fa-solid fa-layer-group"></i>
+                                        <span>Superposição</span>
+                                    </button>
+                                    <button id="fill-mode-flat" data-mode="flat"
+                                        class="fill-mode-btn flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition text-gray-500 hover:text-gray-700">
+                                        <i class="fa-solid fa-object-ungroup"></i>
+                                        <span>Composição Flat</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Content -->
-                        <div class="p-6">
+                        <!-- Overlay Mode -->
+                        <div id="fill-overlay-mode" class="p-6">
                             <div class="flex flex-col lg:flex-row gap-8">
                                 <div class="flex-1 space-y-4">
                                     <div
-                                        class="bg-purple-50 border border-purple-100 rounded-md p-4 text-sm text-purple-800 flex gap-2 items-start">
-                                        <i class="fa-solid fa-wand-magic-sparkles mt-0.5"></i>
+                                        class="bg-cyan-50 border border-cyan-100 rounded-md p-4 text-sm text-cyan-800 flex gap-2 items-start">
+                                        <i class="fa-solid fa-layer-group mt-0.5"></i>
                                         <div>
-                                            <strong>Gere ou anexe:</strong> Use a IA para gerar um fundo ou
-                                            faça upload de uma imagem/vídeo pronta.
-                                            <br><span class="text-xs">Aceita: JPG, PNG ou MP4</span>
+                                            <strong>Modo Superposição:</strong> A folha preenchida será sobreposta ao
+                                            vídeo
+                                            de loop.
+                                            <br><span class="text-xs">O convite final carrega 2 arquivos: loop.mp4 +
+                                                folha_preenchida.png</span>
                                         </div>
                                     </div>
 
                                     <div>
-                                        <div class="flex items-center justify-between mb-2">
-                                            <label class="block text-sm font-medium text-gray-700">Prompt de
-                                                Preenchimento</label>
-                                            <button id="btn-default-fill-prompt" type="button"
-                                                class="text-xs bg-brand-50 text-brand-600 px-2 py-1 rounded hover:bg-brand-100 border border-brand-200 transition flex items-center gap-1">
-                                                <i class="fa-solid fa-rotate-left"></i> Preenchimento Padrão
-                                            </button>
-                                        </div>
-                                        <textarea id="fill-prompt" data-field="fill_prompt" rows="6"
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Prompt de
+                                            Preenchimento</label>
+                                        <textarea id="fill-prompt" data-field="fill_prompt" rows="4"
                                             class="form-input w-full rounded-md border-gray-300 bg-gray-50 border p-3 text-sm focus:border-brand-500 outline-none resize-none"
                                             placeholder="Descreva os elementos visuais a adicionar..."></textarea>
                                     </div>
@@ -1030,27 +1067,77 @@
                                                 class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Gemini</a>
                                             <a href="https://pxz.ai/tools/image-generator" target="_blank"
                                                 class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">PXZ.ai</a>
-                                            <a href="https://dreamina.capcut.com/ai-tool/generate?type=image"
-                                                target="_blank"
-                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Dreamina</a>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="w-full lg:w-80 shrink-0">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Fundo (JPG, PNG ou
-                                        MP4)</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Folha Preenchida
+                                        (PNG)</label>
                                     <div id="fill-image-dropzone"
                                         class="w-full aspect-[9/16] bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-brand-300 transition-colors cursor-pointer relative overflow-hidden">
-                                        <input type="file" accept="image/*,video/mp4"
+                                        <input type="file" accept="image/*"
                                             class="absolute inset-0 opacity-0 cursor-pointer">
                                         <button
                                             class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
                                             title="Remover">
                                             <i class="fa-solid fa-times text-xs"></i>
                                         </button>
-                                        <i class="fa-solid fa-image text-3xl mb-2"></i>
-                                        <span class="text-xs">Imagem ou Vídeo</span>
+                                        <i class="fa-solid fa-pen-nib text-3xl mb-2"></i>
+                                        <span class="text-xs">PNG Transparente</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Flat Mode -->
+                        <div id="fill-flat-mode" class="p-6 hidden">
+                            <div class="flex flex-col lg:flex-row gap-8">
+                                <div class="flex-1 space-y-4">
+                                    <div
+                                        class="bg-orange-50 border border-orange-100 rounded-md p-4 text-sm text-orange-800 flex gap-2 items-start">
+                                        <i class="fa-solid fa-object-ungroup mt-0.5"></i>
+                                        <div>
+                                            <strong>Modo Flat:</strong> Você fez a composição externamente (ex: Canva).
+                                            <br><span class="text-xs">Faça upload de um único vídeo já composto.</span>
+                                        </div>
+                                    </div>
+
+                                    <p class="text-sm text-gray-600">
+                                        Neste modo, você deve baixar a Folha Preenchida e o Loop de Fundo, combiná-los
+                                        em um
+                                        software externo,
+                                        e fazer upload do vídeo final aqui.
+                                    </p>
+
+                                    <div class="flex gap-2">
+                                        <button
+                                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-md text-sm font-medium transition flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-download"></i>
+                                            Baixar Loop
+                                        </button>
+                                        <button
+                                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-md text-sm font-medium transition flex items-center justify-center gap-2">
+                                            <i class="fa-solid fa-download"></i>
+                                            Baixar Folha
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="w-full lg:w-80 shrink-0">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Vídeo Final
+                                        Composto</label>
+                                    <div id="fill-video-dropzone"
+                                        class="w-full aspect-[9/16] bg-gray-900 rounded-lg border-2 border-dashed border-gray-600 flex flex-col items-center justify-center text-gray-400 cursor-pointer relative overflow-hidden">
+                                        <input type="file" accept="video/*"
+                                            class="absolute inset-0 opacity-0 cursor-pointer">
+                                        <button
+                                            class="btn-remove-media absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-md transition z-10 hidden"
+                                            title="Remover">
+                                            <i class="fa-solid fa-times text-xs"></i>
+                                        </button>
+                                        <i class="fa-solid fa-video text-3xl mb-2"></i>
+                                        <span class="text-xs">MP4 Composto</span>
                                     </div>
                                 </div>
                             </div>
@@ -1170,9 +1257,6 @@
                                                 class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Gemini</a>
                                             <a href="https://pxz.ai/tools/image-generator" target="_blank"
                                                 class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">PXZ.ai</a>
-                                            <a href="https://dreamina.capcut.com/ai-tool/generate?type=image"
-                                                target="_blank"
-                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Dreamina</a>
                                         </div>
                                     </div>
                                 </div>
@@ -1251,7 +1335,7 @@
                                             HTML Gerado
                                             <span class="text-xs text-gray-400 ml-2">(editável)</span>
                                         </label>
-                                        <textarea id="manual-html-editor" rows="8" data-field="manual_html"
+                                        <textarea id="manual-html-editor" rows="8" data-field="manual_content"
                                             class="form-input w-full rounded-md border-gray-300 bg-gray-900 text-green-400 border p-3 text-sm font-mono focus:border-brand-500 outline-none resize-none"
                                             placeholder="<p><i class='fa-solid fa-shirt'></i> Traje esporte fino</p>"></textarea>
                                     </div>
@@ -1318,9 +1402,6 @@
                                                 class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Gemini</a>
                                             <a href="https://pxz.ai/tools/image-generator" target="_blank"
                                                 class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">PXZ.ai</a>
-                                            <a href="https://dreamina.capcut.com/ai-tool/generate?type=image"
-                                                target="_blank"
-                                                class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded text-xs text-gray-600 transition">Dreamina</a>
                                         </div>
                                     </div>
                                 </div>
@@ -1428,41 +1509,17 @@
                             </h4>
 
                             <div id="music-samples-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <!-- MUSIC_SAMPLES_START -->
-                                <!-- Auto-generated: PERFECT - Ed Sheeran - Violin Cover by Andre Soueid -->
-                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
-                                    data-sample="música base/PERFECT - Ed Sheeran - Violin Cover by Andre Soueid [b9v96HD_3_U].mp3"
-                                    data-name="PERFECT - Ed Sheeran - Violin Cover by Andre Soueid">
-                                    <div
-                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
-                                        <i class="fa-solid fa-heart"></i>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-700 truncate">PERFECT - Ed Sheeran -
-                                            Violin Cover by Andre Soueid</p>
-                                        <p class="text-xs text-gray-400">Biblioteca • PERFECT</p>
-                                    </div>
-                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
-                                        title="Ouvir prévia">
-                                        <i class="fa-solid fa-play text-sm"></i>
-                                    </button>
-                                    <button
-                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
-                                        Usar
-                                    </button>
-                                </div>
-                                <!-- Auto-generated: Música filme Enrolados  I See the Light  instrumental - para Entrada das Floristas -->
+                                <!-- Sample 1: Enrolados -->
                                 <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
                                     data-sample="música base/Música filme Enrolados _I See the Light_ instrumental - para Entrada das Floristas [LAA3_ZFZYLY].mp3"
-                                    data-name="Música filme Enrolados  I See the Light  instrumental - para Entrada das Floristas">
+                                    data-name="I See The Light (Instrumental)">
                                     <div
                                         class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
                                         <i class="fa-solid fa-heart"></i>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-700 truncate">Música filme Enrolados I
-                                            See the Light instrumental - para Entrada das Floristas</p>
-                                        <p class="text-xs text-gray-400">Biblioteca • Música</p>
+                                        <p class="text-sm font-medium text-gray-700 truncate">I See The Light</p>
+                                        <p class="text-xs text-gray-400">Disney • Romântico</p>
                                     </div>
                                     <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
                                         title="Ouvir prévia">
@@ -1473,16 +1530,40 @@
                                         Usar
                                     </button>
                                 </div>
-                                <!-- Auto-generated: sample enchanted -->
+
+                                <!-- Sample 2: Perfect -->
                                 <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
-                                    data-sample="música base/sample_enchanted.mp3" data-name="sample enchanted">
+                                    data-sample="música base/PERFECT - Ed Sheeran - Violin Cover by Andre Soueid [b9v96HD_3_U].mp3"
+                                    data-name="Perfect (Violin Cover)">
+                                    <div
+                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
+                                        <i class="fa-solid fa-music"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-700 truncate">Perfect (Violin)</p>
+                                        <p class="text-xs text-gray-400">Casamento • Clássico</p>
+                                    </div>
+                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
+                                        title="Ouvir prévia">
+                                        <i class="fa-solid fa-play text-sm"></i>
+                                    </button>
+                                    <button
+                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
+                                        Usar
+                                    </button>
+                                </div>
+
+                                <!-- Sample 3: Viva La Vida -->
+                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
+                                    data-sample="música base/sample_vivalavida.mp3"
+                                    data-name="Viva La Vida (Instrumental)">
                                     <div
                                         class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
                                         <i class="fa-solid fa-bolt"></i>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-700 truncate">sample enchanted</p>
-                                        <p class="text-xs text-gray-400">Biblioteca • sample</p>
+                                        <p class="text-sm font-medium text-gray-700 truncate">Viva La Vida</p>
+                                        <p class="text-xs text-gray-400">Pop • Animado</p>
                                     </div>
                                     <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
                                         title="Ouvir prévia">
@@ -1493,16 +1574,17 @@
                                         Usar
                                     </button>
                                 </div>
-                                <!-- Auto-generated: sample vivalavida -->
+
+                                <!-- Sample 4: Enchanted -->
                                 <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
-                                    data-sample="música base/sample_vivalavida.mp3" data-name="sample vivalavida">
+                                    data-sample="musica-base/sample_enchanted.mp3" data-name="Enchanted (Orchestral)">
                                     <div
                                         class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
-                                        <i class="fa-solid fa-music"></i>
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-700 truncate">sample vivalavida</p>
-                                        <p class="text-xs text-gray-400">Biblioteca • sample</p>
+                                        <p class="text-sm font-medium text-gray-700 truncate">Enchanted</p>
+                                        <p class="text-xs text-gray-400">Valsa • Épico</p>
                                     </div>
                                     <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
                                         title="Ouvir prévia">
@@ -1513,51 +1595,6 @@
                                         Usar
                                     </button>
                                 </div>
-                                <!-- Auto-generated: Ed Sheeran - Thinking Out Loud -->
-                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
-                                    data-sample="música base/Ed Sheeran - Thinking Out Loud (Official Lyric Video).mp3"
-                                    data-name="Ed Sheeran - Thinking Out Loud">
-                                    <div
-                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
-                                        <i class="fa-solid fa-music"></i>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-700 truncate">Ed Sheeran - Thinking Out
-                                            Loud</p>
-                                        <p class="text-xs text-gray-400">Biblioteca • Ed</p>
-                                    </div>
-                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
-                                        title="Ouvir prévia">
-                                        <i class="fa-solid fa-play text-sm"></i>
-                                    </button>
-                                    <button
-                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
-                                        Usar
-                                    </button>
-                                </div>
-                                <!-- Auto-generated: Sentimentos São - Bela e a Fera -->
-                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
-                                    data-sample="música base/Sentimentos São - Bela e a Fera.mp3"
-                                    data-name="Sentimentos São - Bela e a Fera">
-                                    <div
-                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
-                                        <i class="fa-solid fa-music"></i>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-700 truncate">Sentimentos São - Bela e a
-                                            Fera</p>
-                                        <p class="text-xs text-gray-400">Biblioteca • Sentimentos</p>
-                                    </div>
-                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
-                                        title="Ouvir prévia">
-                                        <i class="fa-solid fa-play text-sm"></i>
-                                    </button>
-                                    <button
-                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
-                                        Usar
-                                    </button>
-                                </div>
-                                <!-- MUSIC_SAMPLES_END -->
                             </div>
                         </div>
                     </div>
@@ -1608,7 +1645,6 @@
                                         </div>
                                         <div class="relative inline-block w-12 mr-2 align-middle select-none">
                                             <input type="checkbox" id="watermark-toggle" data-field="watermark_enabled"
-                                                checked
                                                 class="form-input toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-amber-300" />
                                             <label for="watermark-toggle"
                                                 class="toggle-label block overflow-hidden h-6 rounded-full bg-amber-300 cursor-pointer"></label>
@@ -1694,75 +1730,23 @@
                             </div>
                         </div>
 
-                        <!-- Footer: New Inline Status Area -->
-                        <div id="publish-status-area"
-                            class="hidden mt-6 bg-gray-50 border border-gray-200 rounded-lg p-5 transition-all duration-300">
-
-                            <!-- Header -->
-                            <div class="flex items-center justify-between mb-4 border-b border-gray-200 pb-2">
-                                <h3 class="text-sm font-bold text-gray-700">Status da Publicação</h3>
-                                <span id="deploy-status-text"
-                                    class="text-xs font-mono text-gray-500 bg-gray-200 px-2 py-1 rounded">Iniciando...</span>
-                            </div>
-
-                            <!-- Steps Container -->
-                            <div class="space-y-4 pl-2">
-
-                                <!-- Step 1: Build -->
-                                <div id="deploy-step-1"
-                                    class="flex items-center gap-3 text-gray-400 transition-colors duration-300">
-                                    <div class="w-6 flex justify-center shrink-0">
-                                        <i
-                                            class="step-icon fa-regular fa-circle text-lg transition-all duration-300"></i>
-                                    </div>
-                                    <span class="text-sm font-medium">1. Gerando Arquivos (Build)</span>
+                        <!-- Footer: Result URL -->
+                        <div id="publish-result" class="hidden p-6 bg-green-50 border-t border-green-100">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                                    <i class="fa-solid fa-check text-xl"></i>
                                 </div>
-
-                                <!-- Step 2: Upload -->
-                                <div id="deploy-step-2"
-                                    class="flex items-center gap-3 text-gray-400 transition-colors duration-300">
-                                    <div class="w-6 flex justify-center shrink-0">
-                                        <i
-                                            class="step-icon fa-regular fa-circle text-lg transition-all duration-300"></i>
-                                    </div>
-                                    <span class="text-sm font-medium">2. Enviando para GitHub</span>
-                                </div>
-
-                                <!-- Step 3: Live -->
-                                <div id="deploy-step-3"
-                                    class="flex items-center gap-3 text-gray-400 transition-colors duration-300">
-                                    <div class="w-6 flex justify-center shrink-0">
-                                        <i
-                                            class="step-icon fa-regular fa-circle text-lg transition-all duration-300"></i>
-                                    </div>
-                                    <span class="text-sm font-medium">3. Verificando Site Online</span>
-                                </div>
-
-                            </div>
-
-
-                            <!-- Success Actions -->
-                            <div id="publish-success-actions" class="hidden mt-4 pt-4 border-t border-gray-200">
-                                <div class="p-3 bg-green-50 border border-green-200 rounded mb-3 text-center">
-                                    <p class="text-sm text-green-700 font-bold mb-1"><i
-                                            class="fa-solid fa-check-circle"></i> Publicado com Sucesso!</p>
-                                    <p class="text-xs text-green-600">Seu convite está online e pronto para
-                                        compartilhar.</p>
-                                </div>
-                                <div class="flex flex-col gap-2">
-                                    <a id="btn-open-live" href="#" target="_blank"
-                                        class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg text-sm font-bold text-center transition shadow-sm flex items-center justify-center gap-2">
-                                        VER CONVITE ONLINE <i class="fa-solid fa-external-link-alt"></i>
+                                <div class="flex-1">
+                                    <p class="text-sm text-green-800 font-medium">Publicado com sucesso!</p>
+                                    <a id="publish-url" href="#" target="_blank"
+                                        class="text-brand-600 hover:underline text-sm">
+                                        https://convites.mforge.com.br/meu-convite
                                     </a>
-                                    <a id="btn-open-repo" href="#" target="_blank"
-                                        class="w-full bg-gray-800 hover:bg-gray-900 text-white py-3 rounded-lg text-sm font-bold text-center transition shadow-sm flex items-center justify-center gap-2">
-                                        <i class="fa-brands fa-github"></i> Abrir Pasta no GitHub
-                                    </a>
-                                    <button id="btn-copy-link"
-                                        class="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 rounded-lg text-sm font-bold text-center transition flex items-center justify-center gap-2">
-                                        <i class="fa-solid fa-copy"></i> Copiar Link
-                                    </button>
                                 </div>
+                                <button class="text-gray-400 hover:text-gray-600 p-2" title="Copiar link">
+                                    <i class="fa-solid fa-copy"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1808,7 +1792,7 @@
 
                     <!-- Buttons Preview -->
                     <div id="preview-buttons" class="absolute w-full px-4 flex justify-center" style="bottom: 40px;">
-                        <div class="flex gap-2 justify-center items-start flex-wrap">
+                        <div class="flex gap-2 justify-center flex-wrap">
                             <!-- Buttons will be dynamically rendered by preview.js -->
                         </div>
                     </div>
@@ -1825,7 +1809,59 @@
 
         </aside>
 
+        <!-- ========================================== -->
+        <!-- DEPLOY STATUS MODAL -->
+        <!-- ========================================== -->
+        <div id="deploy-status-modal"
+            class="fixed inset-0 bg-black/90 z-[60] hidden flex items-center justify-center p-4">
+            <div class="w-full max-w-lg bg-gray-900 rounded-xl border border-gray-800 shadow-2xl p-6 relative">
 
+                <!-- Close Button -->
+                <button onclick="document.getElementById('deploy-status-modal').classList.add('hidden')"
+                    class="absolute top-4 right-4 text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-white mb-2">Publicar Online</h2>
+                    <p class="text-gray-400 text-sm">Gerenciando sua publicação...</p>
+                </div>
+
+                <!-- Success Box (Hidden by default) -->
+                <div id="deploy-success-box" class="hidden mb-4">
+                    <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-4">
+                        <div class="flex items-center gap-2 text-green-400 font-bold mb-2">
+                            <i class="fa-solid fa-check-circle"></i> Arquivos enviados!
+                        </div>
+                        <div class="flex items-center gap-2 bg-gray-950/50 rounded p-3 border border-green-500/10">
+                            <input id="deploy-final-link" type="text" readonly
+                                class="bg-transparent border-none text-green-400 w-full text-sm focus:ring-0 cursor-text"
+                                value="https://...">
+                            <a id="deploy-open-link" href="#" target="_blank"
+                                class="text-green-400 hover:text-green-300 transition p-2">
+                                <i class="fa-solid fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Local Files Box (Static Placeholder as requested) -->
+                <div
+                    class="bg-gray-800/50 rounded-lg p-4 mb-4 flex items-center gap-3 border border-gray-700/50 opacity-60">
+                    <i class="fa-brands fa-github text-2xl text-white"></i>
+                    <span class="text-gray-300 font-medium">Repositório GitHub (Arquivos)</span>
+                </div>
+
+                <!-- Status Bar -->
+                <div class="border border-yellow-500/20 bg-yellow-500/5 rounded-lg p-3 flex items-center gap-3 transition-colors"
+                    id="deploy-status-container">
+                    <i id="deploy-status-icon" class="fa-solid fa-clock text-yellow-500"></i>
+                    <span id="deploy-status-text" class="text-yellow-500 font-medium text-sm">Status: pending</span>
+                </div>
+
+            </div>
+        </div>
 
         <!-- MOBILE PREVIEW MODAL -->
         <!-- ========================================== -->
@@ -1889,28 +1925,25 @@
     </div>
 
 
-    <!-- Core Dependencies -->
-    <script src="static/js/supabase-adapter.js?v=4.4.0"></script>
-    <script src="static/js/persistence.js?v=4.3.55"></script>
-    <script src="static/js/history.js?v=4.3.55"></script>
-    <script src="static/js/form.js?v=4.4.0"></script>
+    <!-- Supabase Adapter (MUST load first) -->
+    <script src="static/js/supabase-adapter.js?v=4.2.1"></script>
 
-    <!-- Utilities -->
-    <script src="static/js/ai-prompts.js?v=4.4.0"></script>
-    <script src="static/js/build-system.js?v=4.3.55"></script>
-    <script src="static/js/debug-logger.js?v=4.3.55"></script>
-    <script src="static/js/api-client.js?v=4.3.55"></script>
+    <!-- CRITICAL: Load these FIRST (before other modules depend on them) -->
+    <script src="static/js/ai-prompts.js?v=4.2.1"></script>
 
-    <!-- Logic & UI -->
-    <script src="static/js/navigation.js?v=4.3.55"></script>
-    <script src="static/js/links-extras.js?v=4.3.55"></script>
-    <script src="static/js/preview.js?v=4.3.55"></script>
-    <script src="static/js/windows.js?v=4.4.0"></script>
-    <script src="static/js/chatbot.js?v=4.4.0"></script>
-    <script src="static/js/theme.js?v=4.4.0"></script>
-    <script src="static/js/github-adapter.js?v=4.4.0"></script>
-    <script src="static/js/gemini-adapter.js?v=4.3.55"></script>
-    <script src="static/js/app.js?v=4.3.55"></script>
+    <script src="static/js/build-system.js?v=4.2.1"></script>
+    <script src="static/js/debug-logger.js?v=1.0"></script>
+
+    <!-- Original Scripts -->
+    <script src="static/js/navigation.js?v=4.2.1"></script>
+    <script src="static/js/form.js?v=4.2.3"></script>
+    <script src="static/js/links-extras.js?v=4.2.1"></script>
+    <script src="static/js/preview.js?v=4.2.1"></script>
+    <script src="static/js/history.js?v=4.2.1"></script>
+    <script src="static/js/chatbot.js?v=4.2.1"></script>
+    <script src="static/js/windows.js?v=4.2.3"></script>
+    <script src="static/js/persistence.js?v=4.2.1"></script>
+    <script src="static/js/app.js?v=4.2.1"></script>
 
     <script>
         // Mobile menu helpers

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AutoBuilder v4 - Criador de Convites Digitais</title>
     <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='white'>✉️</text></svg>">
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
 
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -16,10 +16,6 @@
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="static/css/main.css?v=4.4.0">
-
     <!-- JSZip -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- SortableJS for drag-and-drop -->
@@ -32,7 +28,6 @@
     <!-- Tailwind Config -->
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -103,57 +98,7 @@
         .window-panel.hidden {
             display: none;
         }
-
-        /* Initial theme setup to avoid flash */
-        :root {
-            --bg-primary: #f6f8fa;
-            --sidebar-bg: #1e293b;
-            --header-bg: #ffffff;
-            --text-primary: #374151;
-            --text-heading: #111827;
-            --panel-bg: #ffffff;
-            --panel-border: #e2e8f0;
-        }
-
-        html.dark {
-            --bg-primary: #0f172a;
-            --sidebar-bg: #1e293b;
-            --header-bg: #1e293b;
-            --text-primary: #f8fafc;
-            --text-heading: #ff8e72;
-            /* Orange-Pink vibrant */
-            --panel-bg: #1e293b;
-            --panel-border: #334155;
-        }
-
-        body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-        }
-
-        .window-panel {
-            background-color: var(--panel-bg);
-            border-color: var(--panel-border);
-        }
-
-        header {
-            background-color: var(--header-bg);
-            border-color: var(--panel-border);
-        }
-
-        h3,
-        h4,
-        #header-title {
-            color: var(--text-heading);
-        }
     </style>
-    <script>
-            // Separate init block to ensure DOM readiness doesn't block class addition
-            (function () {
-                const theme = localStorage.getItem('theme') || 'dark';
-                if (theme === 'dark') document.documentElement.classList.add('dark');
-            })();
-    </script>
 </head>
 
 <body class="bg-saas-bg h-screen w-screen overflow-hidden text-gray-700">
@@ -176,12 +121,9 @@
             <div
                 class="h-16 flex items-center justify-between px-4 lg:px-6 bg-slate-900 border-b border-slate-700 shrink-0">
                 <div class="flex items-center">
-                    <span class="text-white font-semibold tracking-wide">AutoBuilder v4</span>
-                    <button id="theme-toggle"
-                        class="ml-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                        title="Alternar Tema">
-                        <i id="theme-icon" class="fa-solid fa-moon"></i>
-                    </button>
+                    <div class="w-8 h-8 bg-brand-500 rounded-md flex items-center justify-center text-white font-bold">A
+                    </div>
+                    <span class="ml-3 text-white font-semibold tracking-wide">AutoBuilder v4</span>
                 </div>
                 <button id="btn-close-menu" class="lg:hidden text-slate-400 hover:text-white p-2"
                     onclick="closeMobileMenu()">
@@ -373,15 +315,6 @@
 
                         <!-- Cards Grid -->
                         <div id="history-cards" class="p-6 hidden">
-                            <!-- Search Bar -->
-                            <div class="mb-6">
-                                <div class="relative">
-                                    <i
-                                        class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                                    <input type="text" id="history-search" placeholder="Buscar convites..."
-                                        class="form-input w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:ring-brand-500 focus:border-brand-500 outline-none">
-                                </div>
-                            </div>
                             <div id="history-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <!-- Cards will be inserted here -->
                             </div>
@@ -1251,7 +1184,7 @@
                                             HTML Gerado
                                             <span class="text-xs text-gray-400 ml-2">(editável)</span>
                                         </label>
-                                        <textarea id="manual-html-editor" rows="8" data-field="manual_html"
+                                        <textarea id="manual-html-editor" rows="8" data-field="manual_content"
                                             class="form-input w-full rounded-md border-gray-300 bg-gray-900 text-green-400 border p-3 text-sm font-mono focus:border-brand-500 outline-none resize-none"
                                             placeholder="<p><i class='fa-solid fa-shirt'></i> Traje esporte fino</p>"></textarea>
                                     </div>
@@ -1428,41 +1361,17 @@
                             </h4>
 
                             <div id="music-samples-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <!-- MUSIC_SAMPLES_START -->
-                                <!-- Auto-generated: PERFECT - Ed Sheeran - Violin Cover by Andre Soueid -->
-                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
-                                    data-sample="música base/PERFECT - Ed Sheeran - Violin Cover by Andre Soueid [b9v96HD_3_U].mp3"
-                                    data-name="PERFECT - Ed Sheeran - Violin Cover by Andre Soueid">
-                                    <div
-                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
-                                        <i class="fa-solid fa-heart"></i>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-700 truncate">PERFECT - Ed Sheeran -
-                                            Violin Cover by Andre Soueid</p>
-                                        <p class="text-xs text-gray-400">Biblioteca • PERFECT</p>
-                                    </div>
-                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
-                                        title="Ouvir prévia">
-                                        <i class="fa-solid fa-play text-sm"></i>
-                                    </button>
-                                    <button
-                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
-                                        Usar
-                                    </button>
-                                </div>
-                                <!-- Auto-generated: Música filme Enrolados  I See the Light  instrumental - para Entrada das Floristas -->
+                                <!-- Sample 1: Enrolados -->
                                 <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
                                     data-sample="música base/Música filme Enrolados _I See the Light_ instrumental - para Entrada das Floristas [LAA3_ZFZYLY].mp3"
-                                    data-name="Música filme Enrolados  I See the Light  instrumental - para Entrada das Floristas">
+                                    data-name="I See The Light (Instrumental)">
                                     <div
                                         class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
                                         <i class="fa-solid fa-heart"></i>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-700 truncate">Música filme Enrolados I
-                                            See the Light instrumental - para Entrada das Floristas</p>
-                                        <p class="text-xs text-gray-400">Biblioteca • Música</p>
+                                        <p class="text-sm font-medium text-gray-700 truncate">I See The Light</p>
+                                        <p class="text-xs text-gray-400">Disney • Romântico</p>
                                     </div>
                                     <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
                                         title="Ouvir prévia">
@@ -1473,16 +1382,40 @@
                                         Usar
                                     </button>
                                 </div>
-                                <!-- Auto-generated: sample enchanted -->
+
+                                <!-- Sample 2: Perfect -->
                                 <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
-                                    data-sample="música base/sample_enchanted.mp3" data-name="sample enchanted">
+                                    data-sample="música base/PERFECT - Ed Sheeran - Violin Cover by Andre Soueid [b9v96HD_3_U].mp3"
+                                    data-name="Perfect (Violin Cover)">
+                                    <div
+                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
+                                        <i class="fa-solid fa-music"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-700 truncate">Perfect (Violin)</p>
+                                        <p class="text-xs text-gray-400">Casamento • Clássico</p>
+                                    </div>
+                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
+                                        title="Ouvir prévia">
+                                        <i class="fa-solid fa-play text-sm"></i>
+                                    </button>
+                                    <button
+                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
+                                        Usar
+                                    </button>
+                                </div>
+
+                                <!-- Sample 3: Viva La Vida -->
+                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
+                                    data-sample="música base/sample_vivalavida.mp3"
+                                    data-name="Viva La Vida (Instrumental)">
                                     <div
                                         class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
                                         <i class="fa-solid fa-bolt"></i>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-700 truncate">sample enchanted</p>
-                                        <p class="text-xs text-gray-400">Biblioteca • sample</p>
+                                        <p class="text-sm font-medium text-gray-700 truncate">Viva La Vida</p>
+                                        <p class="text-xs text-gray-400">Pop • Animado</p>
                                     </div>
                                     <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
                                         title="Ouvir prévia">
@@ -1493,16 +1426,17 @@
                                         Usar
                                     </button>
                                 </div>
-                                <!-- Auto-generated: sample vivalavida -->
+
+                                <!-- Sample 4: Enchanted -->
                                 <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
-                                    data-sample="música base/sample_vivalavida.mp3" data-name="sample vivalavida">
+                                    data-sample="musica-base/sample_enchanted.mp3" data-name="Enchanted (Orchestral)">
                                     <div
                                         class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
-                                        <i class="fa-solid fa-music"></i>
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-700 truncate">sample vivalavida</p>
-                                        <p class="text-xs text-gray-400">Biblioteca • sample</p>
+                                        <p class="text-sm font-medium text-gray-700 truncate">Enchanted</p>
+                                        <p class="text-xs text-gray-400">Valsa • Épico</p>
                                     </div>
                                     <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
                                         title="Ouvir prévia">
@@ -1513,51 +1447,6 @@
                                         Usar
                                     </button>
                                 </div>
-                                <!-- Auto-generated: Ed Sheeran - Thinking Out Loud -->
-                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
-                                    data-sample="música base/Ed Sheeran - Thinking Out Loud (Official Lyric Video).mp3"
-                                    data-name="Ed Sheeran - Thinking Out Loud">
-                                    <div
-                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
-                                        <i class="fa-solid fa-music"></i>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-700 truncate">Ed Sheeran - Thinking Out
-                                            Loud</p>
-                                        <p class="text-xs text-gray-400">Biblioteca • Ed</p>
-                                    </div>
-                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
-                                        title="Ouvir prévia">
-                                        <i class="fa-solid fa-play text-sm"></i>
-                                    </button>
-                                    <button
-                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
-                                        Usar
-                                    </button>
-                                </div>
-                                <!-- Auto-generated: Sentimentos São - Bela e a Fera -->
-                                <div class="sample-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition group cursor-pointer flex items-center gap-3"
-                                    data-sample="música base/Sentimentos São - Bela e a Fera.mp3"
-                                    data-name="Sentimentos São - Bela e a Fera">
-                                    <div
-                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-brand-600 border border-gray-200">
-                                        <i class="fa-solid fa-music"></i>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-700 truncate">Sentimentos São - Bela e a
-                                            Fera</p>
-                                        <p class="text-xs text-gray-400">Biblioteca • Sentimentos</p>
-                                    </div>
-                                    <button class="sample-preview-btn text-gray-400 hover:text-brand-600 p-1"
-                                        title="Ouvir prévia">
-                                        <i class="fa-solid fa-play text-sm"></i>
-                                    </button>
-                                    <button
-                                        class="sample-select-btn bg-brand-100 text-brand-600 px-2 py-1 rounded text-xs font-medium opacity-0 group-hover:opacity-100 transition">
-                                        Usar
-                                    </button>
-                                </div>
-                                <!-- MUSIC_SAMPLES_END -->
                             </div>
                         </div>
                     </div>
@@ -1889,28 +1778,31 @@
     </div>
 
 
-    <!-- Core Dependencies -->
-    <script src="static/js/supabase-adapter.js?v=4.4.0"></script>
-    <script src="static/js/persistence.js?v=4.3.55"></script>
-    <script src="static/js/history.js?v=4.3.55"></script>
-    <script src="static/js/form.js?v=4.4.0"></script>
+    <!-- Supabase Adapter (MUST load first) -->
+    <script src="static/js/supabase-adapter.js?v=4.3.55"></script>
 
-    <!-- Utilities -->
-    <script src="static/js/ai-prompts.js?v=4.4.0"></script>
+    <!-- CRITICAL: Load these FIRST (before other modules depend on them) -->
+    <script src="static/js/ai-prompts.js?v=4.3.55"></script>
+
     <script src="static/js/build-system.js?v=4.3.55"></script>
     <script src="static/js/debug-logger.js?v=4.3.55"></script>
-    <script src="static/js/api-client.js?v=4.3.55"></script>
 
-    <!-- Logic & UI -->
+    <!-- Original Scripts -->
     <script src="static/js/navigation.js?v=4.3.55"></script>
+    <script src="static/js/form.js?v=4.3.55"></script>
     <script src="static/js/links-extras.js?v=4.3.55"></script>
     <script src="static/js/preview.js?v=4.3.55"></script>
-    <script src="static/js/windows.js?v=4.4.0"></script>
-    <script src="static/js/chatbot.js?v=4.4.0"></script>
-    <script src="static/js/theme.js?v=4.4.0"></script>
-    <script src="static/js/github-adapter.js?v=4.4.0"></script>
+
+    <!-- Core Modules -->
     <script src="static/js/gemini-adapter.js?v=4.3.55"></script>
     <script src="static/js/app.js?v=4.3.55"></script>
+    <script src="static/js/ai-prompts.js?v=4.4.0"></script>
+    <script src="static/js/windows.js?v=4.4.0"></script>
+    <script src="static/js/chatbot.js?v=4.4.0"></script>
+    <script src="static/js/supabase-adapter.js?v=4.4.0"></script>
+    <script src="static/js/github-adapter.js?v=4.4.0"></script>
+    <script src="static/js/history.js?v=4.3.55"></script>
+    <script src="static/js/persistence.js?v=4.3.55"></script>
 
     <script>
         // Mobile menu helpers
