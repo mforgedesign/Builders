@@ -710,88 +710,151 @@
 
     /**
      * Delete an invitation from GitHub
+     * Uses elegant confirmation modal and runs deletion in background
      */
     async function deleteInvitation(slug) {
-        if (!confirm(`Tem certeza que deseja excluir "${slug}"?\n\nEsta ação não pode ser desfeita.`)) {
-            return;
-        }
-
-        // Show loading overlay
-        const loadingMsg = document.createElement('div');
-        loadingMsg.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm';
-        loadingMsg.innerHTML = `
-            <div class="bg-gray-900 text-white rounded-xl p-8 max-w-md w-full border border-gray-700 shadow-2xl">
-                <div class="flex flex-col items-center gap-6 text-center">
-                    <div class="relative">
-                        <div class="w-16 h-16 border-4 border-red-500/30 border-t-red-500 rounded-full animate-spin"></div>
-                        <i class="fa-solid fa-trash absolute inset-0 flex items-center justify-center text-red-500 text-xl"></i>
+        // Create elegant confirmation modal
+        const modalId = `confirm-delete-${Date.now()}`;
+        const modal = document.createElement('div');
+        modal.className = 'confirm-modal-overlay';
+        modal.id = modalId;
+        modal.innerHTML = `
+            <div class="confirm-modal-content">
+                <div class="flex flex-col items-center text-center">
+                    <!-- Icon -->
+                    <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-trash text-red-500 text-2xl"></i>
                     </div>
-                    <div>
-                        <h3 class="font-bold text-xl mb-2">Excluindo Convite</h3>
-                        <p class="text-gray-400 text-sm" id="delete-status">Conectando ao GitHub...</p>
+                    
+                    <!-- Title -->
+                    <h3 class="text-xl font-bold text-white mb-2">Excluir Convite?</h3>
+                    
+                    <!-- Message -->
+                    <p class="text-gray-400 text-sm mb-2">Você está prestes a excluir:</p>
+                    <p class="text-brand-400 font-semibold mb-4">${slug}</p>
+                    <p class="text-red-400 text-xs mb-6">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                        Esta ação não pode ser desfeita.
+                    </p>
+                    
+                    <!-- Buttons -->
+                    <div class="flex gap-3 w-full">
+                        <button id="${modalId}-cancel" 
+                            class="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition">
+                            Cancelar
+                        </button>
+                        <button id="${modalId}-confirm" 
+                            class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-trash"></i>
+                            Excluir
+                        </button>
                     </div>
                 </div>
             </div>
         `;
-        document.body.appendChild(loadingMsg);
+        document.body.appendChild(modal);
 
-        const updateStatus = (msg) => {
-            const statusEl = document.getElementById('delete-status');
-            if (statusEl) statusEl.textContent = msg;
-        };
+        // Handle button clicks
+        return new Promise((resolve) => {
+            const cancelBtn = document.getElementById(`${modalId}-cancel`);
+            const confirmBtn = document.getElementById(`${modalId}-confirm`);
 
-        try {
-            if (!window.githubAdapter) {
-                throw new Error('GitHub Adapter não disponível');
-            }
+            const closeModal = () => {
+                modal.style.animation = 'fadeIn 0.2s ease-out reverse';
+                setTimeout(() => modal.remove(), 200);
+            };
 
-            updateStatus('Autenticando...');
-            await window.githubAdapter.ensureAuth();
+            cancelBtn.addEventListener('click', () => {
+                closeModal();
+                resolve(false);
+            });
 
-            updateStatus('Excluindo pasta do repositório...');
-            const success = await window.githubAdapter.deleteFolder(slug);
-
-            if (success) {
-                // Remove from local state
-                invitations = invitations.filter(i => i.slug !== slug);
-                allInvitations = allInvitations.filter(i => i.slug !== slug);
-
-                // Remove card from DOM
-                const cardEl = document.querySelector(`[data-slug="${slug}"]`);
-                if (cardEl) {
-                    cardEl.style.transition = 'opacity 0.3s, transform 0.3s';
-                    cardEl.style.opacity = '0';
-                    cardEl.style.transform = 'scale(0.9)';
-                    setTimeout(() => cardEl.remove(), 300);
+            // Close on overlay click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                    resolve(false);
                 }
+            });
 
-                // Close loading
-                loadingMsg.remove();
+            confirmBtn.addEventListener('click', async () => {
+                // Change button to loading state
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Excluindo...';
 
-                // Show success
-                if (window.showToast) {
-                    window.showToast(`"${slug}" excluído com sucesso!`, 'success');
-                } else {
-                    alert(`"${slug}" excluído com sucesso!`);
+                try {
+                    if (!window.githubAdapter) {
+                        throw new Error('GitHub Adapter não disponível');
+                    }
+
+                    // Ensure auth (will prompt if needed)
+                    const authOk = await window.githubAdapter.ensureAuth();
+                    if (!authOk) {
+                        throw new Error('Autenticação cancelada');
+                    }
+
+                    // Start deletion in background
+                    closeModal();
+
+                    // Immediately fade out the card for responsive UI
+                    const cardEl = document.querySelector(`[data-slug="${slug}"]`);
+                    if (cardEl) {
+                        cardEl.style.transition = 'opacity 0.3s, transform 0.3s';
+                        cardEl.style.opacity = '0.5';
+                        cardEl.style.pointerEvents = 'none';
+                    }
+
+                    // Perform deletion
+                    const success = await window.githubAdapter.deleteFolder(slug);
+
+                    if (success) {
+                        // Remove from local state
+                        invitations = invitations.filter(i => i.slug !== slug);
+                        allInvitations = allInvitations.filter(i => i.slug !== slug);
+
+                        // Remove card from DOM
+                        if (cardEl) {
+                            cardEl.style.transform = 'scale(0.9)';
+                            cardEl.style.opacity = '0';
+                            setTimeout(() => cardEl.remove(), 300);
+                        }
+
+                        // Show success toast
+                        if (window.showToast) {
+                            window.showToast(`"${slug}" excluído com sucesso!`, 'success');
+                        }
+
+                        // Check if empty
+                        if (invitations.length === 0) {
+                            showState('empty');
+                        }
+
+                        resolve(true);
+                    } else {
+                        throw new Error('Pasta não encontrada no repositório');
+                    }
+
+                } catch (error) {
+                    console.error('[History] Delete Error:', error);
+
+                    // Restore card if it exists
+                    const cardEl = document.querySelector(`[data-slug="${slug}"]`);
+                    if (cardEl) {
+                        cardEl.style.opacity = '1';
+                        cardEl.style.pointerEvents = 'auto';
+                    }
+
+                    // Show error toast
+                    if (window.showToast) {
+                        window.showToast(`Erro ao excluir: ${error.message}`, 'error');
+                    } else {
+                        alert(`Erro ao excluir: ${error.message}`);
+                    }
+
+                    resolve(false);
                 }
-
-                // Check if empty
-                if (invitations.length === 0) {
-                    showState('empty');
-                }
-            } else {
-                throw new Error('Falha ao excluir do repositório');
-            }
-
-        } catch (error) {
-            console.error('[History] Delete Error:', error);
-            loadingMsg.remove();
-            if (window.showToast) {
-                window.showToast(`Erro ao excluir: ${error.message}`, 'error');
-            } else {
-                alert(`Erro ao excluir: ${error.message}`);
-            }
-        }
+            });
+        });
     }
 
     // ==================== PUBLIC API ====================
