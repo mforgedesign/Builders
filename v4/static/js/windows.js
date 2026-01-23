@@ -2693,8 +2693,7 @@
 
                     // Map payload to Kie.ai API format
                     const edgeInput = {
-                        prompt: payload.prompt,
-                        aspect_ratio: payload.aspect_ratio || '9:16'
+                        prompt: payload.prompt
                     };
 
                     // Model-specific parameter filtering
@@ -2711,6 +2710,11 @@
                         if (payload.duration) edgeInput.duration = String(payload.duration);
                         if (payload.resolution) edgeInput.resolution = payload.resolution;
                         if (payload.hasOwnProperty('prompt_optimizer')) edgeInput.prompt_optimizer = payload.prompt_optimizer;
+
+                        // ONLY add aspect_ratio if explicitly provided for video (Hailuo 02 doesn't support it)
+                        if (payload.aspect_ratio && !isHailuo) {
+                            edgeInput.aspect_ratio = payload.aspect_ratio;
+                        }
                     } else {
                         // Image/Edit Specific (Seedream, etc.)
                         // Documentation confirms quality and aspect_ratio are REQUIRED
@@ -2724,6 +2728,8 @@
                             edgeInput.image_url = payload.image_url;
                         }
                     }
+
+                    console.log(`[Windows AI] Calling Edge Function (${payload.model}):`, edgeInput);
 
                     const { data: taskData, error: taskError } = await window.supabaseClient.functions.invoke('generate-asset', {
                         body: {
