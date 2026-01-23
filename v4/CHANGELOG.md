@@ -1,6 +1,12 @@
 ## [4.2.4] - 2026-01-22
 ### Fixed
 - **Chatbot CORS Error**: Corrigida falha de conexão (CORS) trocando a chamada da função inexistente `chat` pelo endpoint correto `chatbot-intent`.
+- **UI & Theme Enhancement**:
+    - Implemented global **Dark Mode** by default with a Sun/Moon toggle next to the logo.
+    - Updated project favicon to a minimalist white envelope icon.
+    - Simplified header by removing the square logo icon.
+    - Implemented vibrant orange-pink accents (`#ff8e72`) for titles in dark mode.
+    - Added CSS variable system for easy theme maintenance in `main.css`.
 - **Chatbot Asset Refinement**:
     - Fixed "Invalid parameter" error in Hailuo animations by enabling `duration`, `resolution` (768P), and `prompt_optimizer` (false) parameters in `windows.js`.
     - Updated `ai-prompts.js` to include standard Hailuo configuration as per the integration guide.
