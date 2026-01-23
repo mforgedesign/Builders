@@ -172,8 +172,6 @@
             if (referenceBase64) {
                 const publicUrl = await uploadToPublicUrl(referenceBase64);
                 input.image_urls = [publicUrl];
-            } else {
-                if (!referenceBase64) throw new Error("Imagem de referência é obrigatória para este modelo (Seedream Edit).");
             }
 
             return this._generateGeneric(API_CONFIG.MODELS.IMAGE, input);
