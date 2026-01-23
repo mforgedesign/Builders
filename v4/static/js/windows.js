@@ -3593,14 +3593,16 @@
                         let result;
                         let liveUrl;
 
-                        // FORCE SERVER-SIDE DEPLOYMENT (Updated per user request)
-                        if (false && window.githubAdapter) {
-                            console.log('[Publish] Using generic githubAdapter.deployBatch');
+                        // HYBRID DEPLOYMENT STRATEGY
+                        // 1. Standard Repos (e.g. 'convite'): Use Client-Side Adapter (Faster, Less Server Load)
+                        // 2. Legacy Repo ('Convites'): Force Server-Side API (Required for specific workflow/auth)
+                        if (window.githubAdapter && repoKey !== 'Convites') {
+                            console.log('[Publish] Using generic githubAdapter.deployBatch (Client-Side)');
                             try {
                                 // We need to clean keys in filesMap to be relative to the slug folder?
-                                // No, deployBatch expects files map where keys are filenames relative to the tree root we are creating.
+                                // No, deployBatch expects files map where keys are filenames relative to the tree root we are creating. 
                                 // If we want the tree to be at `slug`, then files should be `index.html`.
-                                // My filesMap generator (lines 3318, 3355, 3549) produces: 'assets/image.png', 'index.html', 'data.json'.
+                                // My filesMap generator produces: 'assets/image.png', 'index.html', 'data.json'.
                                 // This is correct for inside the slug folder.
 
                                 const deploymentResult = await window.githubAdapter.deployBatch(slug, filesMap, repoKey);
@@ -3610,10 +3612,25 @@
                                 liveUrl = `https://${config.domain}/${slug}/`;
 
                             } catch (adapterErr) {
-                                throw new Error(adapterErr.message || 'Erro no adaptador GitHub');
+                                console.error('[Publish] Client-Side Adapter failed, falling back to API...', adapterErr);
+                                // Fallback to API if Client fails
+                                const payload = {
+                                    slug: slug,
+                                    files: filesMap,
+                                    repo: repoKey
+                                };
+                                const response = await fetch('/api/publish', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                });
+                                result = await response.json();
+                                if (!response.ok) throw new Error(result.error || 'Falha na publicação via API (Fallback)');
+                                liveUrl = `https://${config.domain}/${slug}/`;
                             }
                         } else {
-                            // Fallback to legacy API if adapter missing (shouldn't happen)
+                            console.log(`[Publish] Legacy/Server-Side Strategy detected for ${repoKey}. Using API...`);
+                            // Legacy or Server-Side Enforcement
                             const payload = {
                                 slug: slug,
                                 files: filesMap,
