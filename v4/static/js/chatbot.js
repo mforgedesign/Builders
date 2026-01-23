@@ -1105,7 +1105,7 @@ Response:
             const msgId = 'vid-' + Date.now();
             const html = `
                 <div class="chat-upload-card" id="${msgId}">
-                    <video src="${url}" class="rounded h-auto" autoplay muted loop></video>
+                    <video src="${url}" class="rounded h-auto" style="max-height: 120px; max-width: 100%;" autoplay muted loop></video>
                     <p class="text-[10px] text-gray-500 mb-1.5 uppercase font-bold text-center">Vídeo Detectado</p>
                     <div class="flex flex-col gap-1 w-full">
                         <button class="btn-xs bg-brand-600 text-white w-full" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'vid_abertura', 'video')">Usar na Abertura</button>
@@ -1212,7 +1212,7 @@ Response:
 
         const html = `
             <div class="chat-upload-card" id="${msgId}">
-                <img src="${url}" class="rounded h-auto">
+                <img src="${url}" class="rounded h-auto" style="max-height: 120px; max-width: 100%;">
                 <p class="text-[10px] text-gray-500 mb-1.5 uppercase font-bold text-center">Imagem Detectada</p>
                 <div class="grid grid-cols-2 gap-1 w-full">
                     <button class="btn-xs bg-brand-600 text-white" onclick="window.AutoBuilderChatbot.assignAsset('${msgId}', '${url}', 'capa', 'image')">Capa</button>
