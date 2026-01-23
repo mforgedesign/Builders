@@ -2707,11 +2707,10 @@
                         edgeInput.image_url = payload.image_url;
                         if (payload.end_image_url) edgeInput.end_image_url = payload.end_image_url;
 
-                        // Only add duration/resolution if model supports it (Hailuo is strict)
-                        if (!isHailuo) {
-                            edgeInput.duration = payload.duration ? String(payload.duration) : undefined;
-                            edgeInput.resolution = payload.resolution;
-                        }
+                        // Pass through duration/resolution/optimizer if present in payload
+                        if (payload.duration) edgeInput.duration = String(payload.duration);
+                        if (payload.resolution) edgeInput.resolution = payload.resolution;
+                        if (payload.hasOwnProperty('prompt_optimizer')) edgeInput.prompt_optimizer = payload.prompt_optimizer;
                     } else {
                         // Image/Edit Specific (Seedream, etc.)
                         // Documentation confirms quality and aspect_ratio are REQUIRED
