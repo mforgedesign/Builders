@@ -5,15 +5,15 @@
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
-    padding: 0.75rem;
-    max-width: 95%; /* Adapts to chat bubble width */
+    padding: 0.6rem;
+    max-width: 150px; /* Reduced width for more balanced cards */
     margin-top: 0.5rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .chat-upload-card img, 
 .chat-upload-card video {
-    max-height: 200px;
+    max-height: 100px; /* Half of previous 200px */
     object-fit: cover;
     width: 100%;
     border-radius: 0.375rem;
