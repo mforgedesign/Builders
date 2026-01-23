@@ -1,3 +1,25 @@
+## [4.2.4] - 2026-01-22
+### Fixed
+- **Chatbot CORS Error**: Corrigida falha de conexão (CORS) trocando a chamada da função inexistente `chat` pelo endpoint correto `chatbot-intent`.
+- Fixed Chatbot file attachment logic (`assignAsset` and `processNextImage` were being overwritten during initialization).
+- Reduced Chatbot file preview size to 50% (max-height 100px) and set a fixed card width for better UI balance.
+- Replaced direct `window.AutoBuilderChatbot` assignment with `Object.assign` to preserve previously defined system functions.
+- Fixed "This field is required" error for Seedream models by ensuring `quality` and `aspect_ratio` are always passed.
+- Fixed "Reference image required" error by updating `getRequiredImage` to correctly detect base images for all generation modes.
+- Refactored `windows.js` to remove redundant generation listeners and consolidated logic in `setupAIButtons`.
+- Updated `ai-prompts.js` to include mandatory API fields in all model configurations.
+- Relaxed strict validation in `api-client.js` to allow `windows.js` to manage the logic.
+- Implemented `image_urls` (array) support for `seedream/4.5-edit` as required by official documentation.
+- **Unified Logic**: Removidos listeners duplicados em `windows.js` que usavam chamadas de API obsoletas.
+- **Referece Image Passing**: Corrigida a extração e envio de imagens de referência (base64) para as Edge Functions de IA.
+
+### Backups
+- `chatbot_backup_20260122_1800_cors_fix.js`
+- `windows_backup_20260122_1811_gen_consolidation.js`
+- `ai_prompts_backup_20260122_1811_edit_logic.js`
+
+---
+
 ## [4.2.3] - 2026-01-22
 ### Fixed
 - **Chatbot Connectivity (CORS)**: Corrigida falha de conexão (CORS) trocando a chamada da função inexistente `chat` pelo endpoint correto `chatbot-intent` em `chatbot.js`.
