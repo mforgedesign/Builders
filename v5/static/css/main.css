@@ -1,0 +1,390 @@
+/* AutoBuilder v4.0 - Main Stylesheet */
+
+/* Global Theme Variables */
+:root {
+    --bg-primary: #f6f8fa;
+    --sidebar-bg: #1e293b;
+    --header-bg: #ffffff;
+    --text-primary: #374151;
+    --text-muted: #6b7280;
+    --text-heading: #111827;
+    --panel-bg: #ffffff;
+    --panel-border: #e2e8f0;
+    --brand-primary: #6366f1;
+    --brand-hover: #4f46e5;
+    --accent-vibrant: #4f46e5;
+}
+
+html.dark {
+    --bg-primary: #0f172a;
+    --sidebar-bg: #1e293b;
+    --header-bg: #1e293b;
+    --text-primary: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-heading: #ff8e72;
+    --panel-bg: #1e293b;
+    --panel-border: #334155;
+    --accent-vibrant: #ff8e72;
+}
+
+/* Hardcoded Tailwind Overrides for Dark Mode */
+html.dark .bg-white {
+    background-color: var(--panel-bg) !important;
+}
+
+html.dark .bg-saas-bg {
+    background-color: var(--bg-primary) !important;
+}
+
+html.dark .bg-gray-50 {
+    background-color: #0f172a !important;
+}
+
+html.dark .bg-gray-100 {
+    background-color: #1e293b !important;
+}
+
+html.dark .bg-gray-200 {
+    background-color: #334155 !important;
+}
+
+html.dark .text-gray-800,
+html.dark .text-gray-700,
+html.dark .text-gray-600,
+html.dark .text-slate-700,
+html.dark label {
+    color: var(--text-primary) !important;
+}
+
+html.dark .text-gray-400,
+html.dark .text-gray-500,
+html.dark .text-slate-400,
+html.dark .text-gray-300 {
+    color: var(--text-muted) !important;
+}
+
+html.dark .border-saas-border,
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-gray-300,
+html.dark .border-slate-700 {
+    border-color: var(--panel-border) !important;
+}
+
+/* Gradients */
+html.dark .from-gray-100 {
+    --tw-gradient-from: #1e293b !important;
+}
+
+html.dark .to-gray-200 {
+    --tw-gradient-to: #334155 !important;
+}
+
+/* Ensure headings use the vibrant orange-pink */
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark #header-title {
+    color: var(--text-heading) !important;
+}
+
+/* Amber/Warning colors (for the watermark toggle) */
+html.dark .bg-amber-50 {
+    background-color: #422006 !important;
+}
+
+html.dark .border-amber-200 {
+    border-color: #92400e !important;
+}
+
+html.dark .text-amber-800 {
+    color: #fcd34d !important;
+}
+
+html.dark .text-amber-600 {
+    color: #fbbf24 !important;
+}
+
+/* Brand button backgrounds */
+html.dark .bg-brand-50 {
+    background-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+html.dark .border-brand-200 {
+    border-color: #6366f1 !important;
+}
+
+html.dark .bg-brand-100 {
+    background-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Tabs/Toggles (like Manual HTML/Imagem toggle) */
+html.dark .bg-indigo-100 {
+    background-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+html.dark .text-indigo-600 {
+    color: #818cf8 !important;
+}
+
+/* Base resets for theme */
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.window-panel {
+    background-color: var(--panel-bg);
+    border-color: var(--panel-border);
+}
+
+header {
+    background-color: var(--header-bg);
+    border-color: var(--panel-border);
+}
+
+h1,
+h2,
+h3,
+h4,
+[id="header-title"] {
+    color: var(--text-heading);
+}
+
+/* Form inputs adjustment for dark mode */
+html.dark .form-input,
+html.dark input[type="text"],
+html.dark input[type="url"],
+html.dark input[type="date"],
+html.dark input[type="time"],
+html.dark textarea,
+html.dark select {
+    background-color: #0f172a;
+    border-color: #334155;
+    color: #f1f5f9;
+}
+
+html.dark .form-input:focus {
+    border-color: var(--accent-vibrant);
+    box-shadow: 0 0 0 2px var(--accent-vibrant);
+}
+
+/* Placeholder text */
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #64748b !important;
+}
+
+/* Chat Styles */
+.chat-upload-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    max-width: 160px;
+    margin-top: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.chat-upload-card img,
+.chat-upload-card video {
+    max-height: 120px;
+    object-fit: contain;
+    width: 100%;
+    border-radius: 0.375rem;
+    background: #0f172a;
+    margin-bottom: 0.4rem;
+}
+
+/* Chat Drag Over State */
+.drag-over {
+    position: relative;
+    background-color: rgba(99, 102, 241, 0.1) !important;
+    border: 2px dashed var(--brand-primary) !important;
+}
+
+.drag-over::after {
+    content: "Solte para enviar arquivos";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.1rem;
+    color: var(--brand-primary);
+    font-weight: 600;
+    pointer-events: none;
+    background: var(--panel-bg);
+    padding: 1rem 2rem;
+    border-radius: 2rem;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-xs {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+    transition: all 150ms ease;
+}
+
+/* Helper for orange-pink accents */
+.text-vibrant {
+    color: var(--text-heading);
+}
+
+.bg-vibrant {
+    background-color: var(--text-heading);
+}
+
+/* Sample Items Dark Mode */
+html.dark .sample-item {
+    background-color: #334155;
+    border-color: #475569;
+}
+
+html.dark .sample-item p {
+    color: #e2e8f0;
+}
+
+html.dark .sample-item:hover {
+    border-color: var(--accent-vibrant);
+    background-color: #1e293b;
+}
+
+/* History Cards */
+html.dark .shadow-sm {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .hover\:shadow-md:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Ensure text on dark panels is readable */
+html.dark p {
+    color: var(--text-primary);
+}
+
+html.dark span {
+    color: inherit;
+}
+
+/* ===================================== */
+/* POPUP/MODAL DARK MODE OVERRIDES       */
+/* ===================================== */
+
+/* Amber/Orange warning popups (like "Slug já existe") */
+html.dark .from-amber-50 {
+    --tw-gradient-from: #422006 !important;
+}
+
+html.dark .to-orange-50 {
+    --tw-gradient-to: #431407 !important;
+}
+
+html.dark .border-amber-300 {
+    border-color: #d97706 !important;
+}
+
+/* Ensure popup text is readable */
+html.dark .text-gray-600 {
+    color: #94a3b8 !important;
+}
+
+/* Gray button backgrounds in popups */
+html.dark .hover\:bg-gray-300:hover {
+    background-color: #64748b !important;
+}
+
+/* Confirmation modal styling */
+.confirm-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.confirm-modal-content {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border: 1px solid #334155;
+    border-radius: 1rem;
+    padding: 2rem;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* ===================================== */
+/* DROPZONE/UPLOAD AREAS DARK MODE       */
+/* ===================================== */
+
+/* Light gray dropzone areas */
+html.dark .dropzone,
+html.dark [class*="dropzone"],
+html.dark .upload-area,
+html.dark .border-dashed {
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+}
+
+/* Music player area */
+html.dark .music-player,
+html.dark .audio-player,
+html.dark [id*="music"] .bg-gray-100,
+html.dark [id*="music"] .bg-gray-50 {
+    background-color: #1e293b !important;
+}
+
+/* Range inputs (sliders) */
+html.dark input[type="range"] {
+    background-color: #334155;
+}
+
+html.dark input[type="range"]::-webkit-slider-thumb {
+    background-color: #6366f1;
+}
+
+/* Dividers */
+html.dark .divide-gray-100>*+* {
+    border-color: #334155 !important;
+}
+
+html.dark hr,
+html.dark .border-t {
+    border-color: #334155 !important;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
