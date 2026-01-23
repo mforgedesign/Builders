@@ -1,3 +1,30 @@
+## [4.2.5] - 2026-01-23
+### Added
+- **History Search Bar**: Barra de busca em tempo real na janela de Histórico para filtrar convites por slug.
+- **Delete Invitation Button**: Botão de lixeira em cada card do Histórico para excluir convites individualmente do GitHub (exclusão atômica via Tree API).
+- **`deleteFolder()` in GitHub Adapter**: Nova função para exclusão atômica de pastas no repositório sem afetar outros arquivos.
+
+### Fixed
+- **Dark Mode Refinement**: Corrigidos overrides CSS faltantes para classes Tailwind:
+    - Backgrounds: `bg-gray-100`, `bg-gray-200`, gradients.
+    - Borders: `border-gray-300`.
+    - Colors: amber (toggle), brand (buttons), indigo (tabs).
+    - Form inputs: date, time, placeholders.
+- **Manual HTML Import (RAIZ)**: Corrigido o bug crítico onde o campo "Manual do Convidado" não era restaurado ao importar convites.
+    - **Causa**: `data-field` estava como `manual_content` em `index.html` mas o código esperava `manual_html`.
+    - **Correção**: Alterado `data-field="manual_content"` → `data-field="manual_html"` na linha 1254 de `index.html`.
+
+### Changed
+- **History Cards**: Adicionado `relative group` e `data-slug` para suportar o botão de exclusão com hover.
+
+### Backups
+- `main_backup_20260123_0935_dark_mode.css`
+- `history_backup_20260123_0935_search_delete.js`
+- `github-adapter_backup_20260123_0935_delete_folder.js`
+- `windows_backup_20260123_0935_manual_fix.js`
+
+---
+
 ## [4.2.4] - 2026-01-22
 ### Fixed
 - **Chatbot CORS Error**: Corrigida falha de conexão (CORS) trocando a chamada da função inexistente `chat` pelo endpoint correto `chatbot-intent`.
