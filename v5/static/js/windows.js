@@ -3531,7 +3531,7 @@
                         publishBtn.classList.remove('bg-brand-600');
                         publishBtn.classList.add('bg-blue-600');
 
-                        const liveUrl = `https://convites.mforge.com.br/${slug}/`;
+                        const liveUrl = `https://convite.mforge.com.br/${slug}/`;
 
                         try {
                             const timestamps = JSON.parse(localStorage.getItem('autoBuilder_historyTimestamps') || '{}');
