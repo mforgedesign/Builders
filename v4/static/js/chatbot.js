@@ -1167,6 +1167,28 @@ Response:
             console.log(`[Chatbot] Builder form updated: ${fieldName}`);
         }
 
+        // 3. Sync with windows.js internal state (builderState)
+        if (!window.builderState) window.builderState = { assets: {} };
+        if (!window.builderState.assets) window.builderState.assets = {};
+
+        const stateKeyMap = {
+            'vid_abertura': 'vid_abertura',
+            'fundo_tela': 'fundo_tela',
+            'capa': 'capa',
+            'folha': 'folha_vazia',
+            'folha_vazia': 'folha_vazia',
+            'folha_preenchida': 'fundo_tela',
+            'presentes': 'presentes',
+            'manual': 'manual'
+        };
+        const stateKey = stateKeyMap[context] || context;
+        window.builderState.assets[stateKey] = url;
+
+        // 4. Dispatch Event for awareness (matches windows.js behavior)
+        document.dispatchEvent(new CustomEvent('builder:asset_ready', {
+            detail: { type: stateKey, url: url, method: 'chatbot' }
+        }));
+
         // Remove card buttons or whole card
         const card = document.getElementById(msgId);
         if (card) {
