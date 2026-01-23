@@ -2,9 +2,11 @@
 ### Fixed
 - **Chatbot CORS Error**: Corrigida falha de conexão (CORS) trocando a chamada da função inexistente `chat` pelo endpoint correto `chatbot-intent`.
 - **Chatbot Asset Refinement**:
-    - Fixed issue where assets assigned via chat would not appear in dropzones (missing `type` parameter in `updateDropzonePreview`).
-    - Added "Preencher" (Folha Preenchida) option for images in the chat, mapping to `fundo_tela`.
-    - Implemented full state synchronization in `assignAsset`.
+    - Fixed "Falta Capa" error in animation window by synchronizing chatbot assignments with `window.builderState.assets`.
+    - Added dispatch of `builder:asset_ready` event during chatbot assignments for better system-wide parity.
+    - Updated `assignAsset` to map all chatbot contexts correctly to both form state and animation state.
+    - Fixed issue where assets assigned via chat would not appear in dropzones (missing `type` parameter).
+    - Added "Preencher" (Folha Preenchida) option for images in the chat.
 - Fixed Chatbot file attachment logic (`assignAsset` and `processNextImage` were being overwritten).
 - Fixed "This field is required" error for Seedream models by ensuring `quality` and `aspect_ratio` are always passed.
 - Fixed "Reference image required" error by updating `getRequiredImage` to correctly detect base images for all generation modes.
