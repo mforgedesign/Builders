@@ -2,8 +2,10 @@
 ### Fixed
 - **Chatbot CORS Error**: Corrigida falha de conexão (CORS) trocando a chamada da função inexistente `chat` pelo endpoint correto `chatbot-intent`.
 - **Chatbot Asset Refinement**:
+    - Fixed critical issue where `main.css` was not linked in `index.html`, preventing chatbot style updates from applying.
+    - Added inline styles and enforced `max-height: 120px` for all chatbot previews (images/videos) to ensure compact UI.
+    - Linked `static/css/main.css` in the project head for permanent styling support.
     - Fixed "Falta Capa" error in animation window by synchronizing chatbot assignments with `window.builderState.assets`.
-    - Added dispatch of `builder:asset_ready` event during chatbot assignments for better system-wide parity.
     - Updated `assignAsset` to map all chatbot contexts correctly to both form state and animation state.
     - Fixed issue where assets assigned via chat would not appear in dropzones (missing `type` parameter).
     - Added "Preencher" (Folha Preenchida) option for images in the chat.
