@@ -742,8 +742,9 @@
             downloadBtn.download = `asset-${Date.now()}`; // Hint filename
         }
 
-        // Expose for Persistence module
+        // Expose for Persistence and Chatbot modules
         window.updateDropzonePreview = updateDropzonePreview;
+        window.readFileAsBase64 = readFileAsBase64;
 
         /**
          * Reads file as Base64
@@ -2833,6 +2834,7 @@
              */
             async getRequiredImage(type) {
                 const assets = window.builderState?.assets || {};
+                let rawValue = null;
 
                 // For Edit mode (image-to-image) for cover/leaf
                 if (type === 'cover') {
@@ -2846,18 +2848,43 @@
 
                 // For specialized modes (fill, gifts, manual), usually use the 'leaf' (blank sheet)
                 if (type === 'fill' || type === 'gifts' || type === 'manual') {
-                    return assets.leaf || assets.folha_vazia || assets.folha;
+                    rawValue = assets.leaf || assets.folha_vazia || assets.folha;
                 }
 
                 // Image-to-Video requirements
-                if (type === 'intro') {
-                    return assets.cover || assets.capa;
+                else if (type === 'intro') {
+                    rawValue = assets.cover || assets.capa;
                 }
-                if (type === 'loop') {
-                    return assets.fill || assets.folha_preenchida || assets.fundo_tela || assets.fundo;
+                else if (type === 'loop') {
+                    rawValue = assets.fill || assets.folha_preenchida || assets.fundo_tela || assets.fundo;
                 }
 
-                return null;
+                if (!rawValue) return null;
+
+                // --- ROBUST CONVERSION ---
+                try {
+                    // 1. If it's already a Base64 string or real URL
+                    if (typeof rawValue === 'string' && (rawValue.startsWith('data:') || rawValue.startsWith('http'))) {
+                        if (!rawValue.startsWith('blob:')) return rawValue;
+                    }
+
+                    // 2. If it's a blob: URL
+                    if (typeof rawValue === 'string' && rawValue.startsWith('blob:')) {
+                        console.log(`[Windows] Converting blob URL to Base64 for AI...`);
+                        const resp = await fetch(rawValue);
+                        const blob = await resp.blob();
+                        return await window.readFileAsBase64(blob);
+                    }
+
+                    // 3. If it's a Blob/File object
+                    if (rawValue instanceof Blob || rawValue instanceof File) {
+                        return await window.readFileAsBase64(rawValue);
+                    }
+                } catch (err) {
+                    console.error('[Windows] Failed to convert image for AI:', err);
+                }
+
+                return rawValue;
             },
 
             /**
