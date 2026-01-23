@@ -2255,15 +2255,12 @@
         /**
          * Poll GitHub Actions status until success or timeout
          */
-        /**
-         * Poll GitHub Actions status until success or timeout
-         */
-        async function pollDeployStatus(slug, liveUrl, commitSha = null, repoKey = 'convite') {
+        async function pollDeployStatus(slug, liveUrl, commitSha = null) {
             const checkBtn = document.getElementById('btn-publish');
             let attempts = 0;
             const maxAttempts = 150; // 5 minutes (2s interval)
 
-            logDebug(`Iniciando Polling. Slug: ${slug}, SHA: ${commitSha?.substring(0, 7)}..., Repo: ${repoKey}`);
+            logDebug(`Iniciando Polling. Slug: ${slug}, SHA: ${commitSha?.substring(0, 7)}...`);
 
             // Ensure UI is visible FIRST (resets steps to pending)
             // showDeployStatusArea(); // REMOVED: Resets UI steps incorrectly
@@ -2287,7 +2284,7 @@
                     // 1. GitHub Workflow Check (Primary)
                     if (commitSha && window.githubAdapter) {
                         try {
-                            const workflow = await window.githubAdapter.getLatestWorkflowStatus(commitSha, repoKey);
+                            const workflow = await window.githubAdapter.getLatestWorkflowStatus(commitSha);
                             if (workflow) {
                                 const status = workflow.status; // queued, in_progress, completed
                                 const conclusion = workflow.conclusion; // success, failure, neutral, cancelled
@@ -2337,11 +2334,10 @@
 
                     // 3. Asset Availability Check (Secondary)
                     // If we don't have SHA, or as backup if workflow API fails but site is live
-                    // Enable fallback after 20 attempts (40s) even if we have SHA, in case workflow never registers
-                    if (assetPath && (!commitSha || attempts > 20)) {
+                    if (!commitSha && assetPath) {
                         const img = new Image();
                         img.onload = () => {
-                            logDebug('Imagem carregou. Site Online (Fallback).');
+                            logDebug('Imagem carregou. Site Online.');
                             finishPolling(true);
                         };
                         img.src = `${checkUrl}?t=${Date.now()}`;
@@ -2360,7 +2356,7 @@
 
                         if (statusText) statusText.innerText = 'Disponível Online!';
                         playSuccessSound(); // 🔔 Success Sound
-                        finalizeSuccessUI(liveUrl, slug, repoKey);
+                        finalizeSuccessUI(liveUrl, slug);
                         resolve();
                     } else {
                         window.updateDeployStep('step-live', 'error');
@@ -2376,7 +2372,7 @@
         }
 
 
-        function finalizeSuccessUI(liveUrl, slug, repoKey = 'convite') {
+        function finalizeSuccessUI(liveUrl, slug) {
             const successActions = document.getElementById('publish-success-actions');
             const btnOpenLive = document.getElementById('btn-open-live');
             const btnOpenRepo = document.getElementById('btn-open-repo');
@@ -2390,15 +2386,8 @@
 
             // Repo URL construction
             // Structure: https://github.com/mforgedesign/Convites/tree/recuperaçãohoje/convites/${slug}
-            // For new repo: https://github.com/mforgedesign/convite/tree/main/${slug}
-
-            let repoUrl;
-            if (repoKey === 'Convites') {
-                repoUrl = `https://github.com/mforgedesign/Convites/tree/recuperaçãohoje/convites/${slug}`;
-            } else {
-                repoUrl = `https://github.com/mforgedesign/${repoKey}/tree/main/${slug}`;
-            }
-
+            // Updated to point to the correct invites repo
+            const repoUrl = `https://github.com/mforgedesign/Convites/tree/recuperaçãohoje/convites/${slug}`;
             if (btnOpenRepo) btnOpenRepo.href = repoUrl;
 
             if (btnCopyLink) {
@@ -2466,15 +2455,9 @@
                     return;
                 }
 
-                // Select Repository
-                const repoKey = await showRepoSelectionModal();
-                if (!repoKey) return;
+                if (!confirm(`Publicar ZIP personalizado em: mforgedesign.github.io/${slug}?`)) return;
 
-                const config = window.REPO_CONFIG[repoKey];
-
-                if (!confirm(`Publicar ZIP personalizado em: ${config.domain}/${slug}?`)) return;
-
-                console.log('[CustomZIP] Starting upload:', file.name, 'to', slug, 'Repo:', repoKey);
+                console.log('[CustomZIP] Starting upload:', file.name, 'to', slug);
 
                 try {
                     // 1. Unzip locally (Client-Side)
@@ -2503,36 +2486,23 @@
                     await Promise.all(promises);
                     console.log('[CustomZIP] Extracted files:', Object.keys(filesMap));
 
-                    // 3. Deploy
-                    let result;
-                    if (window.githubAdapter) {
-                        const deployRes = await window.githubAdapter.deployBatch(
-                            slug,
-                            filesMap,
-                            `Custom ZIP Upload: ${file.name}`,
-                            repoKey
-                        );
-                        result = { sha: deployRes.sha, url: deployRes.url };
-                    } else {
-                        // Fallback (Assumes backend handles repo param)
-                        const response = await fetch('/api/publish', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                slug: slug,
-                                files: filesMap,
-                                repo: repoKey
-                            })
-                        });
-                        result = await response.json();
-                        if (!response.ok) throw new Error(result.error || 'Falha no deploy');
-                    }
+                    // 3. Send to Standard Publish API (reusing deploy-github)
+                    // We bypass the build step but use the same deployment function
+                    const response = await fetch('/api/publish', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            slug: slug,
+                            files: filesMap // { "index.html": "...", "assets/..." }
+                        })
+                    });
 
-                    const liveUrl = `https://${config.domain}/${slug}/`;
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || 'Falha no deploy');
 
-                    // Start Polling
-                    showDeployStatusArea();
-                    await pollDeployStatus(slug, liveUrl, result.sha, repoKey);
+                    const liveUrl = `https://mforgedesign.github.io/${slug}/`;
+                    alert(`ZIP publicado com sucesso!\n\nAcesse: ${liveUrl}`);
+                    window.open(liveUrl, '_blank');
 
                 } catch (err) {
                     console.error('[CustomZIP] Error:', err);
@@ -3095,69 +3065,6 @@
         // setupCoverGeneration and setupLeafGeneration removed - consolidated into setupAIButtons
 
 
-        async function showRepoSelectionModal() {
-            return new Promise((resolve) => {
-                const modal = document.createElement('div');
-                modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in';
-                modal.innerHTML = `
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-                    <div class="p-6">
-                        <div class="flex items-center gap-4 mb-4">
-                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center shrink-0">
-                                <i class="fa-solid fa-server text-purple-600 text-xl"></i>
-                            </div>
-                            <h3 class="text-xl font-bold text-gray-800">Escolha o Repositório</h3>
-                        </div>
-                        <p class="text-gray-600 mb-6 leading-relaxed">Onde você deseja publicar este convite?</p>
-                        
-                        <div class="space-y-3 mb-6">
-                            <label class="flex items-center p-3 border rounded-xl cursor-pointer hover:bg-purple-50 transition-colors group">
-                                <input type="radio" name="repo-select" value="convite" checked class="w-5 h-5 text-purple-600 focus:ring-purple-500 border-gray-300">
-                                <div class="ml-3">
-                                    <span class="block text-sm font-medium text-gray-900 group-hover:text-purple-700">Novo (convite.mforge.com.br)</span>
-                                    <span class="block text-xs text-gray-500">Recomendado para novos convites</span>
-                                </div>
-                            </label>
-
-                            <label class="flex items-center p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-                                <input type="radio" name="repo-select" value="Convites" class="w-5 h-5 text-gray-600 focus:ring-gray-500 border-gray-300">
-                                <div class="ml-3">
-                                    <span class="block text-sm font-medium text-gray-900">Legado (Convites)</span>
-                                    <span class="block text-xs text-gray-500">Antigo sistema (convites.mforge.com.br)</span>
-                                </div>
-                            </label>
-                        </div>
-
-                        <div class="flex justify-end gap-3">
-                            <button id="modal-cancel-repo" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition-colors">
-                                Cancelar
-                            </button>
-                            <button id="modal-confirm-repo" class="px-5 py-2.5 rounded-xl bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors shadow-lg shadow-purple-200">
-                                Continuar <i class="fa-solid fa-arrow-right ml-2"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-                document.body.appendChild(modal);
-
-                const confirmBtn = modal.querySelector('#modal-confirm-repo');
-                const cancelBtn = modal.querySelector('#modal-cancel-repo');
-
-                confirmBtn.addEventListener('click', () => {
-                    const selected = modal.querySelector('input[name="repo-select"]:checked').value;
-                    modal.remove();
-                    resolve(selected);
-                });
-
-                cancelBtn.addEventListener('click', () => {
-                    modal.remove();
-                    resolve(null);
-                });
-            });
-        }
-
         function setupFinalizeButtons() {
             // 4. PUBLISH (Deploy to GitHub with timestamps)
             const publishBtn = document.getElementById('btn-publish');
@@ -3174,10 +3081,6 @@
                         return;
                     }
 
-                    // Select Repository
-                    const repoKey = await showRepoSelectionModal();
-                    if (!repoKey) return; // Cancelled
-
                     // ===================================================
                     // CHECK IF SLUG ALREADY EXISTS ON GITHUB
                     // ===================================================
@@ -3186,11 +3089,16 @@
 
                     let slugExists = false;
                     try {
-                        const exists = await window.githubAdapter.checkFolderExists(slug, repoKey);
-                        slugExists = exists;
+                        // Check if slug folder exists in GitHub repo
+                        const checkUrl = `https://api.github.com/repos/mforgedesign/Convites/contents/${slug}`;
+                        const checkResp = await fetch(checkUrl, {
+                            headers: { 'Accept': 'application/vnd.github.v3+json' }
+                        });
+                        slugExists = checkResp.ok; // 200 = exists, 404 = doesn't exist
                         console.log('[Publish] Slug check:', slug, slugExists ? 'EXISTS' : 'NEW');
                     } catch (e) {
                         console.warn('[Publish] Could not check slug existence:', e);
+                        // Continue anyway - better UX than blocking on network error
                     }
 
                     publishBtn.innerHTML = '<i class="fa-solid fa-rocket"></i> Publicar';
@@ -3198,22 +3106,20 @@
 
                     // SHOW APPROPRIATE CONFIRMATION MODAL
                     let confirmed = false;
-                    const config = window.REPO_CONFIG[repoKey];
-                    const domain = config.domain;
 
                     if (slugExists) {
                         // WARNING: Slug already exists - show prominent warning
                         confirmed = await showConfirmModal(
                             '⚠️ Slug já existe!',
                             `<div class="text-left space-y-3">
-                            <p>O slug <strong class="text-red-600">${slug}</strong> já está em uso em <strong>${repoKey}</strong>.</p>
+                            <p>O slug <strong class="text-red-600">${slug}</strong> já está em uso.</p>
                             <div class="bg-red-50 border border-red-200 rounded-lg p-3">
                                 <p class="text-red-800 text-sm">
                                     Ao <strong>confirmar</strong>, o convite que estiver nesse slug será 
                                     <strong>apagado</strong> e <strong>sobrescrito</strong> pelo convite atual no builder.
                                 </p>
                             </div>
-                            <p class="text-sm text-gray-600">URL: <strong>${domain}/${slug}</strong></p>
+                            <p class="text-sm text-gray-600">URL: <strong>convites.mforge.com.br/${slug}</strong></p>
                         </div>`,
                             '⚠️ Sobrescrever',
                             'Cancelar'
@@ -3222,7 +3128,7 @@
                         // Normal flow for new slug
                         confirmed = await showConfirmModal(
                             'Publicar Convite',
-                            `Seu convite será publicado em:<br><strong class="text-brand-600">${domain}/${slug}</strong><br><br>Repositório: ${repoKey}<br>Deseja continuar?`,
+                            `Seu convite será publicado em:<br><strong class="text-brand-600">convites.mforge.com.br/${slug}</strong><br><br>Deseja continuar?`,
                             'Publicar',
                             'Cancelar'
                         );
@@ -3230,6 +3136,7 @@
 
                     if (!confirmed) return;
 
+                    const originalText = publishBtn.innerHTML;
                     try {
                         // UI: Start
                         publishBtn.disabled = true;
@@ -3241,7 +3148,7 @@
                         window.updateDeployStep('step-upload', 'pending');
                         window.updateDeployStep('step-live', 'pending');
 
-                        // 1. Prepare Brain \& Timestamp
+                        // 1. Prepare Brain & Timestamp
                         const appState = window.generateBuilderState();
                         const formData = (window.AutoBuilderForm && window.AutoBuilderForm.data) || {};
                         const timestamp = Date.now();
@@ -3588,65 +3495,19 @@
                         window.updateDeployStep('step-build', 'done');
                         window.updateDeployStep('step-upload', 'loading');
 
-                        // Use githubAdapter directly if available (Client-Side Deployment)
-                        // This bypasses the need for /api/publish if we want direct control
-                        let result;
-                        let liveUrl;
+                        const payload = {
+                            slug: slug,
+                            files: filesMap
+                        };
 
-                        // HYBRID DEPLOYMENT STRATEGY
-                        // 1. Standard Repos (e.g. 'convite'): Use Client-Side Adapter (Faster, Less Server Load)
-                        // 2. Legacy Repo ('Convites'): Force Server-Side API (Required for specific workflow/auth)
-                        if (window.githubAdapter && repoKey !== 'Convites') {
-                            console.log('[Publish] Using generic githubAdapter.deployBatch (Client-Side)');
-                            try {
-                                // We need to clean keys in filesMap to be relative to the slug folder?
-                                // No, deployBatch expects files map where keys are filenames relative to the tree root we are creating. 
-                                // If we want the tree to be at `slug`, then files should be `index.html`.
-                                // My filesMap generator produces: 'assets/image.png', 'index.html', 'data.json'.
-                                // This is correct for inside the slug folder.
+                        const response = await fetch('/api/publish', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
 
-                                const deploymentResult = await window.githubAdapter.deployBatch(slug, filesMap, repoKey);
-                                result = { sha: deploymentResult.sha }; // Mock result structure expected by UI
-
-                                // Construct Live URL based on Repo domain
-                                liveUrl = `https://${config.domain}/${slug}/`;
-
-                            } catch (adapterErr) {
-                                console.error('[Publish] Client-Side Adapter failed, falling back to API...', adapterErr);
-                                // Fallback to API if Client fails
-                                const payload = {
-                                    slug: slug,
-                                    files: filesMap,
-                                    repo: repoKey
-                                };
-                                const response = await fetch('/api/publish', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(payload)
-                                });
-                                result = await response.json();
-                                if (!response.ok) throw new Error(result.error || 'Falha na publicação via API (Fallback)');
-                                liveUrl = `https://${config.domain}/${slug}/`;
-                            }
-                        } else {
-                            console.log(`[Publish] Legacy/Server-Side Strategy detected for ${repoKey}. Using API...`);
-                            // Legacy or Server-Side Enforcement
-                            const payload = {
-                                slug: slug,
-                                files: filesMap,
-                                repo: repoKey // Pass repoKey just in case backend supports it
-                            };
-
-                            const response = await fetch('/api/publish', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(payload)
-                            });
-
-                            result = await response.json();
-                            if (!response.ok) throw new Error(result.error || 'Falha na publicação via API');
-                            liveUrl = `https://${config.domain}/${slug}/`;
-                        }
+                        const result = await response.json();
+                        if (!response.ok) throw new Error(result.error || 'Falha na publicação');
 
                         window.updateDeployStep('step-upload', 'done');
                         window.updateDeployStep('step-live', 'loading');
@@ -3659,6 +3520,8 @@
                         publishBtn.classList.remove('bg-brand-600');
                         publishBtn.classList.add('bg-blue-600');
 
+                        const liveUrl = `https://convites.mforge.com.br/${slug}/`;
+
                         try {
                             const timestamps = JSON.parse(localStorage.getItem('autoBuilder_historyTimestamps') || '{}');
                             timestamps[slug] = Date.now();
@@ -3667,7 +3530,7 @@
                             console.warn('Failed to update history timestamp', e);
                         }
 
-                        await pollDeployStatus(slug, liveUrl, result.sha, repoKey);
+                        await pollDeployStatus(slug, liveUrl, result.sha);
 
                     } catch (err) {
                         console.error('Publish Error:', err);
