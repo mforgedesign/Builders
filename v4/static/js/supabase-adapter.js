@@ -333,6 +333,7 @@
             body: {
                 slug: body.slug,
                 files: body.files || {},
+                repo: body.repo, // Pass repo param (Convites/convite)
                 commit_message: `Deploy ${body.slug} via AutoBuilder v4 (Server-Side V2)`
             }
         });
