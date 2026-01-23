@@ -1,39 +1,58 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-console.log("Hello from chatbot-intent function!");
+console.log("Hello from chatbot-intent function! v4.3.55 (Master Prompt)");
 
-serve(async (req) => {
-    // CORS headers handling
+// Emergency Key provided by user
+// Emergency Key provided by user
+const EMERGENCY_OPENAI_KEY = ""; // Removed for security (GitHub Secret Scanning)
+
+serve(async (req: Request) => {
+    const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    };
+
     if (req.method === 'OPTIONS') {
-        return new Response('ok', {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-            }
-        });
+        return new Response('ok', { headers: corsHeaders });
     }
 
     try {
-        const { message, history, system_prompt, context } = await req.json();
+        console.log("Request received:", req.method, req.url);
+
+        let body;
+        try {
+            body = await req.json();
+        } catch (e) {
+            console.error("Failed to parse JSON body:", e);
+            throw new Error("Invalid JSON body");
+        }
+
+        const { message, history, system_prompt, context } = body;
+
+        console.log("Payload parsed:", {
+            message_len: message?.length,
+            history_len: history?.length,
+            has_system_prompt: !!system_prompt
+        });
 
         if (!message) {
             throw new Error("Message is required");
         }
 
-        // Retrieve API Key from Environment Variable
-        // YOU MUST SET 'OPENAI_API_KEY' IN YOUR SUPABASE PROJECT DASHBOARD
         const openAiKey = Deno.env.get('OPENAI_API_KEY');
+
         if (!openAiKey) {
             throw new Error("OPENAI_API_KEY not configured on server");
         }
 
         // Use provided system prompt or fallback
-        const promptToUse = system_prompt || "You are a helpful assistant. You must output JSON.";
+        const promptToUse = system_prompt || "You are a helpful assistant.";
 
-        // Construct Context Message
+        // Inject Current Context if available
         let contextMessage = "";
         if (context) {
-            contextMessage = `\n\n[SYSTEM CONTEXT]\nCurrent Step: ${context.currentStep || 1}\nLast Action: ${context.lastAction || 'None'}\nFormData: ${JSON.stringify(context.formData || {})}\nUploaded Assets: ${JSON.stringify(context.uploadedAssets || {})}`;
+            contextMessage = `\n\n[CURRENT BUILDER STATE]\nStep: ${context.currentStep || 1}\nUploaded Assets: ${JSON.stringify(context.uploadedAssets || {})}\nForm Data: ${JSON.stringify(context.formData || {}).substring(0, 3000)}`;
         }
 
         const messages = [
@@ -42,7 +61,7 @@ serve(async (req) => {
             { role: "user", content: message }
         ];
 
-        console.log("Sending request to OpenAI...");
+        console.log("Calling OpenAI (gpt-4o)...");
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -51,42 +70,36 @@ serve(async (req) => {
                 'Authorization': `Bearer ${openAiKey}`
             },
             body: JSON.stringify({
-                model: "gpt-4o", // Ensure you have access to this model, or use gpt-3.5-turbo / gpt-4-turbo
+                model: "gpt-4o",
                 messages: messages,
                 temperature: 0.7,
-                response_format: { type: "json_object" } // Using JSON mode ensures structure
+                response_format: { type: "json_object" }
             })
         });
 
         if (!response.ok) {
             const err = await response.json();
-            console.error("OpenAI API Error:", err);
-            throw new Error(err.error?.message || 'OpenAI API Error');
+            console.error("OpenAI API Error:", JSON.stringify(err));
+            throw new Error(`OpenAI Error: ${err.error?.message || response.statusText}`);
         }
 
         const data = await response.json();
         const aiContent = data.choices[0].message.content;
 
-        console.log("Received response from OpenAI");
+        console.log("Success. Returning response.");
 
         return new Response(JSON.stringify({
             status: 'ok',
             response: aiContent
         }), {
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*', // Allow all origins for dev, restrict in prod if needed
-            },
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Function Error:", error);
         return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-            },
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
 });
