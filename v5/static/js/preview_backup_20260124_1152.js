@@ -338,89 +338,11 @@
             }
         });
 
-        // Toggle container visibility (LEGACY - keep for mobile modal compatibility)
+        // Toggle container visibility
         const hasButtons = visibleButtons.length > 0;
         ['preview-buttons', 'mobile-preview-buttons'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = hasButtons ? 'flex' : 'none';
-        });
-
-        // v4.3.0: Also render the external reorder panel
-        renderReorderPanel(visibleButtons, color);
-    }
-
-    /**
-     * v4.3.0: Render external button reorder panel
-     * Used alongside the iframe preview for drag-and-drop reordering
-     */
-    function renderReorderPanel(visibleButtons, color) {
-        const panel = document.getElementById('button-reorder-list');
-        if (!panel) return;
-
-        panel.innerHTML = '';
-
-        if (visibleButtons.length === 0) {
-            panel.innerHTML = '<div class="text-xs text-gray-400 text-center py-2">Nenhum botão configurado</div>';
-            return;
-        }
-
-        visibleButtons.forEach((btn, index) => {
-            const item = document.createElement('div');
-            item.className = 'flex items-center gap-2 bg-white rounded p-2 border border-gray-200 cursor-grab active:cursor-grabbing transition hover:border-brand-400 hover:shadow-sm';
-            item.setAttribute('data-button-id', btn.id);
-            item.setAttribute('draggable', 'true');
-
-            item.innerHTML = `
-                <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs shrink-0" style="background-color: ${color}">
-                    <i class="${btn.icon || 'fa-solid fa-link'}"></i>
-                </div>
-                <span class="text-xs text-gray-700 font-medium flex-1 truncate">${btn.label || 'Link'}</span>
-                <i class="fa-solid fa-grip-vertical text-gray-300 text-xs"></i>
-            `;
-
-            // Drag events
-            item.addEventListener('dragstart', (e) => {
-                e.dataTransfer.setData('text/plain', index);
-                item.classList.add('opacity-50');
-            });
-
-            item.addEventListener('dragend', () => {
-                item.classList.remove('opacity-50');
-            });
-
-            item.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                item.classList.add('border-brand-500');
-            });
-
-            item.addEventListener('dragleave', () => {
-                item.classList.remove('border-brand-500');
-            });
-
-            item.addEventListener('drop', (e) => {
-                e.preventDefault();
-                item.classList.remove('border-brand-500');
-
-                const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                const toIndex = index;
-
-                if (fromIndex !== toIndex) {
-                    // Reorder
-                    const newOrder = [...buttonOrder];
-                    const [moved] = newOrder.splice(fromIndex, 1);
-                    newOrder.splice(toIndex, 0, moved);
-                    buttonOrder = newOrder;
-                    saveButtonOrder();
-                    renderButtons();
-
-                    // Dispatch event for live-preview.js to regenerate iframe
-                    document.dispatchEvent(new CustomEvent('buttonOrderChanged', {
-                        detail: { order: buttonOrder }
-                    }));
-                }
-            });
-
-            panel.appendChild(item);
         });
     }
 

@@ -1772,117 +1772,101 @@
         </main>
 
         <!-- ========================================== -->
-        <!-- DEVICE PREVIEW (Desktop Only) -->
+        <!-- DEVICE PREVIEW (Desktop + Responsive) -->
+        <!-- v4.3.0: Live iframe preview with button reorder panel -->
         <!-- ========================================== -->
         <aside id="device-preview"
-            class="hidden lg:flex w-[400px] bg-white border-l border-saas-border flex-col items-center justify-center p-8 shrink-0 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+            class="hidden lg:flex w-[400px] bg-white border-l border-saas-border flex-col items-center p-4 shrink-0 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] overflow-y-auto">
 
-            <div
-                class="absolute top-4 right-4 bg-white/80 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-brand-600 shadow-sm border border-brand-100">
-                <i class="fa-solid fa-mobile-screen-button mr-1"></i> Moto G75 View
+            <!-- Header Badge -->
+            <div class="flex items-center justify-between w-full mb-3">
+                <div
+                    class="bg-white/80 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-brand-600 shadow-sm border border-brand-100">
+                    <i class="fa-solid fa-mobile-screen-button mr-1"></i> Preview Real
+                </div>
+                <button id="btn-refresh-preview" class="text-gray-400 hover:text-brand-600 transition p-1"
+                    title="Atualizar preview">
+                    <i class="fa-solid fa-arrows-rotate text-sm"></i>
+                </button>
             </div>
 
+            <!-- Phone Frame with Live Iframe -->
             <div
-                class="relative w-[320px] aspect-[9/16] bg-black rounded-[2.5rem] device-frame overflow-hidden ring-1 ring-white/20">
-                <div id="preview-content" class="w-full h-full relative bg-cover bg-center transition-all duration-500"
-                    style="background-image: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)">
-
-                    <div class="absolute inset-0 bg-black/30"></div>
-
-                    <!-- Timer Preview -->
-                    <div id="preview-timer" class="absolute top-12 left-0 w-full flex justify-center z-10"
-                        style="display: none;">
-                        <div class="flex gap-3 text-white text-center">
-                            <div><span class="text-xl font-bold block leading-none">00</span><span
-                                    class="text-[8px] uppercase opacity-80">Meses</span></div>
-                            <div><span class="text-xl font-bold block leading-none">00</span><span
-                                    class="text-[8px] uppercase opacity-80">Dias</span></div>
-                            <div><span class="text-xl font-bold block leading-none">00</span><span
-                                    class="text-[8px] uppercase opacity-80">Hs</span></div>
-                        </div>
-                    </div>
-
-                    <!-- Shadow Gradient -->
-                    <div id="preview-shadow" class="absolute bottom-0 left-0 w-full h-1/2 pointer-events-none"
-                        style="background: linear-gradient(to top, #000000, transparent);"></div>
-
-                    <!-- Buttons Preview -->
-                    <div id="preview-buttons" class="absolute w-full px-4 flex justify-center" style="bottom: 40px;">
-                        <div class="flex gap-2 justify-center items-start flex-wrap">
-                            <!-- Buttons will be dynamically rendered by preview.js -->
-                        </div>
-                    </div>
-
-                </div>
+                class="relative w-[300px] aspect-[9/16] bg-black rounded-[2.5rem] device-frame overflow-hidden ring-1 ring-white/20 shadow-2xl">
+                <!-- Live Preview Iframe -->
+                <iframe id="live-preview-iframe" class="w-full h-full border-0 rounded-[2rem]"
+                    sandbox="allow-scripts allow-same-origin"
+                    srcdoc="<div style='display:flex;align-items:center;justify-content:center;height:100%;background:#0f172a;color:white;font-family:sans-serif;text-align:center;padding:2rem'><div><i class='fa-solid fa-spinner fa-spin' style='font-size:2rem;margin-bottom:1rem;display:block'></i><p style='font-size:0.75rem;opacity:0.7'>Carregando preview...</p></div></div>">
+                </iframe>
 
                 <!-- Notch -->
-                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-xl z-20"></div>
+                <div
+                    class="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-b-xl z-20 pointer-events-none">
+                </div>
             </div>
 
-            <p class="mt-6 text-xs text-gray-400 text-center max-w-xs">
-                Esta prévia simula a renderização final. As animações ocorrerão no site publicado.
+            <!-- Button Reorder Panel -->
+            <div class="w-full mt-4 bg-gray-50 rounded-lg border border-gray-200 p-3">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-xs font-bold text-gray-600 uppercase tracking-wider">
+                        <i class="fa-solid fa-grip-vertical mr-1"></i> Ordem dos Botões
+                    </h4>
+                    <span class="text-[10px] text-gray-400">Arraste para reordenar</span>
+                </div>
+                <div id="button-reorder-list" class="space-y-1">
+                    <!-- Buttons will be rendered here by JS -->
+                    <div class="text-xs text-gray-400 text-center py-2">Carregando...</div>
+                </div>
+            </div>
+
+            <!-- Info Text -->
+            <p class="mt-3 text-[10px] text-gray-400 text-center max-w-xs leading-relaxed">
+                <i class="fa-solid fa-info-circle mr-1"></i>
+                Preview em tempo real do convite final. Clique nos elementos para testar interações.
             </p>
 
         </aside>
 
 
 
-        <!-- MOBILE PREVIEW MODAL -->
+        <!-- MOBILE PREVIEW MODAL (v4.3.0: Live iframe) -->
         <!-- ========================================== -->
         <div id="mobile-preview-modal"
-            class="fixed inset-0 bg-black/90 z-50 hidden lg:hidden flex flex-col items-center justify-center p-4">
+            class="fixed inset-0 bg-black/90 z-50 hidden flex flex-col items-center justify-center p-4">
 
             <!-- Header with Close Button -->
             <div class="w-full max-w-sm flex justify-between items-center mb-4">
-                <span class="text-white font-medium">Prévia do Convite</span>
+                <span class="text-white font-medium"><i class="fa-solid fa-mobile-screen mr-2"></i>Prévia Mobile</span>
                 <button onclick="closeMobilePreview()"
                     class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition">
                     <i class="fa-solid fa-xmark"></i> Fechar
                 </button>
             </div>
 
-            <div class="relative w-full max-w-sm">
-                <!-- Device Frame -->
+            <div class="relative w-full max-w-sm flex-1 flex flex-col">
+                <!-- Device Frame with Iframe -->
                 <div
-                    class="relative w-full aspect-[9/16] bg-black rounded-[2rem] overflow-hidden ring-2 ring-white/20 mx-auto">
-                    <div id="mobile-preview-content" class="w-full h-full relative bg-cover bg-center"
-                        style="background-image: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)">
-
-                        <div class="absolute inset-0 bg-black/30"></div>
-
-                        <!-- Timer -->
-                        <div id="mobile-preview-timer" class="absolute top-8 left-0 w-full flex justify-center z-10"
-                            style="display: none;">
-                            <div class="flex gap-3 text-white text-center">
-                                <div><span class="text-lg font-bold block leading-none">00</span><span
-                                        class="text-[7px] uppercase opacity-80">Meses</span></div>
-                                <div><span class="text-lg font-bold block leading-none">00</span><span
-                                        class="text-[7px] uppercase opacity-80">Dias</span></div>
-                                <div><span class="text-lg font-bold block leading-none">00</span><span
-                                        class="text-[7px] uppercase opacity-80">Hs</span></div>
-                            </div>
-                        </div>
-
-                        <!-- Shadow Gradient -->
-                        <div class="absolute bottom-0 left-0 w-full h-1/2 pointer-events-none"
-                            style="background: linear-gradient(to top, #000000, transparent);"></div>
-
-                        <!-- Buttons -->
-                        <div id="mobile-preview-buttons" class="absolute w-full px-4 flex justify-center"
-                            style="bottom: 30px;">
-                            <div class="flex gap-2 justify-center flex-wrap">
-                                <!-- Buttons will be synced from main preview -->
-                            </div>
-                        </div>
-                    </div>
+                    class="relative w-full flex-1 max-h-[80vh] bg-black rounded-[2rem] overflow-hidden ring-2 ring-white/20 mx-auto">
+                    <iframe id="mobile-preview-iframe" class="w-full h-full border-0"
+                        sandbox="allow-scripts allow-same-origin"
+                        srcdoc="<div style='display:flex;align-items:center;justify-content:center;height:100%;background:#0f172a;color:white;font-family:sans-serif'><p>Carregando...</p></div>">
+                    </iframe>
 
                     <!-- Notch -->
-                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-5 bg-black rounded-b-xl z-20"></div>
+                    <div
+                        class="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-5 bg-black rounded-b-xl z-20 pointer-events-none">
+                    </div>
                 </div>
 
-                <p class="mt-4 text-xs text-gray-400 text-center">
-                    Toque fora para fechar
-                </p>
+                <!-- Button Reorder Panel (Mobile) -->
+                <div class="w-full mt-3 bg-white/10 backdrop-blur rounded-lg p-3">
+                    <h4 class="text-xs font-bold text-white/70 uppercase tracking-wider mb-2">
+                        <i class="fa-solid fa-grip-vertical mr-1"></i> Ordem dos Botões
+                    </h4>
+                    <div id="mobile-button-reorder-list" class="space-y-1">
+                        <!-- Will be synced from main reorder panel -->
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1907,7 +1891,8 @@
     <!-- Logic & UI -->
     <script src="static/js/navigation.js?v=4.3.55"></script>
     <script src="static/js/links-extras.js?v=4.3.55"></script>
-    <script src="static/js/preview.js?v=4.3.55"></script>
+    <script src="static/js/preview.js?v=4.3.0"></script>
+    <script src="static/js/live-preview.js?v=4.3.0"></script>
     <script src="static/js/windows.js?v=4.4.0"></script>
     <script src="static/js/chatbot.js?v=4.4.0"></script>
     <script src="static/js/theme.js?v=4.4.0"></script>
