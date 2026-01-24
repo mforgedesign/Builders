@@ -137,6 +137,15 @@
         const state = window.builderState || {};
         const formData = state.formData || {};
 
+        // DEBUG: Log what we're working with
+        console.log('[LivePreview] generateMenuConfig - formData:', {
+            link_google_maps: formData.link_google_maps,
+            confirmacao: formData.confirmacao,
+            link_presentes: formData.link_presentes,
+            manual_html: formData.manual_html ? 'exists' : 'empty'
+        });
+        console.log('[LivePreview] generateMenuConfig - assets:', state.assets);
+
         const config = [];
 
         // Google Maps
