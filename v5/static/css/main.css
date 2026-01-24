@@ -446,3 +446,40 @@ html.dark .text-blue-700 {
 html.dark .border-blue-200 {
     border-color: #1d4ed8 !important;
 }
+
+/* v4.3.1: Refresh Preview Button States */
+#btn-refresh-preview.pending-changes {
+    animation: glow-pulse 1.5s ease-in-out infinite;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6), 0 0 40px rgba(99, 102, 241, 0.3);
+}
+
+#btn-refresh-preview.updating {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+#btn-refresh-preview.updating i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes glow-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.4), 0 0 20px rgba(99, 102, 241, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(99, 102, 241, 0.8), 0 0 50px rgba(99, 102, 241, 0.4);
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

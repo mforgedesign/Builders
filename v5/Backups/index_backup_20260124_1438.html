@@ -1778,20 +1778,17 @@
         <aside id="device-preview"
             class="hidden lg:flex w-[400px] bg-white border-l border-saas-border flex-col items-center p-4 shrink-0 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] overflow-y-auto">
 
-            <!-- Header Badge + Refresh Button -->
+            <!-- Header Badge -->
             <div class="flex items-center justify-between w-full mb-3">
                 <div
                     class="bg-white/80 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-brand-600 shadow-sm border border-brand-100">
                     <i class="fa-solid fa-mobile-screen-button mr-1"></i> Preview Real
                 </div>
+                <button id="btn-refresh-preview" class="text-gray-400 hover:text-brand-600 transition p-1"
+                    title="Atualizar preview">
+                    <i class="fa-solid fa-arrows-rotate text-sm"></i>
+                </button>
             </div>
-
-            <!-- v4.3.1: Large Refresh Button with Glow Effect -->
-            <button id="btn-refresh-preview"
-                class="w-full mb-3 px-4 py-2.5 bg-gradient-to-r from-brand-600 to-indigo-600 text-white rounded-lg font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2">
-                <i class="fa-solid fa-arrows-rotate"></i>
-                <span>Atualizar Prévia</span>
-            </button>
 
             <!-- Phone Frame with Live Iframe (Moto G75: 9:20 aspect ratio) -->
             <div

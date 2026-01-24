@@ -401,38 +401,19 @@
     // Event Listeners
     // ========================================
 
-    // v4.3.1: Track if changes pending (for glow effect)
-    let hasPendingChanges = false;
-
-    function markPendingChanges() {
-        hasPendingChanges = true;
-        const refreshBtn = document.getElementById('btn-refresh-preview');
-        if (refreshBtn) {
-            refreshBtn.classList.add('pending-changes');
-        }
-    }
-
-    function clearPendingChanges() {
-        hasPendingChanges = false;
-        const refreshBtn = document.getElementById('btn-refresh-preview');
-        if (refreshBtn) {
-            refreshBtn.classList.remove('pending-changes');
-        }
-    }
-
     function init() {
         loadButtonOrder();
 
-        // v4.3.1: Listen for changes but DON'T auto-update - just mark button as pending
-        document.addEventListener('stateUpdated', markPendingChanges);
-        document.addEventListener('mediaUpdated', markPendingChanges);
-        document.addEventListener('linksExtrasUpdated', markPendingChanges);
+        // Listen for state updates
+        document.addEventListener('stateUpdated', schedulePreviewUpdate);
+        document.addEventListener('mediaUpdated', schedulePreviewUpdate);
+        document.addEventListener('linksExtrasUpdated', schedulePreviewUpdate);
 
         // Listen for button order changes (from external drag-drop UI)
         document.addEventListener('buttonOrderChanged', (e) => {
             if (e.detail && e.detail.order) {
                 saveButtonOrder(e.detail.order);
-                markPendingChanges();
+                schedulePreviewUpdate();
             }
         });
 
@@ -441,18 +422,15 @@
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
                 console.log('[LivePreview] Manual refresh requested');
-
-                // Disable button during update
-                refreshBtn.disabled = true;
-                refreshBtn.classList.add('updating');
+                // Add spin animation
+                const icon = refreshBtn.querySelector('i');
+                if (icon) icon.classList.add('fa-spin');
 
                 updatePreview().then(() => {
-                    clearPendingChanges();
-                    refreshBtn.disabled = false;
-                    refreshBtn.classList.remove('updating');
-                }).catch(() => {
-                    refreshBtn.disabled = false;
-                    refreshBtn.classList.remove('updating');
+                    // Remove spin after update
+                    setTimeout(() => {
+                        if (icon) icon.classList.remove('fa-spin');
+                    }, 500);
                 });
             });
         }
