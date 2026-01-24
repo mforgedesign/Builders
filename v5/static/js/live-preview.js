@@ -134,15 +134,10 @@
     // ========================================
 
     function generateMenuConfig() {
-        const state = window.builderState || {};
-        const formData = state.formData || {};
-
-        // DEBUG: Log exactly what values we have
-        console.log('[LivePreview] formData.link_google_maps =', formData.link_google_maps || '(empty)');
-        console.log('[LivePreview] formData.confirmacao =', formData.confirmacao || '(empty)');
-        console.log('[LivePreview] formData.link_presentes =', formData.link_presentes || '(empty)');
-        console.log('[LivePreview] formData.manual_html =', formData.manual_html ? '(has content)' : '(empty)');
-        console.log('[LivePreview] state.assets keys =', Object.keys(state.assets || {}));
+        // v4.3.1: Use live form data as primary source
+        const formData = (window.AutoBuilderForm && window.AutoBuilderForm.data) || window.builderState?.formData || {};
+        // v4.3.1: Use live assets and correct keys
+        const assets = window.builderState?.assets || {};
 
         const config = [];
 

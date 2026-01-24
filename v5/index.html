@@ -1797,7 +1797,10 @@
             <div
                 class="relative w-[270px] aspect-[9/20] bg-black rounded-[2.5rem] device-frame overflow-hidden ring-1 ring-white/20 shadow-2xl">
                 <!-- Live Preview Iframe -->
-                <iframe id="live-preview-iframe" class="w-full h-full border-0 rounded-[2rem]"
+                <!-- v4.3.0: Scaled to simulate 360px viewport on 270px frame (Scale: 0.75) -->
+                <!-- This prevents elements (like buttons) from looking too large -->
+                <iframe id="live-preview-iframe" class="absolute top-0 left-0 border-0 bg-white"
+                    style="width: 133.33%; height: 133.33%; transform: scale(0.75); transform-origin: 0 0;"
                     sandbox="allow-scripts allow-same-origin"
                     srcdoc="<div style='display:flex;align-items:center;justify-content:center;height:100%;background:#0f172a;color:white;font-family:sans-serif;text-align:center;padding:2rem'><div><i class='fa-solid fa-spinner fa-spin' style='font-size:2rem;margin-bottom:1rem;display:block'></i><p style='font-size:0.75rem;opacity:0.7'>Carregando preview...</p></div></div>">
                 </iframe>
