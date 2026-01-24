@@ -253,16 +253,15 @@
     // ========================================
 
     function renderButtons() {
+        // v4.3.0: Legacy containers may not exist if using iframe preview
         const containers = [
             document.querySelector('#preview-buttons > div'),
             document.querySelector('#mobile-preview-buttons > div')
         ].filter(el => !!el);
 
-        if (containers.length === 0) return;
-
         const color = currentState.cor_botoes || '#4f46e5';
 
-        // Build ordered list of visible buttons
+        // Build ordered list of visible buttons (always, even without legacy containers)
         const visibleButtons = [];
 
         // 1. Add native buttons in order
