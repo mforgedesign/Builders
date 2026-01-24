@@ -2,30 +2,18 @@
  * AutoBuilder v4 - History Module
  * =================================
  * Manages GitHub repository history and invitation imports
- * v4.3.0: Added multi-repository support (Convites + Convite)
  */
 
 (function () {
     'use strict';
 
-    // GitHub Configuration - Multiple Repositories
+    // GitHub Configuration
     const GITHUB_OWNER = 'mforgedesign';
-
-    // v4.3.0: Support multiple repositories
-    const REPOSITORIES = [
-        {
-            repo: 'Convites',
-            branch: 'recuperaçãohoje',
-            pagesBase: 'https://mforgedesign.github.io/Convites/',
-            label: 'Convites'
-        },
-        {
-            repo: 'Convite',
-            branch: 'main',
-            pagesBase: 'https://mforgedesign.github.io/Convite/',
-            label: 'Convite'
-        }
-    ];
+    const GITHUB_REPO = 'Convites';
+    const GITHUB_BASE_PATH = ''; // Root of repo (invitations are in root)
+    const GITHUB_PAGES_BASE = `https://mforgedesign.github.io/Convites/`;
+    const GITHUB_BRANCH = 'recuperaçãohoje';
+    const GITHUB_REPO_BASE = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/tree/${GITHUB_BRANCH}/`;
 
     // DOM Elements
     let loadingEl, emptyEl, errorEl, cardsEl, gridEl, errorMessageEl;
@@ -113,8 +101,7 @@
     }
 
     /**
-     * Load invitations from GitHub - MULTI-REPO (v4.3.0)
-     * Fetches from all configured repositories in parallel
+     * Load invitations from GitHub - OPTIMIZED (Single Request)
      */
     async function loadInvitations() {
         if (isLoading) return;
@@ -124,7 +111,29 @@
         showState('loading');
 
         try {
-            console.log('[History] Fetching invitations from multiple repositories...');
+            console.log('[History] Fetching invitations tree from GitHub...');
+
+            // Fetch entire repository tree in ONE request (recursive=2)
+            // This avoids N+1 requests that hit API rate limits (403 error)
+            const response = await fetch(
+                `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/trees/${GITHUB_BRANCH}?recursive=2`,
+                {
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                // Handle rate limit specifically
+                if (response.status === 403) {
+                    throw new Error('Limite de acesso ao GitHub atingido. Tente novamente em alguns minutos.');
+                }
+                throw new Error(`GitHub API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const tree = data.tree;
 
             // Fetch ignored paths config
             let ignoredPaths = ['builder', 'static', 'assets', 'builder-v4', 'home', 'v3-1']; // Defaults
@@ -139,7 +148,67 @@
             } catch (e) {
                 console.warn('[History] Could not load builder-config.json, using defaults.', e);
             }
+
+            // Normalize ignored paths for case-insensitive comparison
             const ignoredSet = new Set(ignoredPaths.map(p => p.toLowerCase()));
+
+            // Process tree to find invitations
+            // directory structure: slug/file.ext
+            const invitationsMap = new Map();
+
+            tree.forEach(item => {
+                const pathLower = item.path.toLowerCase();
+
+                // Skip if matches ignored path (partial or full match check strategy)
+                // Strategy: exact match on root folder name
+                const rootFolder = item.path.split('/')[0].toLowerCase();
+
+                if (ignoredSet.has(rootFolder) || pathLower.startsWith('.')) {
+                    return;
+                }
+
+                // Skip root files that are not directories
+                if (!item.path.includes('/')) {
+                    if (item.type !== 'tree') return; // Skip files in root
+                }
+
+                const parts = item.path.split('/');
+                const slug = parts[0];
+
+                // If we haven't seen this folder yet
+                // Extra safety: re-check against ignore list (redundant but safe)
+                if (!invitationsMap.has(slug) && !slug.startsWith('.') && !ignoredSet.has(slug.toLowerCase())) {
+                    invitationsMap.set(slug, {
+                        slug: slug,
+                        coverUrl: null,
+                        files: []
+                    });
+                }
+
+                if (invitationsMap.has(slug)) {
+                    const inv = invitationsMap.get(slug);
+                    inv.files.push(item);
+
+                    // Check for cover image
+                    const lowerPath = item.path.toLowerCase();
+
+                    // Must be a valid image
+                    if (/\.(jpg|jpeg|png|webp)$/i.test(lowerPath)) {
+
+                        // Check if "capa" or "cover" is in the path (excluding the slug itself)
+                        // This handles:
+                        // - slug/capa.jpg
+                        // - slug/capa/image.jpg
+                        // - slug/assets/cover.png
+                        const pathInsideSlug = parts.slice(1).join('/').toLowerCase();
+
+                        if (pathInsideSlug.includes('capa') || pathInsideSlug.includes('cover')) {
+                            // Construct raw URL directly
+                            inv.coverUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${item.path}`;
+                        }
+                    }
+                }
+            });
 
             // Load sorting timestamps
             let historyTimestamps = {};
@@ -149,30 +218,24 @@
                 console.warn('[History] Failed to load timestamps', e);
             }
 
-            // Fetch all repositories in parallel
-            const repoPromises = REPOSITORIES.map(repoConfig => fetchRepoInvitations(repoConfig, ignoredSet));
-            const repoResults = await Promise.allSettled(repoPromises);
-
-            // Merge all invitations
-            let allRepoInvitations = [];
-            repoResults.forEach((result, index) => {
-                if (result.status === 'fulfilled' && result.value) {
-                    console.log(`[History] ${REPOSITORIES[index].label}: Found ${result.value.length} invitations`);
-                    allRepoInvitations = allRepoInvitations.concat(result.value);
-                } else if (result.status === 'rejected') {
-                    console.warn(`[History] ${REPOSITORIES[index].label}: Failed to load`, result.reason);
-                }
-            });
-
-            // Add timestamps and sort
-            invitations = allRepoInvitations.map(inv => ({
-                ...inv,
-                timestamp: historyTimestamps[inv.slug] || 0
-            }));
+            // Convert to array and sort
+            invitations = Array.from(invitationsMap.values())
+                .filter(inv => inv.slug !== '404.html' && inv.slug !== 'assets' && inv.slug !== 'static')
+                .map(inv => ({
+                    slug: inv.slug,
+                    coverUrl: inv.coverUrl,
+                    liveUrl: `${GITHUB_PAGES_BASE}${inv.slug}/`,
+                    repoUrl: `${GITHUB_REPO_BASE}${inv.slug}`,
+                    timestamp: historyTimestamps[inv.slug] || 0 // Use saved timestamp or 0
+                }));
 
             // Sort: Timestamp Descending (Newest First) -> Then Alphabetical
             invitations.sort((a, b) => {
-                if (b.timestamp !== a.timestamp) return b.timestamp - a.timestamp;
+                // Primary: Timestamp
+                if (b.timestamp !== a.timestamp) {
+                    return b.timestamp - a.timestamp;
+                }
+                // Secondary: Alphabetical
                 return a.slug.localeCompare(b.slug);
             });
 
@@ -182,7 +245,7 @@
                 return;
             }
 
-            console.log(`[History] Total: ${invitations.length} invitations from ${REPOSITORIES.length} repositories`);
+            console.log(`[History] Found ${invitations.length} invitations via Tree API`);
 
             // Show cards container
             showState('cards');
@@ -202,92 +265,6 @@
             showError(error.message);
             isLoading = false;
         }
-    }
-
-    /**
-     * Fetch invitations from a single repository
-     * @param {Object} repoConfig - Repository configuration
-     * @param {Set} ignoredSet - Set of paths to ignore
-     * @returns {Promise<Array>} - Array of invitations
-     */
-    async function fetchRepoInvitations(repoConfig, ignoredSet) {
-        const { repo, branch, pagesBase, label } = repoConfig;
-
-        const response = await fetch(
-            `https://api.github.com/repos/${GITHUB_OWNER}/${repo}/git/trees/${branch}?recursive=2`,
-            {
-                headers: {
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            }
-        );
-
-        if (!response.ok) {
-            if (response.status === 403) {
-                throw new Error('Rate limit atingido');
-            }
-            throw new Error(`GitHub API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const tree = data.tree;
-
-        // Process tree to find invitations
-        const invitationsMap = new Map();
-
-        tree.forEach(item => {
-            const pathLower = item.path.toLowerCase();
-            const rootFolder = item.path.split('/')[0].toLowerCase();
-
-            if (ignoredSet.has(rootFolder) || pathLower.startsWith('.')) {
-                return;
-            }
-
-            if (!item.path.includes('/')) {
-                if (item.type !== 'tree') return;
-            }
-
-            const parts = item.path.split('/');
-            const slug = parts[0];
-
-            if (!invitationsMap.has(slug) && !slug.startsWith('.') && !ignoredSet.has(slug.toLowerCase())) {
-                invitationsMap.set(slug, {
-                    slug: slug,
-                    coverUrl: null,
-                    files: [],
-                    // v4.3.0: Track source repository
-                    sourceRepo: repo,
-                    sourceBranch: branch,
-                    sourceLabel: label
-                });
-            }
-
-            if (invitationsMap.has(slug)) {
-                const inv = invitationsMap.get(slug);
-                inv.files.push(item);
-
-                const lowerPath = item.path.toLowerCase();
-                if (/\.(jpg|jpeg|png|webp)$/i.test(lowerPath)) {
-                    const pathInsideSlug = parts.slice(1).join('/').toLowerCase();
-                    if (pathInsideSlug.includes('capa') || pathInsideSlug.includes('cover')) {
-                        inv.coverUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${repo}/${branch}/${item.path}`;
-                    }
-                }
-            }
-        });
-
-        // Convert to array
-        return Array.from(invitationsMap.values())
-            .filter(inv => inv.slug !== '404.html' && inv.slug !== 'assets' && inv.slug !== 'static')
-            .map(inv => ({
-                slug: inv.slug,
-                coverUrl: inv.coverUrl,
-                liveUrl: `${pagesBase}${inv.slug}/`,
-                repoUrl: `https://github.com/${GITHUB_OWNER}/${repo}/tree/${branch}/${inv.slug}`,
-                sourceRepo: inv.sourceRepo,
-                sourceBranch: inv.sourceBranch,
-                sourceLabel: inv.sourceLabel
-            }));
     }
 
     /**
@@ -312,12 +289,6 @@
                 title="Excluir Convite">
                 <i class="fa-solid fa-trash text-sm"></i>
             </button>
-
-            <!-- Source Repo Badge (v4.3.0) -->
-            ${invitation.sourceLabel ? `
-            <div class="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur rounded text-[10px] font-bold text-white z-10">
-                ${invitation.sourceLabel}
-            </div>` : ''}
 
             <!-- Cover Thumbnail -->
             <div class="aspect-[9/16] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden">
