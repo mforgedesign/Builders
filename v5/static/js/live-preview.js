@@ -160,8 +160,8 @@
                 id: 'gifts'
             });
         }
-        // Gifts (Image mode)
-        else if (state.assets?.gifts) {
+        // Gifts (Image mode) - v4.3.0 fix: key is 'presentes' not 'gifts'
+        else if (state.assets?.presentes || state.assets?.gifts) {
             config.push({
                 titulo: 'Sugestões de Presentes',
                 icone: 'fa-solid fa-gift',
