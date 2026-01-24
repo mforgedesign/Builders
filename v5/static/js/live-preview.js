@@ -137,14 +137,12 @@
         const state = window.builderState || {};
         const formData = state.formData || {};
 
-        // DEBUG: Log what we're working with
-        console.log('[LivePreview] generateMenuConfig - formData:', {
-            link_google_maps: formData.link_google_maps,
-            confirmacao: formData.confirmacao,
-            link_presentes: formData.link_presentes,
-            manual_html: formData.manual_html ? 'exists' : 'empty'
-        });
-        console.log('[LivePreview] generateMenuConfig - assets:', state.assets);
+        // DEBUG: Log exactly what values we have
+        console.log('[LivePreview] formData.link_google_maps =', formData.link_google_maps || '(empty)');
+        console.log('[LivePreview] formData.confirmacao =', formData.confirmacao || '(empty)');
+        console.log('[LivePreview] formData.link_presentes =', formData.link_presentes || '(empty)');
+        console.log('[LivePreview] formData.manual_html =', formData.manual_html ? '(has content)' : '(empty)');
+        console.log('[LivePreview] state.assets keys =', Object.keys(state.assets || {}));
 
         const config = [];
 
