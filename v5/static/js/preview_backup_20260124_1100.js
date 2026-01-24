@@ -42,7 +42,6 @@
         link_presentes: '',
         link_confirmacao: '', // Legacy
         manual_content: '',
-        manual_html: '',  // v4.2.6: Added - Form uses this field
         media_folha_animada: null,
         media_folha_preenchida: null,
         media_folha_vazia: null,
@@ -129,14 +128,8 @@
 
         // 4. Manual - Priority: Text > Image
         if (btn.id === 'manual') {
-            // v4.2.6: Check both manual_html (new) and manual_content (legacy)
-            const htmlContent = (currentState.manual_html || '').trim();
-            const textContent = (currentState.manual_content || '').trim();
-
-            if (htmlContent.length > 0) {
-                showPreviewModal('Manual', `<div class="text-left prose prose-sm max-w-none text-gray-800">${htmlContent}</div>`);
-            } else if (textContent.length > 0) {
-                showPreviewModal('Manual', `<div class="text-left prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap">${textContent}</div>`);
+            if (currentState.manual_content && currentState.manual_content.trim().length > 0) {
+                showPreviewModal('Manual', `<div class="text-left prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap">${currentState.manual_content}</div>`);
             } else {
                 // Try to get image URL from various possible state keys (manual OR media_manual)
                 const imgUrl = (typeof currentState.manual === 'string' ? currentState.manual : null) ||
@@ -218,12 +211,11 @@
 
                 return hasLink || hasStateImage || hasDomImage;
             case 'manual':
-                // v4.2.6 FIX: Check both manual_html (new form field) AND manual_content (legacy)
-                const hasHtml = currentState.manual_html && currentState.manual_html.trim().length > 0;
-                const hasText = currentState.manual_content && currentState.manual_content.trim().length > 0;
+                // Logic: Visible if Text exists OR Image exists
+                const hasText = currentState.manual_content && currentState.manual_content.length > 0;
                 const hasManualMedia = (currentState.manual && typeof currentState.manual === 'string') ||
                     (currentState.media_manual && !!currentState.media_manual.url);
-                return hasHtml || hasText || hasManualMedia;
+                return hasText || hasManualMedia;
             default:
                 // Extra links are always visible if they exist
                 return true;
@@ -494,7 +486,6 @@
                 currentState.media_presentes = null;
                 currentState.link_presentes = '';
                 currentState.manual_content = '';
-                currentState.manual_html = '';  // v4.2.6: Also reset manual_html
 
                 Object.assign(currentState, e.detail.data.formData);
                 updateBackground();
