@@ -259,19 +259,22 @@
         const isTrue = (val) => val === true || val === 'true' || val === 'on' || val === 1;
 
         // Asset URLs (convert to data URLs for preview)
-        const capaUrl = await assetToDataURL(assets.cover) || 'blank.jpg';
-        const folhaUrl = await assetToDataURL(assets.sheet) || await assetToDataURL(assets.folha_preenchida) || '';
-        const loopUrl = await assetToDataURL(assets.loop) || '';
+        // Keys match actual builderState.assets keys (Portuguese names)
+        const capaUrl = await assetToDataURL(assets.capa) || await assetToDataURL(assets.cover) || 'blank.jpg';
+        const folhaUrl = await assetToDataURL(assets.folha_preenchida) || await assetToDataURL(assets.sheet) || '';
+        const fundoTelaUrl = await assetToDataURL(assets.fundo_tela) || await assetToDataURL(assets.loop) || folhaUrl || '';
         const musicaUrl = ''; // Disabled in preview to avoid autoplay
-        const presentesUrl = await assetToDataURL(assets.gifts) || '';
+        const presentesUrl = await assetToDataURL(assets.presentes) || await assetToDataURL(assets.gifts) || '';
         const manualUrl = await assetToDataURL(assets.manual) || '';
-        const aberturaUrl = await assetToDataURL(assets.opening) || '';
+        const aberturaUrl = await assetToDataURL(assets.vid_abertura) || await assetToDataURL(assets.opening) || '';
 
-        // Determine background URL (loop video OR static image)
-        let fundoTelaUrl = loopUrl;
-        if (!fundoTelaUrl && assets.folha_preenchida) {
-            fundoTelaUrl = await assetToDataURL(assets.folha_preenchida) || '';
-        }
+        console.log('[LivePreview] Assets:', {
+            capa: !!assets.capa,
+            fundo_tela: !!assets.fundo_tela,
+            presentes: !!assets.presentes,
+            vid_abertura: !!assets.vid_abertura
+        });
+
 
         // OG Title
         const ogTitle = formData.event_name || formData.nome || 'Convite Digital';

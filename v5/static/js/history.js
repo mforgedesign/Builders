@@ -459,10 +459,16 @@
         try {
             console.log(`[History] Starting import of ${slug}...`);
 
+            // v4.3.0: Find source repository from invitation data
+            const sourceInvitation = allInvitations.find(inv => inv.slug === slug);
+            const sourceRepo = sourceInvitation?.sourceRepo || 'Convites';
+            const sourceBranch = sourceInvitation?.sourceBranch || 'recuperaçãohoje';
+            console.log(`[History] Source: ${sourceRepo}/${sourceBranch}`);
+
             // Step 1: Fetch files list
             updateStatus('Listando arquivos...', 10);
             const filesResponse = await fetch(
-                `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${slug}`,
+                `https://api.github.com/repos/${GITHUB_OWNER}/${sourceRepo}/contents/${slug}`,
                 { headers: { 'Accept': 'application/vnd.github.v3+json' } }
             );
 
@@ -676,7 +682,7 @@
             if (window.resetBuilderState) await window.resetBuilderState(true);
 
             // CRITICAL FIX: Pass baseUrl so relative paths in data.json can be fetched
-            const baseUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${slug}`;
+            const baseUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${sourceRepo}/${sourceBranch}/${slug}`;
             await window.restoreBuilderState(appState, null, baseUrl);
 
             // Step 7: Finish
