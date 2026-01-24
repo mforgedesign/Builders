@@ -163,7 +163,7 @@
             });
         }
         // Gifts (Image mode) - v4.3.0 fix: key is 'presentes' not 'gifts'
-        else if (state.assets?.presentes || state.assets?.gifts) {
+        else if (assets.presentes || assets.gifts) {
             config.push({
                 titulo: 'Sugestões de Presentes',
                 icone: 'fa-solid fa-gift',
@@ -183,8 +183,8 @@
                 manualText: formData.manual_html || formData.manual_text
             });
         }
-        // Manual (Image mode)
-        else if (state.assets?.manual) {
+        // Manual (Image mode) - check both keys
+        else if (assets.manual) {
             config.push({
                 titulo: 'Manual do Convidado',
                 icone: 'fa-solid fa-book-open',
@@ -219,8 +219,9 @@
         }
 
         // Extra Links
-        if (state.extraLinks && state.extraLinks.length > 0) {
-            state.extraLinks.forEach(extraLink => {
+        const linksExtras = window.builderState?.linksExtras || [];
+        if (linksExtras.length > 0) {
+            linksExtras.forEach(extraLink => {
                 config.push({
                     titulo: extraLink.button_name || extraLink.label,
                     icone: extraLink.icon_code || extraLink.icon || 'fa-solid fa-link',
