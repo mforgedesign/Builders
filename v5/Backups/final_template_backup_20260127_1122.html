@@ -600,9 +600,7 @@
             e.preventDefault();
 
             // SIMPLIFIED LOGIC: Any URL opens directly, only raw phone numbers use popup
-            // FIX (2026-01-27): Treat 'wa.me' and 'whatsapp.com' links as numbers to force popup
-            const isWhatsAppLink = link.includes("wa.me") || link.includes("whatsapp.com");
-            const isUrl = link.startsWith("http") && !isWhatsAppLink;
+            const isUrl = link.startsWith("http");
 
             if (isUrl) {
                 // ANY URL (forms, group chats, wedding sites, etc) opens directly

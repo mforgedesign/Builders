@@ -91,63 +91,8 @@
         }, 1500);
     };
 
-    /**
-     * Automatically formats WhatsApp numbers (adds 55 if missing)
-     */
-    /**
-     * Automatically formats WhatsApp numbers (adds 55 if missing)
-     */
-    const setupWhatsAppFormatter = () => {
-        const input = document.getElementById('form-confirmacao');
-        if (!input) return;
-
-        // Formats current value if applicable
-        const formatValue = () => {
-            let val = input.value.trim();
-
-            // If it's empty or a URL by definition, ignore
-            if (!val || val.toLowerCase().startsWith('http')) return;
-
-            // Clean non-digits
-            const digits = val.replace(/\D/g, '');
-
-            // Check for Brazilian phone patterns (DD + 8 digits or DD + 9 digits) = 10 or 11 digits
-            if (digits.length === 10 || digits.length === 11) {
-                const newValue = '55' + digits;
-
-                // Only update if different to avoid infinite loops
-                if (input.value !== newValue) {
-                    input.value = newValue;
-
-                    // Trigger change for persistence (Crucial for build system)
-                    input.dispatchEvent(new Event('change', { bubbles: true }));
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-
-                    console.log('[AutoBuilder] WhatsApp Auto-Format (Import/Blur): Added 55 prefix');
-                }
-            }
-        };
-
-        // 1. Trigger on User Blur
-        input.addEventListener('blur', formatValue);
-
-        // 2. Trigger on History Import / State Restore
-        // Using 'stateUpdated' event which form.js dispatches after populating
-        document.addEventListener('stateUpdated', (e) => {
-            const isRestoration = e.detail.source === 'persistence';
-            const isConfirmUpdate = e.detail.field === 'confirmacao';
-
-            // Check if we should re-verify formatting
-            // We use a small timeout to let the DOM value settle if needed
-            if (isRestoration || isConfirmUpdate) {
-                setTimeout(formatValue, 100);
-            }
-        });
-    };
-
     document.addEventListener('DOMContentLoaded', () => {
         setupUIControls(); // Init Controls
-        setupWhatsAppFormatter(); // Init WhatsApp Auto-Format
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
             const colors = {
