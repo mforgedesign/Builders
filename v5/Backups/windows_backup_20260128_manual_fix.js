@@ -3088,13 +3088,7 @@
 
                     } catch (err) {
                         console.error('[Manual Optimizer] Error:', err);
-
-                        let paramMsg = err.message;
-                        if (err.message.includes('Failed to send a request') || err.message.includes('net::ERR_NAME_NOT_RESOLVED')) {
-                            paramMsg = "Erro de conexão com o servidor de IA. O sistema pode estar iniciando ou há um problema de internet. Tente novamente em alguns instantes.";
-                        }
-
-                        alert('Erro ao otimizar texto: ' + paramMsg);
+                        alert('Erro ao otimizar texto: ' + err.message);
                     } finally {
                         // Restore Button
                         optimizeBtn.innerHTML = originalBtnText;

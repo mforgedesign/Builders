@@ -1,0 +1,3 @@
+Este backup foi feito antes de melhorar o tratamento de erros na função 'optimize-manual' em windows.js.
+O projeto Supabase estava INATIVO, causando erro de DNS. A correção no código visa dar uma mensagem mais clara quando isso ocorrer (erro de conexão/servidor offline) em vez de um erro genérico de fetch.
+Também foi solicitado a restauração do projeto Supabase.
