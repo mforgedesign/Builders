@@ -1260,7 +1260,8 @@
                             } else if (dropzoneId) {
                                 const dropzone = document.getElementById(dropzoneId);
                                 if (dropzone) {
-                                    const type = path.endsWith('.mp4') ? 'video' : 'image';
+                                    const isVideo = path.toLowerCase().match(/\.(mp4|webm|mov|ogg)$/);
+                                    const type = isVideo ? 'video' : 'image';
                                     // FIXED: Access local function directly (closure), not window.
                                     updateDropzonePreview(dropzone, url, type);
                                 }
@@ -1277,7 +1278,7 @@
                             document.dispatchEvent(new CustomEvent('mediaUpdated', {
                                 detail: {
                                     type: evtType,
-                                    data: { url: url, type: path.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg' },
+                                    data: { url: url, type: path.toLowerCase().match(/\.(mp4|webm|mov|ogg)$/) ? 'video/mp4' : 'image/jpeg' },
                                     skipPersistence: true // Prevent overwriting DB with mapped preview
                                 }
                             }));
