@@ -379,9 +379,7 @@
 
             // Drag events
             item.addEventListener('dragstart', (e) => {
-                // Fix: Use specific ID instead of index
-                e.dataTransfer.setData('button-id', btn.id);
-                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', index);
                 item.classList.add('opacity-50');
             });
 
@@ -391,7 +389,6 @@
 
             item.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
                 item.classList.add('border-brand-500');
             });
 
@@ -403,24 +400,15 @@
                 e.preventDefault();
                 item.classList.remove('border-brand-500');
 
-                const fromId = e.dataTransfer.getData('button-id');
-                const toId = btn.id;
+                const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                const toIndex = index;
 
-                if (!fromId || fromId === toId) return;
-
-                // Find real indices in the global buttonOrder array
-                // accessible via closure or window.AutoBuilderPreview.getButtonOrder()
-                // But buttonOrder variable is available in this scope (preview.js module scope)
-                const fromIndex = buttonOrder.indexOf(fromId);
-                const toIndex = buttonOrder.indexOf(toId);
-
-                if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
+                if (fromIndex !== toIndex) {
                     // Reorder
                     const newOrder = [...buttonOrder];
                     const [moved] = newOrder.splice(fromIndex, 1);
                     newOrder.splice(toIndex, 0, moved);
                     buttonOrder = newOrder;
-
                     saveButtonOrder();
                     renderButtons();
 
@@ -428,8 +416,6 @@
                     document.dispatchEvent(new CustomEvent('buttonOrderChanged', {
                         detail: { order: buttonOrder }
                     }));
-
-                    console.log('[Preview] Button reordered:', fromId, '->', toId, buttonOrder);
                 }
             });
 

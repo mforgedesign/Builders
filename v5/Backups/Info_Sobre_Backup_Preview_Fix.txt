@@ -1,0 +1,5 @@
+Este backup foi feito antes de corrigir o bug de reordenação de botões no preview.js.
+O bug acontecia porque o índice visual dos botões (visibleButtons) estava sendo usado para manipular o array completo de botões (buttonOrder), o que causava trocas erradas quando havia botões ocultos no meio.
+
+Mudança:
+Refatoração da função renderReorderPanel para usar IDs (data-button-id) para encontrar os índices reais no array buttonOrder, em vez de usar os índices do loop visual.
