@@ -280,7 +280,10 @@
 
         // 3. Add any new extra links not yet in buttonOrder
         (currentState.links_extras || []).forEach(link => {
-            const extraId = `extra-${link.id || Math.random().toString(36).substr(2, 9)}`;
+            // Fix: Use ID 0 if present, don't fallback to random if ID is 0
+            const linkId = (link.id !== undefined && link.id !== null) ? link.id : Math.random().toString(36).substr(2, 9);
+            const extraId = `extra-${linkId}`;
+
             if (link.label && !buttonOrder.includes(extraId)) {
                 buttonOrder.push(extraId);
                 visibleButtons.push({
