@@ -750,8 +750,16 @@
                 dropzone.style.backgroundImage = `url(${url})`;
                 dropzone.style.backgroundSize = 'cover';
                 dropzone.style.backgroundPosition = 'center';
+
+                // Clear any existing video
+                const existingVideo = dropzone.querySelector('video');
+                if (existingVideo) existingVideo.remove();
+
                 dropzone.querySelectorAll('i, span').forEach(el => el.classList.add('hidden'));
             } else if (type === 'video') {
+                // Clear background image
+                dropzone.style.backgroundImage = '';
+
                 const existingVideo = dropzone.querySelector('video');
                 if (existingVideo) existingVideo.remove();
 
@@ -760,7 +768,12 @@
                 video.muted = true;
                 video.loop = true;
                 video.autoplay = true;
+                video.playsInline = true; // Important for mobile
                 video.classList.add('absolute', 'inset-0', 'w-full', 'h-full', 'object-cover');
+
+                // Debug log
+                console.log('[Dropzone] Adding video:', url);
+
                 dropzone.appendChild(video);
                 dropzone.querySelectorAll('i, span').forEach(el => el.classList.add('hidden'));
             }
@@ -1618,7 +1631,9 @@
                                 if (dz) {
                                     // Just update preview with URL (Lazy load)
                                     // Logic in updateDropzonePreview handles URLs
-                                    updateDropzonePreview(dz, fullAssetUrl);
+                                    // Just update preview with URL (Lazy load)
+                                    const isVideo = fullAssetUrl.toLowerCase().match(/\.(mp4|webm|ogg|mov)$/);
+                                    updateDropzonePreview(dz, fullAssetUrl, isVideo ? 'video' : 'image');
 
                                     // Also update Form Data for persistence?
                                     // Note: The persistence system usually expects Base64 for local work.
