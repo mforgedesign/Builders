@@ -15,9 +15,6 @@
     let debounceTimer = null;
     const DEBOUNCE_MS = 500;
 
-    // Local state cache (Moved to top scope for internal access)
-    const localData = {};
-
     // ========================================
     // API Functions
     // ========================================
@@ -29,9 +26,6 @@
      * @returns {Promise<object>} The API response
      */
     async function updateField(fieldName, value) {
-        // v4.3.52 Fix: Update local cache immediately so live-preview gets it
-        localData[fieldName] = value;
-
         try {
             const payload = {};
             payload[fieldName] = value;
@@ -93,9 +87,6 @@
             console.log('[Form] Skipping populate - state is empty');
             return;
         }
-
-        // v4.3.52 Fix: Sync state to localData cache
-        Object.assign(localData, state);
 
         // =============================================
         // LEGACY FIELD MAPPING (Retrocompatibilidade)
@@ -390,6 +381,8 @@
     // ========================================
     // Expose to Global Scope
     // ========================================
+    // Local state cache
+    const localData = {};
 
     window.AutoBuilderForm = {
         updateField: async (field, value) => {

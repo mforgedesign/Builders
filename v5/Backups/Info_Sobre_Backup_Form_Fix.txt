@@ -1,0 +1,7 @@
+Backup feito antes de corrigir o problema de sincronização de estado entre form.js e live-preview.js.
+O problema era que 'localData' (usado pelo live-preview) não estava sendo atualizado corretamente nas chamadas internas (init e updateField), causando inconsistências no iframe.
+
+Mudanças planejadas:
+1. Mover 'localData' para o topo do escopo para ser acessível por todas as funções.
+2. Atualizar 'localData' dentro de 'updateField'.
+3. Atualizar 'localData' dentro de 'populateForm'.
