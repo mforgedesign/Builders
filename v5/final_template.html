@@ -700,7 +700,7 @@
         if (btnCount <= 4) {
             // V4.1: Use Flexbox for better centering spacing when few buttons exist
             // gap-2 matches the preview spacing exactly
-            gridClasses = "flex flex-row flex-nowrap justify-center items-start transition-all duration-300 gap-2";
+            gridClasses = "flex flex-row justify-center items-start transition-all duration-300 gap-2";
         } else {
             // Use Grid for 5+ to guarantee equal distribution/squeezing
             gridClasses = "grid grid-flow-col auto-cols-fr w-full max-w-[480px] place-items-start transition-all duration-300";
@@ -729,7 +729,7 @@
             const anchor = document.createElement('a');
             // 'min-w-0' é crucial para permitir encolhimento em linhas cheias (grid)
             // 'w-full' garante que ele ocupe o centro da sua fração do grid
-            anchor.className = "group flex flex-col items-center gap-1 focus:outline-none flex-1 w-full min-w-0 cursor-pointer";
+            anchor.className = "group flex flex-col items-center gap-1 focus:outline-none w-full min-w-0 cursor-pointer";
 
             // Logic for href/click (Mantendo a lógica original funcional)
             anchor.target = "_blank"; // Default
@@ -777,7 +777,7 @@
                         <i class="${btn.icone}" style="font-size: ${iconRem}rem;"></i>
                     </div>
                 </div>
-                <span class="text-[10px] uppercase font-bold text-white tracking-wide text-center leading-tight drop-shadow-md w-full whitespace-nowrap px-0.5">
+                <span class="text-[10px] uppercase font-bold text-white tracking-wide text-center leading-tight drop-shadow-md w-full break-words px-1">
                     ${btn.titulo}
                 </span>
             `;
