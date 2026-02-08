@@ -3468,7 +3468,7 @@
                         if (formData.link_google_maps) {
                             buttonConfigs['location'] = {
                                 id: 'location',
-                                titulo: 'Como Chegar',
+                                titulo: 'Localização',
                                 icone: 'fa-solid fa-location-dot',
                                 link: formData.link_google_maps
                             };

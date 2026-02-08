@@ -1,0 +1,12 @@
+Backup realizado em 2026-02-08 17:30.
+Arquivos modificados:
+- static/js/windows.js
+- final_template.html
+
+Motivo:
+Correção do bug onde o botão "Localização" pula linha quando há apenas 2 botões ativos.
+Mudança do texto "Localização" para "Como Chegar".
+
+Arquivos de backup salvos como:
+- Backups/windows_backup_20260208_1730.js
+- Backups/final_template_backup_20260208_1730.html
