@@ -776,7 +776,7 @@ window.EMBEDDED_FINAL_TEMPLATE = `<!DOCTYPE html>
                         <i class="\${btn.icone}" style="font-size: \${iconRem}rem;"></i>
                     </div>
                 </div>
-                <span class="btn-label text-[10px] uppercase font-bold text-white tracking-wide text-center leading-tight drop-shadow-md w-full px-1" style="word-break: keep-all; overflow-wrap: break-word;">
+                <span class="btn-label text-[10px] uppercase font-bold text-white tracking-wide text-center leading-tight drop-shadow-md w-full px-1" style="word-break: normal; overflow-wrap: normal;">
                     \${btn.titulo}
                 </span>
             \`;
@@ -806,7 +806,7 @@ window.EMBEDDED_FINAL_TEMPLATE = `<!DOCTYPE html>
                         document.body.removeChild(temp);
 
                         const containerWidth = label.closest('a').offsetWidth;
-                        if (wordWidth > containerWidth - 4) {
+                        if (wordWidth > containerWidth - 8) {
                             return true;
                         }
                     }

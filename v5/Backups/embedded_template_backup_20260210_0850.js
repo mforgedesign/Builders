@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+
+window.EMBEDDED_FINAL_TEMPLATE = `<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -600,9 +601,7 @@
             e.preventDefault();
 
             // SIMPLIFIED LOGIC: Any URL opens directly, only raw phone numbers use popup
-            // FIX (2026-01-27): Treat 'wa.me' and 'whatsapp.com' links as numbers to force popup
-            const isWhatsAppLink = link.includes("wa.me") || link.includes("whatsapp.com");
-            const isUrl = link.startsWith("http") && !isWhatsAppLink;
+            const isUrl = link.startsWith("http");
 
             if (isUrl) {
                 // ANY URL (forms, group chats, wedding sites, etc) opens directly
@@ -654,22 +653,22 @@
                 return;
             }
 
-            let message = `Olá! Gostaria de confirmar minha presença.\n\n*Nome:* ${name}\n*Telefone:* ${phone}`;
+            let message = \`Olá! Gostaria de confirmar minha presença.\\n\\n*Nome:* \${name}\\n*Telefone:* \${phone}\`;
 
             // Only include companion info if feature is enabled
             if (!companionHideClass.includes('hidden')) {
                 if (!checkNoAcomp.checked) {
                     if (acompCount > 0) {
-                        message += `\n*Acompanhantes:* ${acompCount}`;
+                        message += \`\\n*Acompanhantes:* \${acompCount}\`;
                     } else {
-                        message += `\n*Acompanhantes:* Nenhum`;
+                        message += \`\\n*Acompanhantes:* Nenhum\`;
                     }
                 } else {
-                    message += `\n*Acompanhantes:* Nenhum (Vou sozinho)`;
+                    message += \`\\n*Acompanhantes:* Nenhum (Vou sozinho)\`;
                 }
             }
 
-            const waUrl = `https://wa.me/${currentRSVPNumber}?text=${encodeURIComponent(message)}`;
+            const waUrl = \`https://wa.me/\${currentRSVPNumber}?text=\${encodeURIComponent(message)}\`;
             window.open(waUrl, '_blank');
 
             popupRSVP.classList.add('invisivel');
@@ -723,7 +722,7 @@
             const isGiftImage = btn.isGiftImage === true;
             const isManualImage = btn.isManualImage === true;
 
-            console.log(`[AutoBuilder] Rendering Button: ${btn.id}`);
+            console.log(\`[AutoBuilder] Rendering Button: \${btn.id}\`);
 
             // Create anchor element
             const anchor = document.createElement('a');
@@ -770,17 +769,17 @@
             const iconRem = baseIconRem * buttonSize;
 
             // Renderização do HTML interno
-            anchor.innerHTML = `
+            anchor.innerHTML = \`
                 <div class="rounded-full border border-stone-300 p-[2px] transition-transform duration-300 group-hover:scale-105 group-active:scale-95">
                     <div class="rounded-full custom-button-bg text-white flex items-center justify-center shadow-lg group-hover:bg-stone-700 transition-colors"
-                         style="width: ${sizePx}px; height: ${sizePx}px; background-color: #751a1a;">
-                        <i class="${btn.icone}" style="font-size: ${iconRem}rem;"></i>
+                         style="width: \${sizePx}px; height: \${sizePx}px; background-color: #751a1a;">
+                        <i class="\${btn.icone}" style="font-size: \${iconRem}rem;"></i>
                     </div>
                 </div>
-                <span class="btn-label text-[10px] uppercase font-bold text-white tracking-wide text-center leading-tight drop-shadow-md w-full px-1" style="word-break: normal; overflow-wrap: normal;">
-                    ${btn.titulo}
+                <span class="btn-label text-[10px] uppercase font-bold text-white tracking-wide text-center leading-tight drop-shadow-md w-full px-1" style="word-break: keep-all; overflow-wrap: break-word;">
+                    \${btn.titulo}
                 </span>
-            `;
+            \`;
 
             gridBotoes.appendChild(anchor);
         });
@@ -797,7 +796,7 @@
 
             function hasOverflow() {
                 for (const label of labels) {
-                    const words = label.textContent.trim().split(/\s+/);
+                    const words = label.textContent.trim().split(/\\s+/);
                     for (const word of words) {
                         const temp = document.createElement('span');
                         temp.style.cssText = 'font-size:' + fontSize + 'px;font-weight:700;letter-spacing:0.025em;text-transform:uppercase;visibility:hidden;position:absolute;white-space:nowrap;';
@@ -806,10 +805,8 @@
                         const wordWidth = temp.offsetWidth;
                         document.body.removeChild(temp);
 
-
                         const containerWidth = label.closest('a').offsetWidth;
-                        // Reduce margin to account for px-1 (4px ideal, 8px safety)
-                        if (wordWidth > containerWidth - 8) {
+                        if (wordWidth > containerWidth - 4) {
                             return true;
                         }
                     }
@@ -978,7 +975,7 @@
             let segundos = Math.floor((diferenca % (1000 * 60)) / 1000);
 
             const totalMeses = (anos * 12) + meses;
-            const fmt = (num) => num < 10 ? `0${num}` : num;
+            const fmt = (num) => num < 10 ? \`0\${num}\` : num;
 
             document.getElementById('contadorMeses').innerText = fmt(totalMeses);
             document.getElementById('contadorDias').innerText = fmt(dias);
@@ -995,4 +992,4 @@
     </script>
 </body>
 
-</html>
+</html>`;
