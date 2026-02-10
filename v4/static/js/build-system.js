@@ -270,7 +270,8 @@
         const confirmacao = (formData.confirmacao || formData.link_confirmacao || formData.numero_whatsapp || '').trim();
 
         if (confirmacao) {
-            const isUrl = confirmacao.startsWith('http');
+            const isWhatsAppLink = confirmacao.includes('wa.me') || confirmacao.includes('whatsapp.com');
+            const isUrl = confirmacao.startsWith('http') && !isWhatsAppLink;
             if (isUrl) {
                 // É um link - abre diretamente
                 config.push({

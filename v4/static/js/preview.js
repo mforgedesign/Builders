@@ -87,7 +87,8 @@
         if (btn.id === 'rsvp') {
             const confirmacao = (currentState.confirmacao || currentState.link_confirmacao || currentState.numero_whatsapp || '').trim();
             if (confirmacao) {
-                const isUrl = confirmacao.startsWith('http');
+                const isWhatsAppLink = confirmacao.includes('wa.me') || confirmacao.includes('whatsapp.com');
+                const isUrl = confirmacao.startsWith('http') && !isWhatsAppLink;
                 if (isUrl) {
                     window.open(confirmacao, '_blank');
                 } else {

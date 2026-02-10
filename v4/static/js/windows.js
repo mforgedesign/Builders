@@ -1960,7 +1960,8 @@
                     // Retrocompatibilidade: suporta campo antigo numero_whatsapp e link_confirmacao
                     const confirmacao = (formData.confirmacao || formData.link_confirmacao || formData.numero_whatsapp || '').trim();
                     if (confirmacao) {
-                        const isUrl = confirmacao.startsWith('http');
+                        const isWhatsAppLink = confirmacao.includes('wa.me') || confirmacao.includes('whatsapp.com');
+                        const isUrl = confirmacao.startsWith('http') && !isWhatsAppLink;
                         if (isUrl) {
                             // É um link - abre diretamente
                             menuConfig.push({ titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: confirmacao, id: 'rsvp' });
@@ -3401,7 +3402,8 @@
                         // RSVP: Campo Unificado com Auto-Detecção
                         const confirmacao2 = (formData.confirmacao || formData.link_confirmacao || formData.numero_whatsapp || '').trim();
                         if (confirmacao2) {
-                            const isUrl2 = confirmacao2.startsWith('http');
+                            const isWhatsAppLink2 = confirmacao2.includes('wa.me') || confirmacao2.includes('whatsapp.com');
+                            const isUrl2 = confirmacao2.startsWith('http') && !isWhatsAppLink2;
                             if (isUrl2) {
                                 buttonConfigs['rsvp'] = { id: 'rsvp', titulo: 'Confirmar Presença', icone: 'fa-solid fa-check', link: confirmacao2 };
                             } else {
