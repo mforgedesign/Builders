@@ -777,52 +777,13 @@
                         <i class="${btn.icone}" style="font-size: ${iconRem}rem;"></i>
                     </div>
                 </div>
-                <span class="btn-label text-[10px] uppercase font-bold text-white tracking-wide text-center leading-tight drop-shadow-md w-full px-1" style="word-break: keep-all; overflow-wrap: break-word;">
+                <span class="text-[10px] uppercase font-bold text-white tracking-wide text-center leading-tight drop-shadow-md w-full break-words px-1">
                     ${btn.titulo}
                 </span>
             `;
 
             gridBotoes.appendChild(anchor);
         });
-
-        // ==================================================================
-        // 3.1 AUTO-SIZE BUTTON LABELS (Uniform font-size across all buttons)
-        // ==================================================================
-        (function autoSizeButtonLabels() {
-            const labels = gridBotoes.querySelectorAll('.btn-label');
-            if (!labels.length) return;
-
-            let fontSize = 10; // starts at 10px (matching text-[10px])
-            const minFontSize = 6;
-
-            function hasOverflow() {
-                for (const label of labels) {
-                    const words = label.textContent.trim().split(/\s+/);
-                    for (const word of words) {
-                        const temp = document.createElement('span');
-                        temp.style.cssText = 'font-size:' + fontSize + 'px;font-weight:700;letter-spacing:0.025em;text-transform:uppercase;visibility:hidden;position:absolute;white-space:nowrap;';
-                        temp.textContent = word;
-                        document.body.appendChild(temp);
-                        const wordWidth = temp.offsetWidth;
-                        document.body.removeChild(temp);
-
-                        const containerWidth = label.closest('a').offsetWidth;
-                        if (wordWidth > containerWidth - 4) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            }
-
-            while (fontSize > minFontSize && hasOverflow()) {
-                fontSize--;
-            }
-
-            labels.forEach(label => {
-                label.style.fontSize = fontSize + 'px';
-            });
-        })();
 
         // ==================================================================
         // 4. LÓGICA DE INÍCIO - INICIA AMBOS OS VÍDEOS NO MESMO GESTO

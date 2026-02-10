@@ -1,0 +1,4 @@
+Backup created before modifying windows.js to fix .dat asset import issue.
+Changes include:
+1. Updated fetchBlobFromSelector to detect video source from DOM
+2. Updated restoreBuilderState to check blob MIME type as fallback for .dat files

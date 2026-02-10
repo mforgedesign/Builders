@@ -1273,16 +1273,8 @@
                             } else if (dropzoneId) {
                                 const dropzone = document.getElementById(dropzoneId);
                                 if (dropzone) {
-                                    // ----------------------------------------------------
-                                    // CRITICAL FIX: Robust Video Detection (Extension OR MIME)
-                                    // ----------------------------------------------------
-                                    // .dat files (from historic publish bug) need MIME check
-                                    const isVideoByPath = path.toLowerCase().match(/\.(mp4|webm|mov|ogg)$/);
-                                    const isVideoByMime = blob.type && blob.type.startsWith('video/');
-                                    const isVideo = isVideoByPath || isVideoByMime;
-
+                                    const isVideo = path.toLowerCase().match(/\.(mp4|webm|mov|ogg)$/);
                                     const type = isVideo ? 'video' : 'image';
-
                                     // FIXED: Access local function directly (closure), not window.
                                     updateDropzonePreview(dropzone, url, type);
                                 }
@@ -1296,15 +1288,10 @@
                             const evtType = previewTypes[context] || context;
                             console.log(`[Restore] Dispatching mediaUpdated for ${context} -> ${evtType}`);
 
-                            // CRITICAL FIX: Propagate correct type to Preview
-                            const isVideoByPath = path.toLowerCase().match(/\.(mp4|webm|mov|ogg)$/);
-                            const isVideoByMime = blob.type && blob.type.startsWith('video/');
-                            const mediaType = (isVideoByPath || isVideoByMime) ? 'video/mp4' : 'image/jpeg';
-
                             document.dispatchEvent(new CustomEvent('mediaUpdated', {
                                 detail: {
                                     type: evtType,
-                                    data: { url: url, type: mediaType },
+                                    data: { url: url, type: path.toLowerCase().match(/\.(mp4|webm|mov|ogg)$/) ? 'video/mp4' : 'image/jpeg' },
                                     skipPersistence: true // Prevent overwriting DB with mapped preview
                                 }
                             }));
@@ -3276,7 +3263,7 @@
                         };
 
                         // Helper: Fetch Blob
-                        async function fetchBlobFromSelector(selector, type, config) {
+                        async function fetchBlobFromSelector(selector, type) {
                             const el = document.querySelector(selector);
                             if (!el) return null;
                             let url = null;
@@ -3286,8 +3273,6 @@
                                     const video = el.querySelector('video');
                                     if (video && video.src) {
                                         url = video.src;
-                                        // V5.1 FIX: Flag that source is definitely a video (for extension detection)
-                                        if (config) config._sourceIsVideo = true;
                                     } else {
                                         const style = el.style.backgroundImage;
                                         if (style && style !== 'none') {
@@ -3331,14 +3316,13 @@
                                 }
                             }
                             else if (config.selector) {
-                                blob = await fetchBlobFromSelector(config.selector, config.type, config);
+                                blob = await fetchBlobFromSelector(config.selector, config.type);
                             }
 
                             if (blob && blob instanceof Blob) {
                                 if (config.ext === 'auto') {
                                     if (blob.type.includes('video')) config.ext = 'mp4';
                                     else if (blob.type.includes('image')) config.ext = 'png';
-                                    else if (config._sourceIsVideo) config.ext = 'mp4'; // V5.1 FIX: Enforce MP4 if source was video
                                     else config.ext = 'dat';
                                 }
 

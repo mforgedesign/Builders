@@ -327,10 +327,14 @@
 
         // Listen for media updates (from windows.js dropzones) to enforce mutual exclusivity
         document.addEventListener('mediaUpdated', (e) => {
-            const { type } = e.detail;
+            const { type, data, skipPersistence } = e.detail;
 
-            // If Presentes Image is uploaded, clear Link Presentes
-            if (type === 'presentes') {
+            // v4.3.58 FIX: During restore (import), skip mutual exclusivity
+            // skipPersistence = restore hydration path; data=null = clearing path (not an upload)
+            if (skipPersistence) return;
+
+            // If Presentes Image is UPLOADED (data != null), clear Link Presentes
+            if (type === 'presentes' && data) {
                 const linkInput = document.querySelector('[data-field="link_presentes"]');
                 // Check if value is not empty to avoid loop/redundant updates
                 if (linkInput && linkInput.value) {
